@@ -9,3 +9,8 @@ name = "Azure OpenAI"
 base_url = "https://<your-resource-name>.openai.azure.com/openai/v1"
 env_key = "AZURE_OPENAI_API_KEY"
 wire_api = "responses"
+
+# MCP for library up-to-date docs
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "@upstash/context7-mcp"]
