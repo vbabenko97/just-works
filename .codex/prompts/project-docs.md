@@ -1,7 +1,3 @@
----
-description: Initialize / update project documentation
----
-
 # Project Documentation
 
 Generate or update project documentation in `docs/`. Produces three files:

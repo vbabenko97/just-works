@@ -1,0 +1,11 @@
+# Paste this in ~/.codex/config.toml
+
+model = "gpt-5.2" 
+model_provider = "azure"
+model_reasoning_effort = "xhigh"
+ 
+[model_providers.azure]
+name = "Azure OpenAI"
+base_url = "https://<your-resource-name>.openai.azure.com/openai/v1"
+env_key = "AZURE_OPENAI_API_KEY"
+wire_api = "responses"
