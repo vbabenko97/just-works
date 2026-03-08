@@ -1,9 +1,9 @@
 ---
-name: shadcn-ui
+name: shadcn-ui-coding
 description: Apply when generating shadcn/ui code. Covers the copy-paste component model, Radix UI compound components, theming with CSS variables, Form/DataTable integrations, and CLI conventions. Does NOT cover general React or Tailwind CSS patterns.
 ---
 
-# shadcn/ui
+# shadcn/ui coding
 
 Match project conventions. Read `components.json` for style, Tailwind version, aliases, and RSC settings. Check `components/ui/` for local component source and `package.json` for React version (18 vs 19) and Radix package format (unified `radix-ui` vs individual `@radix-ui/react-*`). These defaults apply only when the project has no established convention.
 
