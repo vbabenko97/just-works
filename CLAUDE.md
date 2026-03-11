@@ -42,20 +42,26 @@ One good question beats building the wrong thing. Clarify scope before exploring
 
 ## Agents
 
-**Delegate to matching agents for implementation work.** When an agent exists whose description covers the target file type and task, use it. Check both global and project-level `.claude/agents/` directories.
+**Delegate to agents for implementation work.** Every implementation task MUST be delegated to an agent — never implement directly in the main session. The main session is the orchestrator: it plans, creates tasks, delegates, tracks progress, and validates results.
 
-**Agent selection is a deliberate decision, not a guess.** Before delegating:
-1. Read the agent's `description` field in its frontmatter — this defines what file types and tasks it handles
-2. Match the **target file extension and task type** to the agent whose description explicitly covers them
-3. If no agent's description matches the file type or task, use direct tools instead of forcing a wrong agent
-
-Never select an agent by name familiarity alone. The description is the contract — if the file you're editing isn't listed in an agent's description, that agent is wrong.
+**Agent selection priority:**
+1. Check both global and project-level `.claude/agents/` directories for a matching specialized agent
+2. Read the agent's `description` field — match the **target file extension and task type** to the agent whose description explicitly covers them
+3. If a specialized agent matches → delegate to it
+4. If NO specialized agent matches → delegate to a **general-purpose Agent** instead. Launch it with a detailed prompt containing: task description, target file paths, acceptance criteria, relevant patterns/conventions, and project context
+5. Never select an agent by name familiarity alone. The description is the contract
 
 **Explore before implementing.** Before implementation work, launch Explore agents to build context about the affected code, architecture, and conventions. For multiple independent questions or codebase areas, launch concurrent Explore agents — one per topic. Specify `thoroughness: "very thorough"` in the prompt.
 
 **Verify external APIs before planning.** When a plan point involves external libraries, launch an Explore agent to verify that methods, patterns, and APIs actually exist and are used correctly. Use available documentation tools and web search. Return findings with source links.
 
-**Plan structure.** When writing a plan, create tasks using TaskCreate and delegate each task to a matching agent (if one exists). For each task, specify the matching agent (check available agents by description), target file paths, requirements, and acceptance criteria.
+**Task creation and delegation.** When executing a plan (whether from BMAD workflows or ad-hoc):
+1. Create a task for each discrete work item using TaskCreate with a clear description and `pending` status
+2. For each task, find the matching agent (specialized first, general-purpose fallback)
+3. Before delegating: call TaskUpdate to set `in_progress`
+4. Delegate to the agent with full context: task description, file paths, acceptance criteria, coding conventions, and any project-specific rules (CLAUDE.md, project-context.md)
+5. After agent completes: validate the result, then call TaskUpdate to set `completed`
+6. If the agent fails or produces incorrect results: fix or re-delegate before marking complete
 
 ## Skills
 
