@@ -19,7 +19,7 @@ These are unconditional. They prevent broken or unreadable diagrams regardless o
 
 - **Never use legacy `skinparam` when `<style>` blocks achieve the same result** -- `skinparam` is deprecated. Use CSS-like `<style>` blocks for all visual customization. The only exception: edge cases where `<style>` does not yet support a specific property.
 
-- **Never hardcode colors inline on individual elements** -- use `<style>` blocks or themes for consistency. Inline colors (`#FF0000`) on individual elements create maintenance nightmares and visual inconsistency.
+- **Never hardcode colors inline on individual elements** -- use stereotype-based `skinparam` or `<style>` blocks for consistency. Inline colors (`#FF0000` or `#CCFFCC` after `;`) on individual elements create maintenance nightmares, visual inconsistency, and often cause syntax errors in activity diagrams.
 
 - **Never mix arrow direction keywords (`-up->`, `-down->`) with layout hacks** -- let PlantUML auto-layout first. Only add direction hints when the auto-layout result is genuinely unreadable. Overriding layout in multiple places creates conflicts that produce worse results than no hints at all.
 
@@ -299,6 +299,50 @@ stop
 ```
 
 **Key syntax:** `start`/`stop`, `:action;`, `if (condition?) then (yes) else (no) endif`, `fork`/`fork again`/`end fork`, `|Swimlane|`, floating notes with `floating note right: text`.
+
+### Coloring activity steps with stereotypes
+
+To highlight specific paths (e.g., desired flow, error paths, regeneration vs new), use **stereotypes with skinparam**. Do NOT use inline `#color` after `;` — it causes syntax errors in activity diagrams.
+
+```plantuml
+@startuml
+skinparam activity {
+  BackgroundColor #F5F5F5
+  BorderColor #333333
+}
+
+skinparam activity {
+  BackgroundColor<<desired>> #E3F2E7
+  BorderColor<<desired>> #7BAA87
+  FontColor<<desired>> #000000
+
+  BackgroundColor<<error>> #FDE2E2
+  BorderColor<<error>> #C77C7C
+  FontColor<<error>> #000000
+}
+
+title Example Flow
+
+start
+:Normal step;
+:Desired step; <<desired>>
+:Error step; <<error>>
+stop
+
+legend right
+  |= Color |= Meaning |
+  |<#E3F2E7>| Desired flow |
+  |<#FDE2E2>| Error path |
+endlegend
+@enduml
+```
+
+**Rules:**
+- Define stereotype colors in a `skinparam activity {}` block at the top
+- Apply with `<<stereotype>>` after the `;` on the activity line
+- Use a color legend table to explain meanings
+- Common stereotypes: `<<desired>>`, `<<error>>`, `<<regen>>`, `<<newgen>>`, `<<fallback>>`
+- `elseif` always requires `then` — omitting it causes syntax errors downstream
 
 ## Class diagrams
 

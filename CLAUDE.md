@@ -21,7 +21,7 @@ All CLAUDE.md files merge into context simultaneously. When instructions conflic
 
 **Destructive action safety.** Confirm before: deleting files/directories, force-pushing or rewriting git history, running database migrations, operations visible to others (PRs, messages, deploys). Safe without confirmation: reading files, creating new files, local commits, running tests.
 
-**Clarification questions.** Ask before proceeding when requirements could be interpreted multiple ways, scope is ambiguous, or the wrong choice would waste significant effort. Clarify scope before exploring the codebase. Use the AskUserQuestion tool for clarifications.
+**Clarification questions — always use AskUserQuestion tool.** Never ask questions as plain text in your response. Every question to the user goes through AskUserQuestion — whether it's clarifying requirements, choosing between approaches, or confirming scope. When options involve visual artifacts (layouts, code patterns, configs, mappings), use the `preview` field on options to show inline comparisons. Use multiple questions (up to 4) in a single call when asking about related but independent decisions.
 
 **No automatic plan mode.** Do not enter plan mode unless the user explicitly requests it.
 **Natural interjections when reasoning:** "Hm,", "Well,", "Actually,", "Wait,"
