@@ -17,6 +17,18 @@ Just copy `.claude/` into any project — or install globally — and get pre-co
 
 ## Installation
 
+### Quick install (recommended)
+
+Requires [Node.js](https://nodejs.org/) 18+.
+
+```bash
+npx @dynokostya/just-works              # default settings
+npx @dynokostya/just-works --personal   # opinionated settings (permissions, hooks, sounds)
+npx @dynokostya/just-works --dry-run    # preview without changes
+```
+
+### From source
+
 ```bash
 git clone https://github.com/dynokostya/just-works.git
 cd just-works
@@ -26,23 +38,26 @@ install.bat             # Windows
 
 Installs agents, skills, commands, and settings globally to `~/.claude/` and `~/.codex/`. Existing files get backed up automatically.
 
-To update, pull the latest changes and run the installer again:
+To update:
 
 ```bash
-git pull && ./install.sh
+npx @dynokostya/just-works@latest
 ```
+
+Or from source: `git pull && ./install.sh`
 
 ### Options
 
 ```bash
-./install.sh --dry-run          # preview without changes
-./install.sh --personal         # opinionated settings (pre-approved commands, hooks, sounds)
-./install.sh --skip-config         # skip settings.json
-./install.sh --skip-statusline     # skip statusline-command.sh
-./install.sh --skip-skills-claude  # skip Claude Code skills
-./install.sh --skip-skills-codex   # skip Codex skills
-./install.sh --claude-only      # skip Codex
-./install.sh --codex-only       # skip Claude
+--personal              # opinionated settings (pre-approved commands, hooks, sounds)
+--dry-run               # preview without changes
+--skip-config           # skip settings.json
+--skip-statusline       # skip statusline-command.sh
+--skip-skills-claude    # skip Claude Code skills
+--skip-skills-codex     # skip Codex skills
+--claude-only           # skip Codex
+--codex-only            # skip Claude
+--no-backup             # skip backup prompt (for CI/scripts)
 ```
 
 ### Codex Azure config
