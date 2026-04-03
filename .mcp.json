@@ -1,14 +1,5 @@
 {
     "mcpServers": {
-        "Context7": {
-            "type": "stdio",
-            "command": "npx",
-            "args": ["-y", "@upstash/context7-mcp"]
-        },
-        "shadcn": {
-            "command": "npx",
-            "args": ["shadcn@latest", "mcp"]
-        },
         "playwright": {
             "command": "npx",
             "args": ["@playwright/mcp@latest"]
