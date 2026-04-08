@@ -1,6 +1,6 @@
 {
   "name": "@dynokostya/just-works",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Drop-in AI agent workflows, coding skills, and prompt standards for Claude Code and OpenAI Codex",
   "type": "module",
   "bin": {
@@ -14,6 +14,12 @@
     ".claude/settings.json",
     ".claude/settings.json.default",
     ".claude/statusline-command.sh",
+    ".codex/agents/",
+    ".codex/config/",
+    ".codex/config.toml",
+    ".codex/config.toml.default",
+    ".codex/hooks.json",
+    ".codex/hooks.json.default",
     ".codex/prompts/",
     ".codex/skills/",
     "CLAUDE.md",

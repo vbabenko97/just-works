@@ -1,0 +1,26 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "shell",
+      "hooks": [
+        {
+          "command": "$HOME/.codex/hooks/rtk-rewrite.sh",
+          "timeout": 10000,
+          "status_message": "Rewriting with rtk"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": ".*",
+      "hooks": [
+        {
+          "command": "afplay /System/Library/Sounds/Glass.aiff",
+          "timeout": 5000,
+          "status_message": "Notification"
+        }
+      ]
+    }
+  ]
+}

@@ -4,11 +4,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_HOME="${HOME}/.claude"
 CODEX_HOME="${HOME}/.codex"
+AGENTS_HOME="${HOME}/.agents"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 BACKUP_DIR="${HOME}/just-works-backups/${TIMESTAMP}"
 
 # Flags
 PERSONAL=false
+AZURE=false
 DRY_RUN=false
 CLAUDE_ONLY=false
 CODEX_ONLY=false
@@ -40,31 +42,37 @@ Usage: $(basename "$0") [OPTIONS]
 Install just-works agents, skills, and commands globally.
 
 Options:
-  --personal      Use opinionated settings.json (permissions, hooks, sounds)
-                  Default: minimal settings.json.default
-  --skip-config      Skip installing settings.json
+  --personal      Use opinionated settings (permissions, hooks, sounds)
+                  Default: minimal *.default configs
+  --azure         Use Azure OpenAI config instead of direct OpenAI API
+  --skip-config      Skip installing settings/config files
   --skip-statusline  Skip installing statusline-command.sh
   --skip-skills-claude  Skip installing Claude Code skills
   --skip-skills-codex   Skip installing Codex skills
   --claude-only   Install only Claude Code files (~/.claude/)
-  --codex-only    Install only Codex files (~/.codex/)
+  --codex-only    Install only Codex files (~/.codex/, ~/.agents/)
   --dry-run       Show what would be installed without making changes
   --no-backup     Skip backup prompt, disable backups (for CI/non-interactive)
   -h, --help      Show this help message
 
 What gets installed:
   ~/.claude/
-    agents/       Agent definitions (python-code-writer, prompt-writer)
+    agents/       Agent definitions (python-code-writer, prompt-writer, ...)
     skills/       Coding and prompting standards
-    commands/     Workflows (project-docs)
+    commands/     Workflows (project-docs, git-sync)
     settings.json             Permission and hook configuration
     CLAUDE.md                 Global behavioral instructions
     statusline-command.sh     Status line script
 
   ~/.codex/
-    prompts/      Agent definitions (plan-reviewer, project-docs)
-    skills/       Coding and prompting standards
+    agents/       Custom agent definitions (python-code-writer, diagrammer, ...)
+    config.toml   Codex CLI configuration (--azure for Azure OpenAI)
+    hooks.json    Lifecycle hooks (notification, rtk rewrite)
+    prompts/      Slash commands (plan-reviewer, project-docs, git-sync)
     AGENTS.md     Global behavioral instructions
+
+  ~/.agents/
+    skills/       Coding and prompting standards (Codex discovery path)
 EOF
     exit 0
 }
@@ -73,6 +81,7 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --personal)    PERSONAL=true; shift ;;
+        --azure)       AZURE=true; shift ;;
         --dry-run)     DRY_RUN=true; shift ;;
         --claude-only) CLAUDE_ONLY=true; shift ;;
         --codex-only)  CODEX_ONLY=true; shift ;;
@@ -225,12 +234,38 @@ fi
 # --- Codex ---
 if ! $CLAUDE_ONLY; then
     echo -e "${BOLD}Codex${NC}"
+    install_dir  "${SCRIPT_DIR}/.codex/agents"   "${CODEX_HOME}/agents"   "agents"
     install_dir  "${SCRIPT_DIR}/.codex/prompts"  "${CODEX_HOME}/prompts"  "prompts"
+
     if ! $SKIP_SKILLS_CODEX; then
-        install_dir  "${SCRIPT_DIR}/.codex/skills"   "${CODEX_HOME}/skills"   "skills"
+        install_dir  "${SCRIPT_DIR}/.codex/skills"   "${AGENTS_HOME}/skills"  "skills (-> ~/.agents/)"
     else
         info "Skipping Codex skills (--skip-skills-codex)"
     fi
+
+    if ! $SKIP_CONFIG; then
+        if $AZURE; then
+            if $PERSONAL; then
+                install_file "${SCRIPT_DIR}/.codex/config/azure/config.toml" "${CODEX_HOME}/config.toml" "config.toml (azure, personal)"
+            else
+                install_file "${SCRIPT_DIR}/.codex/config/azure/config.toml.default" "${CODEX_HOME}/config.toml" "config.toml (azure, default)"
+            fi
+        else
+            if $PERSONAL; then
+                install_file "${SCRIPT_DIR}/.codex/config.toml" "${CODEX_HOME}/config.toml" "config.toml (personal)"
+            else
+                install_file "${SCRIPT_DIR}/.codex/config.toml.default" "${CODEX_HOME}/config.toml" "config.toml (default)"
+            fi
+        fi
+        if $PERSONAL; then
+            install_file "${SCRIPT_DIR}/.codex/hooks.json" "${CODEX_HOME}/hooks.json" "hooks.json (personal)"
+        else
+            install_file "${SCRIPT_DIR}/.codex/hooks.json.default" "${CODEX_HOME}/hooks.json" "hooks.json (default)"
+        fi
+    else
+        info "Skipping config.toml and hooks.json (--skip-config)"
+    fi
+
     install_file "${SCRIPT_DIR}/AGENTS.md"        "${CODEX_HOME}/AGENTS.md" "AGENTS.md"
     echo ""
 fi
@@ -248,5 +283,6 @@ else
     fi
     if ! $CLAUDE_ONLY; then
         echo "  Codex:       ${CODEX_HOME}/"
+        echo "  Skills:      ${AGENTS_HOME}/skills/"
     fi
 fi
