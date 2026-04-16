@@ -12,11 +12,13 @@ Two parallel provider directories at root, plus shared behavioral standards:
 
 **Agents** (`.claude/agents/`, `.codex/prompts/`) — entry points that delegate specialized work:
 - `python-code-writer` — Python file creation, editing, and quality enforcement
-- `prompt-writer` — LLM prompt creation across Claude, GPT-5.2, and Gemini 3
+- `prompt-writer` — LLM prompt creation across Claude, GPT-5, and Gemini 3
 
 **Skills** (`.claude/skills/`, `.codex/skills/`) — behavioral standards referenced by agents:
 - `python-coding` — error handling, async patterns, type safety, security defaults
-- `claude-opus-4-6-prompting` — adaptive thinking, XML tags, behavioral tuning
+- `opus-4-7-prompting` — effort tuning, adaptive thinking, response-length calibration
+- `opus-4-6-prompting` — adaptive thinking, XML tags, behavioral tuning
+- `gpt-5-4-prompting` — output contracts, follow-through defaults, tool persistence
 - `gpt-5-2-prompting` — verbosity control, reasoning effort, structured extraction
 - `gemini-3-prompting` — three-layer prompts, context-first, thinking levels
 
