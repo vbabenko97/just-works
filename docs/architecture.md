@@ -21,6 +21,9 @@ Two parallel provider directories at root, plus shared behavioral standards:
 - `gpt-5-4-prompting` — output contracts, follow-through defaults, tool persistence
 - `gpt-5-2-prompting` — verbosity control, reasoning effort, structured extraction
 - `gemini-3-prompting` — three-layer prompts, context-first, thinking levels
+- `doc-coauthoring` — structured workflow for co-authoring docs, specs, proposals
+- `mcp-builder` — guide for building MCP servers (Python FastMCP or Node/TS SDK)
+- `skill-creator` — create, modify, and evaluate skills iteratively
 
 **Commands** (`.claude/commands/`) — multi-step workflows:
 - `project-docs` — 5-phase documentation generation pipeline
