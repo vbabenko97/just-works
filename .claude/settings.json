@@ -43,17 +43,18 @@
     ],
     "defaultMode": "bypassPermissions"
   },
-  "model": "opus[1m]",
+  "model": "opus",
+  "includeCoAuthoredBy": false,
   "enableAllProjectMcpServers": true,
   "cleanupPeriodDays": 180,
   "maxTerminalOutputChars": 200000,
   "maxFileReadTokens": 50000,
   "autoCompactPercentageOverride": 80,
   "autoMemoryEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
   "plansDirectory": "./.claude/plans",
   "outputStyle": "default",
   "spinnerTipsEnabled": true,
+  "effortLevel": "high",
   "attribution": {
     "commit": "",
     "pr": ""
@@ -71,11 +72,11 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Read",
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/dynokostya/.claude/hooks/rtk-rewrite.sh"
+            "command": "FILE=$(echo '$CLAUDE_TOOL_INPUT' | jq -r '.file_path') && [ -f \"$FILE\" ] && LINES=$(wc -l < \"$FILE\") && [ \"$LINES\" -gt 500 ] && echo 'File is too large, do not read it fully. Use offset and limit parameters to read specific sections.' >&2 && exit 2 || exit 0"
           }
         ]
       }
