@@ -5,3 +5,5 @@ __pycache__/
 src/
 node_modules/
 .claude/plans/**.md
+.claude/settings.local.json
+.claude/skills/*-workspace/

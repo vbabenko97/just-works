@@ -1,0 +1,59 @@
+{
+  "skill_name": "ai-analyst-pipeline",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "hey so tourism authority asked us to dig into this. my director keeps saying 'our recovery is done, visitor arrivals are back to normal' but the regional offices are complaining. the data is monthly visitor arrivals by island for 2024 and 2025, broken out by accommodation type, tier, and origin market (it's tourism_monthly.csv). can you put together a markdown report i can share with the director - what's actually going on across the islands and what should we do differently. assume the director knows the business but doesn't look at data much.",
+      "expected_output": "A markdown report (report.md) with the six-phase analysis surfacing that the aggregate is flat BUT Maui is growing while Oahu is declining (Simpson's Paradox), with root-cause drill-down identifying Oahu hotel luxury tier (especially Japanese market) as the driver. Includes action-titled charts, a CTR narrative, and ranked recommendations with owners and confidence grades.",
+      "files": ["evals/files/tourism_monthly.csv"],
+      "expectations": [
+        "A markdown report file (report.md) exists as the final deliverable",
+        "Report surfaces Simpson's Paradox: aggregate is roughly flat while islands diverge",
+        "Report identifies Maui as the growth outlier AND Oahu as the decline driver",
+        "Root-cause drill-down reaches at least 3 layers deep",
+        "Report contains at least 3 charts (PNGs embedded or referenced)",
+        "At least 2 chart titles are action-oriented",
+        "Report follows CTR narrative structure",
+        "Recommendations are ranked with owners AND confidence grades",
+        "Arithmetic was independently validated",
+        "Tone is appropriate for a director audience"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "customer churn spiked in q2 2026 and the board wants answers at next week's meeting. i have customer-level data in customer_churn.csv with plan tier, industry, signup and churn quarters, ARR, tenure. i need a marp slide deck - action titles, not more than 15 slides, with a clear ask at the end. the board is non-technical. what's driving the churn and what do we do about it?",
+      "expected_output": "A Marp slide deck (deck.md) where the analysis shows churn rise is concentrated in Pro plan + Retail industry (drill-down), NOT systemic. Deck has 10-15 slides with action titles, CTR narrative, and recommendations targeting Pro+Retail segment specifically. Validated via re-derivation of churn rates.",
+      "files": ["evals/files/customer_churn.csv"],
+      "expectations": [
+        "A Marp deck file (deck.md) exists with valid Marp frontmatter",
+        "Deck has 15 or fewer slides",
+        "Analysis identifies Pro plan tier as the primary driver",
+        "Drill-down identifies Retail industry within Pro as the top churn segment",
+        "Churn rates are independently re-derived",
+        "At least 2 slide titles are action-oriented",
+        "Deck follows CTR narrative structure",
+        "Recommendations are specific, named, with confidence grades",
+        "At least 3 charts included as PNGs",
+        "Tone is non-technical and appropriate for a board audience"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "our marketing team keeps saying conversion is 'flat' this quarter and nothing to worry about. gut says something's off - we've been spending more on paid and organic traffic is up. data is funnel_monthly.csv (jan-jun 2026) with visits, signups, conversions by channel and user_type (new vs returning). please build me a jupyter notebook i can share with the growth team so they can re-run it. tell me whether conversion is actually flat and what's happening underneath.",
+      "expected_output": "A Jupyter notebook (analysis.ipynb) revealing that aggregate conversion is ~flat BUT new-user conversion improved ~5% \u2192 ~7% while returning-user conversion regressed from ~14% \u2192 ~10%. Notebook has reproducible cells, CTR narrative in markdown, action-titled charts, and recommendations.",
+      "files": ["evals/files/funnel_monthly.csv"],
+      "expectations": [
+        "A valid Jupyter notebook file (analysis.ipynb) exists as the final deliverable",
+        "Notebook confirms aggregate conversion is roughly flat",
+        "Notebook surfaces that new-user conversion improved",
+        "Notebook surfaces that returning-user conversion regressed",
+        "Notebook explicitly names the pattern as Simpson's Paradox OR composition shift",
+        "Notebook code cells are reproducible",
+        "Notebook has narrative markdown cells",
+        "At least 2 chart titles are action-oriented",
+        "At least 3 charts are included",
+        "Recommendations included with owners and confidence grades"
+      ]
+    }
+  ]
+}
