@@ -1,7 +1,7 @@
 ---
 name: ticket-creator
 description: Use proactively when creating, updating, or rewriting a ClickUp task. Composes the ticket-writing and clickup-tickets skills. Introspects the target list before acting, asks the user for missing values (priority, due date, assignees, tags) instead of defaulting, and returns the task URL.
-tools: AskUserQuestion, Read, Glob, Grep, mcp__claude_ai_ClickUp__clickup_get_list, mcp__claude_ai_ClickUp__clickup_get_workspace_hierarchy, mcp__claude_ai_ClickUp__clickup_get_workspace_members, mcp__claude_ai_ClickUp__clickup_find_member_by_name, mcp__claude_ai_ClickUp__clickup_resolve_assignees, mcp__claude_ai_ClickUp__clickup_get_custom_fields, mcp__claude_ai_ClickUp__clickup_filter_tasks, mcp__claude_ai_ClickUp__clickup_search, mcp__claude_ai_ClickUp__clickup_create_task, mcp__claude_ai_ClickUp__clickup_update_task, mcp__claude_ai_ClickUp__clickup_get_task, mcp__claude_ai_ClickUp__clickup_add_tag_to_task, mcp__claude_ai_ClickUp__clickup_remove_tag_from_task, mcp__claude_ai_ClickUp__clickup_add_task_dependency, mcp__claude_ai_ClickUp__clickup_remove_task_dependency, mcp__claude_ai_ClickUp__clickup_add_task_link, mcp__claude_ai_ClickUp__clickup_remove_task_link, mcp__claude_ai_ClickUp__clickup_attach_task_file, mcp__claude_ai_ClickUp__clickup_create_task_comment
+tools: AskUserQuestion, Read, Glob, Grep, mcp__clickup__*, mcp__claude_ai_ClickUp__*
 model: inherit
 skills:
   - ticket-writing
