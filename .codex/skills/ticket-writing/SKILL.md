@@ -57,11 +57,16 @@ Aim for under ~70 characters when possible — that's the width where titles sta
 ## Body formatting
 
 - **Headers** — one level of boldness: Markdown bold (`**Header**`) or H2 (`## Header`), whichever the tool renders. No H1 inside the body. Pick one style per ticket and keep it uniform.
+- **Header punctuation** — end the header with `:` when it introduces a list, a single-value line below, or a definition (`Steps to reproduce:`, `Severity:`, `Acceptance criteria:`). Omit the colon when the header opens a prose paragraph (`Summary`, `Problem`, `Proposed change`) or a labelled link (`Source`).
+- **Single-value sections** — for one-line values like `Severity`, `Priority`, or `Timebox`, put the header on its own line and the value on the next line. Don't inline the value next to the header.
 - **No horizontal rules** (`---`). Sections separate themselves through bold headers.
 - **No em dashes as separators.** Use commas, periods, or semicolons. Em dashes inside prose are fine.
 - **No blank line between a header and its first line of content.** Each section opens immediately.
+- **Numbered and bulleted lists** — no blank lines between items. Each item ends with a period.
+- **Inline code with backticks** — wrap technical identifiers in backticks: field names (`due_date`, `postId`), enum values (`high`, `urgent`), env var names (`OPENROUTER_API_KEY`), file paths (`src/api/auth.ts`), id expressions (`postId = 69c2c683039c4ad6d45387bcb7ede`). Keep plain URLs and product-path references (`Settings → Account → Transactions`) unformatted.
+- **Capitalize proper nouns** — environment names (`Prod`, `Stage`, `Dev`), browser names (`Chrome`, `Firefox`, `Safari`), OS names (`Windows`, `macOS`), service and team names (`Platform`, `AI backend`, `Ops`), vendor names (`AWS`, `Slack`), and standard acronyms (`API`, `URL`, `HTTP`).
 - **Length** — 200–300 words is a reasonable soft target for PBIs and Bugs. Spikes and Discovery tickets may run longer when framing demands it. Shorter is fine when the problem is genuinely simple. Length is an artifact of clarity, not a goal.
-- **Code, logs, error messages** — fenced code blocks for verbatim content. Don't paraphrase error messages; quote them exactly.
+- **Code, logs, error messages** — fenced code blocks for verbatim multi-line content; inline backticks for short identifiers. Don't paraphrase error messages; quote them exactly.
 
 ## PBI (Product Backlog Item)
 
@@ -132,9 +137,9 @@ One line: what's wrong, where, for whom. "Login fails on Chrome 125 / Windows 11
 Numbered, specific, complete. A dev with no prior context should follow them verbatim and reproduce.
 
 ```
-1. Open https://app.example.com/login in Chrome 125 on Windows 11
-2. Enter a valid email and password
-3. Click Sign in
+1. Open https://app.example.com/login in Chrome 125 on Windows 11.
+2. Enter a valid email and password.
+3. Click Sign in.
 ```
 
 **Actual result**
@@ -301,10 +306,10 @@ Body:
 **Summary**
 Users on Chrome 125 / Windows 11 see no error when login credentials are rejected. The page reloads with the form cleared.
 
-**Steps to reproduce**
-1. Open https://app.example.com/login in Chrome 125 on Windows 11
-2. Enter a valid email and an incorrect password
-3. Click Sign in
+**Steps to reproduce:**
+1. Open https://app.example.com/login in Chrome 125 on Windows 11.
+2. Enter a valid email and an incorrect password.
+3. Click Sign in.
 
 **Actual result**
 Page reloads. Form fields cleared. No error banner. Console: `POST /api/auth 401 — empty body`.
@@ -313,10 +318,13 @@ Page reloads. Form fields cleared. No error banner. Console: `POST /api/auth 401
 An error banner appears above the form: "Invalid email or password." Form fields remain populated so the user can correct them.
 
 **Environment**
-Chrome 125.0.6422.76, Windows 11 23H2, staging, web client v2.18.0. Reproduced on two accounts.
+Chrome 125.0.6422.76, Windows 11 23H2, Stage, web client v2.18.0. Reproduced on two accounts.
 
-**Severity** Major — blocks user feedback for every failed login on the affected platform.
-**Priority** High — affects every user on Chrome / Windows hitting an auth failure.
+**Severity:**
+Major — blocks user feedback for every failed login on the affected platform.
+
+**Priority:**
+High — affects every user on Chrome / Windows hitting an auth failure.
 
 **Attachments**
 `login-failure.mp4` — screen recording of the failure.
@@ -340,18 +348,18 @@ Finance-facing users currently export transactions by copying rows out of the we
 **Proposed change**
 Add a Download CSV button in Settings → Account → Transactions. The file covers the currently selected date range and includes date, amount, merchant, category, and status.
 
-**Acceptance criteria**
-- A Download CSV button appears in Settings → Account → Transactions for signed-in users
-- Clicking the button downloads a CSV with header row: `date, amount, merchant, category, status`
-- The CSV covers the currently selected date range
-- An empty range produces a CSV with header row only
-- Download starts within 2 seconds for ranges up to 10,000 rows
+**Acceptance criteria:**
+- A Download CSV button appears in Settings → Account → Transactions for signed-in users.
+- Clicking the button downloads a CSV with header row: `date, amount, merchant, category, status`.
+- The CSV covers the currently selected date range.
+- An empty range produces a CSV with header row only.
+- Download starts within 2 seconds for ranges up to 10,000 rows.
 
 **Out of scope**
 Excel export, email delivery, scheduled exports. These are separate tickets if demand appears.
 
-**Links**
-Parent: ACCT-410 — Self-service reporting epic
+**Links:**
+Parent: ACCT-410 — Self-service reporting epic.
 
 **Source**
 Ops team Slack thread (18 Apr): https://example.slack.com/archives/C01/p1713456789
@@ -373,10 +381,10 @@ Body:
 **Goal**
 Recommend one PDF library to generate styled invoice PDFs from our existing HTML templates. Decision criteria: render fidelity vs the current Chrome reference, bundle size, license compatibility (commercial distribution), active maintenance.
 
-**Timebox**
+**Timebox:**
 2 days.
 
-**Method**
+**Method:**
 1. Shortlist three libraries based on current industry usage: Puppeteer (headless Chrome), wkhtmltopdf, and Playwright print-to-PDF.
 2. Render the current invoice template through each and diff against the Chrome reference.
 3. Record output fidelity, render time on a representative sample of 100 invoices, bundle impact, and license terms.
@@ -385,7 +393,7 @@ Recommend one PDF library to generate styled invoice PDFs from our existing HTML
 **Expected output**
 A comparison table, a recommendation with reasoning, and three sample PDFs (one per library) attached to this ticket.
 
-**Open questions**
+**Open questions:**
 1. Are we constrained to run this in-process, or can it run as a side-car service?
 2. Is the commercial license for wkhtmltopdf a blocker given our distribution model?
 
