@@ -1,0 +1,3 @@
+interface:
+  display_name: "GPT Image 2 Prompting"
+  short_description: "Create and refine production-ready gpt-image-2 prompts."

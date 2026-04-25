@@ -1,0 +1,3 @@
+interface:
+  display_name: "GPT-5.5 Prompting"
+  short_description: "Create, migrate, and review GPT-5.5 prompts."
