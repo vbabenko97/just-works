@@ -58,6 +58,7 @@
     "defaultMode": "bypassPermissions"
   },
   "model": "opus[1m]",
+  "includeCoAuthoredBy": false,
   "enableAllProjectMcpServers": true,
   "cleanupPeriodDays": 180,
   "maxTerminalOutputChars": 200000,
