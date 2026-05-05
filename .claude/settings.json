@@ -67,12 +67,13 @@
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "plansDirectory": "./.claude/plans",
-  "outputStyle": "default",
+  "outputStyle": "Compressed",
   "spinnerTipsEnabled": true,
   "attribution": {
     "commit": "",
     "pr": ""
   },
+  "awaySummaryEnabled": false,
   "env": {
     "ENABLE_TOOL_SEARCH": "true",
     "CLAUDE_CODE_SUBAGENT_MODEL": "opus[1m]",
