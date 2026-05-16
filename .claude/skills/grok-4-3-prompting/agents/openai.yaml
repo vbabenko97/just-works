@@ -1,0 +1,3 @@
+interface:
+  display_name: "Grok 4.3 Prompting"
+  short_description: "Prompting and migration guidance for xAI Grok 4.3."
