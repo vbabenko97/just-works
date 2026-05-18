@@ -107,7 +107,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Glass.aiff"
+            "command": "bash -c 'exec \"$HOME/.claude/hooks/notification.sh\"'"
           }
         ]
       }
