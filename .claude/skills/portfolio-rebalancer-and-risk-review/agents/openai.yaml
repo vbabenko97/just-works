@@ -1,0 +1,5 @@
+interface:
+  display_name: "Portfolio Rebalancer and Risk Review"
+  short_description: "Review portfolio drift, concentration, fees, liquidity, tax flags, and cash-first rebalancing."
+  icon: "chart-no-axes-combined"
+  color: "#1F6FEB"

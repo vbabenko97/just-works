@@ -1,0 +1,3 @@
+interface:
+  display_name: "Investment Policy Builder"
+  short_description: "Create a personal investment policy statement before choosing instruments."

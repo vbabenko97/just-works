@@ -1,0 +1,5 @@
+interface:
+  display_name: "Finance Data Normalizer"
+  short_description: "Normalize personal finance data into clean transaction, account, asset, debt, and monthly snapshot tables."
+  icon: "bar-chart-3"
+  primary_color: "#1F7A5C"

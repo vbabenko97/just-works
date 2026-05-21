@@ -1,0 +1,5 @@
+interface:
+  display_name: "Bank Broker Due Diligence"
+  short_description: "Check financial intermediaries before sending money."
+  icon: "shield-check"
+  brand_color: "#1F4E79"

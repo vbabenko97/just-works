@@ -1,0 +1,5 @@
+interface:
+  display_name: "Tax and Residency Watch"
+  short_description: "Structure cross-border tax and residency risk memos for adviser review."
+  icon: "calculator"
+  primary_color: "#374151"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Debt and Obligation Prioritizer"
+  short_description: "Prioritize debts, taxes, rent, insurance, and recurring obligations before investing."
+  icon: "💳"

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Finance Privacy Redactor"
+  short_description: "Redact financial PII before analysis."

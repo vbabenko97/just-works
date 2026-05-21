@@ -1,0 +1,19 @@
+{
+  "monthly_income": 5000,
+  "required_expenses": 2600,
+  "debt_minimums": 300,
+  "survival_expenses": 2900,
+  "accessible_liquidity": 18000,
+  "largest_single_institution_balance": 11000,
+  "locked_institution_amount": 11000,
+  "relocation_cost": 7000,
+  "medical_or_family_cost": 4000,
+  "blackout_or_equipment_cost": 1200,
+  "devaluation_rate": 0.25,
+  "fx_expense_share": 0.40,
+  "income_delay_months": 2,
+  "target_months": 6,
+  "income_is_unstable": true,
+  "material_fx_mismatch": true,
+  "active_infrastructure_risk": true
+}

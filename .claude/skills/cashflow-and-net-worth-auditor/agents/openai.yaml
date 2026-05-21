@@ -1,0 +1,3 @@
+interface:
+  display_name: "Cashflow and Net Worth Auditor"
+  short_description: "Audit personal cashflow, burn rate, runway, savings rate, assets, debts, and net worth."

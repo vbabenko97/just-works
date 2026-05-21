@@ -1,0 +1,3 @@
+interface:
+  display_name: "Financial Stress Tester"
+  short_description: "Stress-test personal cashflow, emergency funds, debt, and access risk."

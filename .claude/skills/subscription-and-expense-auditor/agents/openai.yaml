@@ -1,0 +1,3 @@
+interface:
+  display_name: "Subscription and Expense Auditor"
+  short_description: "Find recurring budget leaks and recommend keep, downgrade, cancel, or review decisions."
