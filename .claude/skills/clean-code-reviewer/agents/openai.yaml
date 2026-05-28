@@ -1,0 +1,4 @@
+interface:
+  display_name: "Clean Code Reviewer"
+  short_description: "Review and refactor code for readability, maintainability, and testability."
+  icon: "🧹"
