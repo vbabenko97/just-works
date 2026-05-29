@@ -1,25 +1,33 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
   "permissions": {
     "allow": [
+      "Bash(pwd)",
       "Bash(cd:*)",
-      "Bash(find:*)",
       "Bash(ls:*)",
+      "Bash(find:*)",
       "Bash(grep:*)",
+      "Bash(rg:*)",
       "Bash(tree:*)",
       "Bash(wc:*)",
       "Bash(file:*)",
       "Bash(du:*)",
       "Bash(which:*)",
       "Bash(diff:*)",
-      "Bash(pwd:*)",
       "Bash(head:*)",
       "Bash(tail:*)",
       "Bash(sort:*)",
       "Bash(uniq:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)"
     ],
     "deny": [
-      "Read(**/.env)",
+      "Read(.env)",
       "Read(**/.env*)",
       "Read(**/*.pem)",
       "Read(**/*.key)",
@@ -28,24 +36,27 @@
       "Read(**/*.jks)",
       "Read(**/.netrc)",
       "Read(**/.pgpass)",
-      "Read(**/.aws/*)",
-      "Read(**/.gcp/*)",
       "Read(**/service-account*.json)",
-      "Read(**/.azure/*)",
       "Read(**/terraform.tfvars)",
       "Read(**/*.tfstate)",
       "Read(**/*.tfstate.*)",
-      "Read(**/.ssh/*)",
-      "Read(**/.gnupg/*)",
+      "Read(**/.htpasswd)",
+
+      "Read(~/.ssh/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gcp/**)",
+      "Read(~/.azure/**)",
+
+      "Read(**/.ssh/**)",
+      "Read(**/.gnupg/**)",
+      "Read(**/.aws/**)",
+      "Read(**/.gcp/**)",
+      "Read(**/.azure/**)",
+
       "Read(**/*.sqlite)",
       "Read(**/*.db)",
-      "Read(**/.htpasswd)",
-      "Read(**/package-lock.json)",
-      "Read(**/pnpm-lock.yaml)",
-      "Read(**/yarn.lock)",
-      "Read(**/Cargo.lock)",
-      "Read(**/poetry.lock)",
-      "Read(**/uv.lock)",
+
       "Read(**/node_modules/**)",
       "Read(**/dist/**)",
       "Read(**/build/**)",
@@ -53,42 +64,57 @@
       "Read(**/target/**)",
       "Read(**/coverage/**)",
       "Read(**/*.min.js)",
-      "Read(**/*.map)"
+      "Read(**/*.map)",
+
+      "Edit(.env)",
+      "Edit(**/.env*)",
+      "Write(.env)",
+      "Write(**/.env*)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "acceptEdits"
   },
+
   "model": "opus[1m]",
-  "includeCoAuthoredBy": false,
-  "enableAllProjectMcpServers": true,
-  "cleanupPeriodDays": 180,
-  "maxTerminalOutputChars": 200000,
-  "maxFileReadTokens": 50000,
-  "autoCompactPercentageOverride": 80,
-  "autoMemoryEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
-  "plansDirectory": "./.claude/plans",
-  "outputStyle": "Compressed",
-  "spinnerTipsEnabled": true,
+  "effortLevel": "xhigh",
+
   "attribution": {
     "commit": "",
     "pr": ""
   },
+
+  "enableAllProjectMcpServers": false,
+  "cleanupPeriodDays": 180,
+  "autoMemoryEnabled": false,
+  "plansDirectory": "./.claude/plans",
+  "outputStyle": "Compressed",
+  "spinnerTipsEnabled": true,
   "awaySummaryEnabled": false,
+  "includeCoAuthoredBy": false,
   "skillListingBudgetFraction": 0.05,
-  "skillListingMaxDescChars": 2048,
+  "maxSkillDescriptionChars": 2048,
+
   "env": {
-    "ENABLE_TOOL_SEARCH": "true",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "opus[1m]",
-    "CLAUDE_CODE_EFFORT_LEVEL": "max",
-    "DISABLE_TELEMETRY": "1",
-    "DISABLE_ERROR_REPORTING": "1",
-    "DISABLE_FEEDBACK_COMMAND": "1",
-    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
-    "BASH_MAX_OUTPUT_LENGTH": "150000",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000",
-    "CLAUDE_STREAM_IDLE_TIMEOUT_MS": "1800000",
-    "API_TIMEOUT_MS": "1800000"
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-8[1m]",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5-20251001",
+
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_DISABLE_FAST_MODE": "1",
+
+    "ENABLE_TOOL_SEARCH": "auto:5",
+
+    "BASH_MAX_OUTPUT_LENGTH": "100000",
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "1800000",
+
+    "CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS": "50000",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "80",
+
+    "API_TIMEOUT_MS": "1800000",
+    "CLAUDE_STREAM_IDLE_TIMEOUT_MS": "1800000"
   },
+
   "hooks": {
     "PreToolUse": [
       {
@@ -113,6 +139,7 @@
       }
     ]
   },
+
   "statusLine": {
     "type": "command",
     "command": "bash ~/.claude/statusline-command.sh"
