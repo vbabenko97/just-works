@@ -1,0 +1,3 @@
+interface:
+  display_name: "Opus 4.8 Prompting"
+  short_description: "Create, migrate, and audit prompts for Claude Opus 4.8."
