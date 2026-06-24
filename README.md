@@ -10,16 +10,46 @@ Just copy `.claude/` into any project — or install globally — and get pre-co
 
 ## What's Inside
 
-**Agents** — `python-code-writer`, `prompt-writer` (Claude).
-**Commands** - `plan-reviewer` (Codex), `project-docs` (Claude & Codex).
+**Lean by default** — `caveman` and the `compressed` output style trim response tokens (filler, hedging, emojis); `minimal-coding` forces least-code solutions. Less context burned, lower cost.
 
-**Skills** — coding standards (Python, React, Tailwind, shadcn/ui), architecture patterns (DDD, feature-driven), and model-specific prompt engineering (Claude Opus 4.6, GPT-5.2, Gemini 3). Applied automatically based on the file type you're editing.
+**Full Claude Code fluency** — uses the whole toolset by default: `AskUserQuestion` for structured choices, rich markdown, `TaskCreate` progress tracking, and parallel tool calls — not plain-text walls.
+
+**Context-isolating subagents** — delegates file-type work (`python`, `react`, `swift`, …) to subagents that carry their own context, so the main thread stays lean and focused.
+
+**Agents** — file-type-triggered writers (`python`, `typescript`, `swift`, `csharp`, `react`), plus `prompt-writer`, `diagrammer`, and `ticket-creator`. 9 per provider.
+**Commands** — `project-docs` and `git-sync` (Claude & Codex), `plan-reviewer` (Codex).
+
+**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), model-specific prompt engineering (Claude Opus 4.8 & Fable 5, GPT-5.5, Gemini 3), and behavioral modes (`minimal-coding` for least-code solutions). Applied automatically based on the file type you're editing.
 
 **Security** — `settings.json` blocks agent access to `.env`, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and databases.
 
 ## Installation
 
 Installs agents, skills, commands, and settings globally to `~/.claude/` and `~/.codex/`. Existing files get backed up automatically.
+
+> **For the best experience, add `--personal`** — installs my full opinionated config instead of the minimal defaults:
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/dynokostya/just-works/main/bootstrap.sh | bash -s -- --personal
+> ```
+
+### My `--personal` config vs default
+
+`--personal` swaps the minimal `*.default` files for my opinionated config:
+
+| | Default | `--personal` (my config) |
+|---|---|---|
+| Permissions | prompts for everything | `bypassPermissions` + safe read-only allow-list |
+| Security deny-list | empty | blocks reads of `.env`, keys, credentials, lockfiles, build dirs |
+| Model / effort | Claude Code defaults | `best` model + `max` effort (main agent & subagents) |
+| Output style | `default` | `Compressed` (fewer tokens) |
+| Codex | model + basic status line | `danger-full-access`, no approval prompts, MCP servers (Playwright, ClickUp) |
+| Hooks (Claude) | none | Bash command rewriting + completion sounds |
+
+**Two `--personal` hooks need extra setup to work:**
+
+- **`rtk` Bash rewriting** (`.claude/hooks/rtk-rewrite.sh`) rewrites commands to save tokens, but needs [`rtk`](https://github.com/rtk-ai/rtk) ≥ 0.23.0 and `jq` installed. Without them it prints a warning on every Bash call and does nothing — install `rtk`, or delete the `PreToolUse` hook from `settings.json`.
+- **Completion sounds** use `afplay` + `/System/Library/Sounds/Glass.aiff`, which are **macOS-only**. On Linux/Windows the notification hooks fail silently (no sound) — swap `afplay` for your player (`paplay`/`aplay` on Linux), or remove the hook.
 
 ### Quick install (recommended)
 
@@ -110,13 +140,19 @@ Requires `npx` (Node.js) in your PATH.
 .claude/
   agents/           # Claude Code agent definitions
   skills/           # Coding and prompting standards
-  commands/         # Multi-step workflows (project-docs)
-  settings.json     # Permissions, hooks, MCP servers
+  commands/         # Multi-step workflows (project-docs, git-sync)
+  output-styles/    # Selectable output styles (compressed)
+  hooks/            # PreToolUse / notification hooks (--personal)
+  settings.json     # Permissions, hooks, env, MCP toggles
 .codex/
-  prompts/          # Codex agent definitions
+  agents/           # Codex custom agent definitions (TOML)
+  prompts/          # Codex slash commands (plan-reviewer, ...)
   skills/           # Same standards, mirrored for Codex
   config/azure/     # config.toml.default + config.toml
+  hooks.json        # Lifecycle hooks (notification)
+bin/cli.mjs         # npx installer
 CLAUDE.md           # Behavioral instructions for Claude Code
+CLAUDE-CHAT.md      # Behavioral instructions for claude.ai chat
 AGENTS.md           # Behavioral instructions for Codex
 ```
 
@@ -124,7 +160,7 @@ AGENTS.md           # Behavioral instructions for Codex
 
 ## Customization
 
-Add project-specific agents in `.claude/agents/` or `.codex/prompts/`. Override skill defaults in your own `CLAUDE.md` or `AGENTS.md`. Extend the deny-list in `.claude/settings.json`.
+Add project-specific agents in `.claude/agents/` or `.codex/agents/`. Override skill defaults in your own `CLAUDE.md` or `AGENTS.md`. Extend the deny-list in `.claude/settings.json`.
 
 If you fork this: skills must be mirrored across both providers (Codex doesn't support `@file` references). Keep instructions model-agnostic.
 
