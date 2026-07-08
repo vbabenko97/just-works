@@ -34,7 +34,7 @@ For <doc section>, use the template section name from the mapping table (e.g., I
 
 - **ready** — no blockers, at most a few majors.
 - **needs work** — blockers present or majors widespread, but all required sections exist.
-- **incomplete** — whole required sections absent for the doc's maturity level. For POC docs, A/B Testing and Serving Optimization subsections are not required ("Deferred until production" is acceptable).
+- **incomplete** — whole required sections absent for the doc's maturity level. For POC docs, A/B Testing and Optimization subsections are not required ("Deferred until production" is acceptable).
 
 ## References
 

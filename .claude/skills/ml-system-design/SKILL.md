@@ -27,7 +27,7 @@ Ask one batched question set (AskUserQuestion on Claude; plain numbered question
 
 Skip any question already answered in the request.
 
-Maturity decides depth. State the chosen maturity on a line directly under the doc title.
+Maturity decides depth. State the chosen maturity in the doc header, on a line following the problem summary.
 
 - **Production:** complete all 12 sections at full depth.
 - **POC:** keep all 12 section headers; abbreviate throughout; replace the "A/B Testing" subsection (Measuring and Reporting) and the "Optimization" subsection (Serving and Inference) with the single line "Deferred until production."
