@@ -1,6 +1,6 @@
 ---
 name: ml-system-design
-description: Apply when designing an ML system, writing an ML system design document, or planning an ML project before implementation — requests mentioning an ML system, model, training pipeline, or ML design doc. Guides triage, drafting with assumption markers, a gap interview, and a finalized 12-section design document. Not for generic docs or specs (use doc-coauthoring) and not for reviewing an existing design doc (use ml-system-design-review).
+description: Apply when designing or specifying an ML system before implementation — writing an ML system design document, architecting a training or inference pipeline, or planning a fraud detection, recommendation, forecasting, or RAG system. Guides triage, drafting with assumption markers, a gap interview, and a finalized 12-section design document. Not for generic docs or specs (use doc-coauthoring), not for reviewing an existing design doc (use ml-system-design-review), and not for writing ML code without a design phase.
 ---
 
 # ML System Design
@@ -25,14 +25,16 @@ Ask one batched question set (AskUserQuestion on Claude; plain numbered question
 4. Deployment context — batch / online / edge; cloud / on-prem.
 5. Project maturity — POC or production.
 
-Maturity decides depth. State the chosen maturity in the doc header.
+Skip any question already answered in the request.
+
+Maturity decides depth. State the chosen maturity on a line directly under the doc title.
 
 - **Production:** complete all 12 sections at full depth.
 - **POC:** keep all 12 section headers; abbreviate throughout; replace the "A/B Testing" subsection (Measuring and Reporting) and the "Optimization" subsection (Serving and Inference) with the single line "Deferred until production."
 
 ### 2. Draft
 
-Generate the full document from `references/template.md`. Mark every fact not supplied by the user inline as `[ASSUMPTION: what was assumed]`. Calibrate tone and depth against the closer worked example: `references/example-demand-forecasting.md` (classic tabular ML) or `references/example-rag-system.md` (LLM/RAG).
+Generate the full document from `references/template.md`. Mark every fact not supplied by the user inline as `[ASSUMPTION: what was assumed]`. Calibrate tone and depth against the closer worked example: use references/example-rag-system.md when the system involves an LLM, vector store, or retrieval step; otherwise use references/example-demand-forecasting.md. When your doc's maturity differs from the example's, the maturity depth rules above win.
 
 ### 3. Gap interview
 

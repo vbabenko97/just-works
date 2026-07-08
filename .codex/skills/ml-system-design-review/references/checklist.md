@@ -14,7 +14,7 @@ Group names are verbatim from the source checklist; template section names are v
 | Error Analysis | VI. Error Analysis |
 | Training Pipeline | VII. Training Pipeline |
 | Feature Engineering | VIII. Features |
-| System Architecture | XII. Serving and Inference + X. Integration (cross-cutting) |
+| System Architecture | XII. Serving and Inference + X. Integration (cross-cutting; Section X is also evaluated by the Integration group) |
 | Integration | X. Integration |
 | Documentation | the doc itself: organization, diagrams, glossary, version history |
 | Evaluation Strategy | IX. Measuring and Reporting |

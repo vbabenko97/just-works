@@ -124,6 +124,8 @@ multiple documents, single document across multiple versions, and multiple docum
 
 ## IX. Measuring and Reporting
 
+Note: the source doc plans a full A/B test despite POC maturity; under this skill's POC rule this subsection would read "Deferred until production."
+
 Offline evaluation uses crowdsourcing (Yandex Toloka or Mechanical Turk): 100 assessors, 1000 query-
 answer pairs (500 direct questions, 500 follow-up questions), overlap of 5 assessors per task, cost
 approximately $50. Assessors score on a 5-point relevance scale and provide a binary hallucination flag
@@ -168,6 +170,8 @@ the source document contains TODO markers indicating that per-system metric thre
 for each component are not yet finalized at POC stage.
 
 ## XII. Serving and Inference
+
+Note: optimization details below are illustrative; a POC doc under this skill's rule defers them until production.
 
 Three on-premise services communicating with external cloud services. The architecture diagram shows
 Embedding service, OCR service, and Chat service on-premise, with Vector DB (Pinecone), Document

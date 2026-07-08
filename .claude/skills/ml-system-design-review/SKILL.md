@@ -1,18 +1,18 @@
 ---
 name: ml-system-design-review
-description: Apply when reviewing, critiquing, scoring, or checking an ML system design document against a quality checklist. Walks a 14-group checklist, reports severity-graded findings (blocker / major / minor) with section references and concrete fixes, and ends with a ready / needs work / incomplete verdict. Critique only — pairs with ml-system-design for authoring or rewriting.
+description: Apply when reviewing, critiquing, evaluating, auditing, scoring, or checking an ML system design document against a quality checklist — e.g. "review my ML design doc", "give feedback on this ML system design". Walks a 14-group checklist, reports severity-graded findings (blocker / major / minor) with section references and concrete fixes, and ends with a ready / needs work / incomplete verdict. Critique only — pairs with ml-system-design for authoring or rewriting.
 ---
 
 # ML System Design Review
 
-Critique an ML system design document against a 14-group checklist distilled from the companion repo of Manning's *Machine Learning System Design*. Critique only: do not rewrite the document unless the user asks. For authoring a new doc, use `ml-system-design` (this skill's author pair).
+Critique an ML system design document against a 14-group checklist distilled from the companion repo of Manning's *Machine Learning System Design* (Babushkin/Kravchenko). Critique only: do not rewrite the document unless the user asks. For authoring a new doc, use `ml-system-design` (this skill's author pair).
 
 ## Workflow
 
 ### 1. Intake
 
 - Accept a file path or pasted document text. If neither is provided, ask for one.
-- Determine the doc's maturity level (POC vs production) from its header or content. If unstated, ask the user before evaluating — the incomplete verdict depends on it.
+- Determine the doc's maturity level (POC vs production) from its header or content. If unstated, ask the user before evaluating — the incomplete verdict and the POC deferrals (A/B Testing, Optimization) both depend on it.
 
 ### 2. Evaluate
 
@@ -23,6 +23,8 @@ Walk `references/checklist.md` group by group. Use its mapping table to locate w
 One finding per failed line item:
 
 `[blocker|major|minor] <doc section> — <what is missing or weak> — Fix: <concrete action>`
+
+For <doc section>, use the template section name from the mapping table (e.g., IV. Validation Schema); if the reviewed doc uses custom headings, cite its closest heading instead.
 
 - **blocker** — absence sinks the project: no business metric, leakage-prone validation, no fallback strategy, no baseline.
 - **major** — significant gap; the project survives but degraded: missing drift monitoring, unspecified labeling QA, no rollback plan.
