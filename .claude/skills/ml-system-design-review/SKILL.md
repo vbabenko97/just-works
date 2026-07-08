@@ -24,7 +24,7 @@ One finding per failed line item:
 
 `[blocker|major|minor] <doc section> — <what is missing or weak> — Fix: <concrete action>`
 
-For <doc section>, use the template section name from the mapping table (e.g., IV. Validation Schema); if the reviewed doc uses custom headings, cite its closest heading instead.
+For <doc section>, use the template section name from the mapping table (e.g., IV. Validation Schema); if the reviewed doc uses custom headings, cite its closest heading instead. For groups with no template section of their own (Documentation, Implementation Plan), cite the checklist group name.
 
 - **blocker** — absence sinks the project: no business metric, leakage-prone validation, no fallback strategy, no baseline.
 - **major** — significant gap; the project survives but degraded: missing drift monitoring, unspecified labeling QA, no rollback plan.
