@@ -136,9 +136,9 @@ include admin panels, company-level dashboards, override UI, and a standard CI/s
 
 ## XI. Monitoring
 
-All predictions logged with input features and timestamps to ClickHouse (column-oriented DBMS, 30-day
-retention). Infrastructure metrics (RPS, error rate, p90/p99/p999 latency) collected via Kafka and
-visualized in Prometheus + Grafana. ML monitoring via Evidently AI covering Data Quality, Data
+All predictions logged with input features and timestamps to ClickHouse (column-oriented DBMS).
+Infrastructure metrics (RPS, error rate, p90/p99/p999 latency) collected via Kafka and visualized in
+Prometheus + Grafana (30-day retention). ML monitoring via Evidently AI covering Data Quality, Data
 Stability, Data Drift, and Target Drift. Data quality alarms: missing values beyond 3σ of historical
 baseline for important features (4σ for others), schema compliance, feature range checks (e.g., sales
 >= 0), and a pairwise correlation delta alarm when any feature pair deviates by more than 0.15. Model
