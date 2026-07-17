@@ -1,0 +1,12 @@
+interface:
+  display_name: Kimi K3 Prompting
+  short_description: Design and migrate prompts for Kimi K3
+  default_prompt: Use $kimi-k-3-prompting to audit and rewrite this prompt for Kimi
+    K3.
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
