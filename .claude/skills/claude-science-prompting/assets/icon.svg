@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Claude Science Prompting">
+  <rect width="128" height="128" rx="26" fill="#123B36"/>
+  <path d="M47 24h34v8l-8 8v18l25 38c4 7-1 16-10 16H40c-9 0-14-9-10-16l25-38V40l-8-8z" fill="none" stroke="#F4EFE6" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M42 90c12-9 20 6 31-2 9-7 15-4 22 2" fill="none" stroke="#D69A6A" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="52" cy="75" r="4" fill="#F4EFE6"/>
+  <circle cx="77" cy="70" r="3" fill="#F4EFE6"/>
+</svg>

@@ -1,0 +1,11 @@
+interface:
+  display_name: Claude Science Prompting
+  short_description: Create and audit rigorous prompts for Claude Science
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - api
+  - atlas
+  allow_implicit_invocation: true
