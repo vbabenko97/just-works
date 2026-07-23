@@ -7,3 +7,9 @@ node_modules/
 .claude/plans/**.md
 .claude/settings.local.json
 .claude/skills/*-workspace/
+
+# private — personal corpora and career data, never published
+my-style-before-llms/
+vitalii-writing-style/
+career/
+my-cvs/

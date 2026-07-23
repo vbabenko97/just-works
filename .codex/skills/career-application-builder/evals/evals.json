@@ -1,0 +1,59 @@
+{
+  "skill_name": "career-application-builder",
+  "_note": "All candidate material here is invented. Do not seed these fixtures from a real person's work history \u2014 this file ships publicly, and a realistic-looking CV built from real details publishes them.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "ambiguous-impact-claim",
+      "prompt": "Can you tighten up my CV bullets for a Staff Backend role at a Berlin fintech? Here's the relevant chunk of my current CV:\n\nStaff Backend Engineer, Northwind Data GmbH (2021-present)\n- Reduced infrastructure costs by $780/month\n- Led migration of the reporting pipeline to Kafka\n- Built structured audit logging across services and cut mean incident triage time by 30%\n- Improved observability with Grafana dashboards\n\nThe JD wants 'demonstrated ownership of cost and reliability outcomes at scale'. Make it land harder.",
+      "expected_output": "Returns a concise batched question list covering: the status of the $780 figure; what 'Led' means concretely; whether audit logging shipped and where the 30% came from; and what 'Improved' was measured against. Splits the audit-logging bullet into implementation and outcome. Polishes nothing that is still unresolved. Does not restate the vacancy, explain its own process, preview conditional rewrites, or judge whether the numbers are impressive.",
+      "files": [],
+      "assertions": [
+        "Asks about the status of the $780 figure (measured / estimated / proposed) before rewriting it",
+        "Asks what 'Led' means concretely \u2014 scope, ownership, or team size",
+        "Treats the audit-logging bullet as two separate claims: the implementation and the 30% outcome",
+        "Asks what 'Improved observability' was measured against",
+        "Does not present any unresolved implementation, ownership or outcome claim as settled in polished bullet form \u2014 including both the $780 saving and the 30% triage reduction",
+        "Batches the questions into a single round rather than asking one at a time",
+        "Requests clarification concisely: no restatement of the vacancy, no explanation of its own process, no preview of conditional rewrites",
+        "Does not editorialise about whether a figure is impressive or large enough for the seniority level"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "missing-required-skill",
+      "prompt": "here's a job posting i want to apply to, can you tailor my cv for it\n\nJOB: Platform Engineer, Zurich. Required: Kubernetes (production), Terraform, Go, service mesh experience (Istio or Linkerd), on-call ownership.\n\nMY CV:\nBackend Engineer, 2019-present. Python and Go services on AWS ECS with Fargate. Docker for local dev and CI. Terraform for all infra. Set up CloudWatch alarms and dashboards. No formal on-call rotation but I've handled prod incidents.",
+      "expected_output": "Names Kubernetes and service mesh as gaps AND keeps them out of the CV text itself. The discriminating behaviour is document-level: the rewritten bullets must not smuggle 'Kubernetes' in as a comparison or relabel ECS/Docker as transferable container orchestration. Applies Swiss conventions.",
+      "files": [],
+      "assertions": [
+        "Produces tailored CV bullets from the supported material rather than withholding the whole document pending answers (precondition: without this, the four CV-text assertions below pass vacuously)",
+        "The rewritten CV text contains no occurrence of 'Kubernetes', including as a comparison or transferability note",
+        "The rewritten CV text contains no occurrence of 'Istio' or 'Linkerd'",
+        "Does not relabel ECS/Docker work as 'container orchestration' in a way implying the Kubernetes requirement is met",
+        "The rewritten CV text does not claim on-call ownership; incident handling is stated as what it was",
+        "Identifies Kubernetes as a requirement the candidate does not meet",
+        "Identifies service mesh (Istio/Linkerd) as a requirement the candidate does not meet",
+        "Applies or explicitly references Swiss CV conventions (work permit, language level)",
+        "Requests any clarification concisely, without explaining its own process"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "linkedin-vs-cv",
+      "prompt": "I need a tailored CV and my LinkedIn updated for this role: Senior ML Platform Engineer, Hamburg logistics company. Requirements are Python, model serving at scale, Kubernetes, feature stores, and 'comfort working with commercial stakeholders'. They explicitly ask for a one-page CV, so it has to be tight \u2014 cut whatever doesn't serve this application.\n\nMy background:\n\nSenior Data Engineer, Northgate Commerce AG, Hamburg, 2020-2023\n- Built and shipped the order-events pipeline: Postgres CDC -> Kafka -> Iceberg on S3, queried via Trino. Ran ~25M events/day at peak.\n- Migrated batch reporting from nightly Spark jobs to Trino. Measured query cost drop of 55% over the following quarter, tracked in the finance dashboard.\n- Owned the Terraform monorepo for the data org (4 engineers).\n\nML Platform Engineer, Northgate Commerce AG, 2023-present\n- Shipped demand-forecast model serving on Kubernetes with Seldon. 9 models in production, p99 under 250ms measured in Grafana.\n- Built the feature store on Tecton. Adopted by both ML teams.\n- Set up drift monitoring; caught two production regressions before they affected pricing.\n\nPhD Operations Research, TU Delft, 2020. Three first-author papers on stochastic demand forecasting (Scopus-indexed). Reviewed for INFORMS twice.\n\nGive me the CV and the LinkedIn headline + About section.",
+      "expected_output": "The one-page constraint forces real prioritisation: the CV should compress or cut the data-engineering role and the research detail to make room for ML platform evidence. LinkedIn must NOT follow it down \u2014 the Kafka/Trino history and the PhD should stay on the profile at full strength, because a profile narrowed to one vacancy loses adjacent-role visibility. This is the assertion that could not fail in iteration 1, when reverse-chronological ordering forced the CV to carry everything anyway.",
+      "files": [],
+      "assertions": [
+        "CV respects the one-page constraint by compressing or cutting lower-relevance material, not by shrinking every section equally",
+        "CV leads with ML platform material (Kubernetes, Seldon, Tecton)",
+        "LinkedIn carries data-engineering material (Kafka/Trino) at greater length or prominence than the compressed CV does",
+        "LinkedIn retains the PhD and research background even if the CV compresses it",
+        "LinkedIn headline signals more than one role family",
+        "LinkedIn About is first-person prose, not a restated bullet list",
+        "LinkedIn About is not a verbatim or near-verbatim copy of CV bullets",
+        "Does not fabricate any technology absent from the supplied material",
+        "Flags requirements with no supporting evidence (Python, commercial stakeholders) rather than silently inferring them"
+      ]
+    }
+  ]
+}
