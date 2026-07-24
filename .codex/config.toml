@@ -5,8 +5,10 @@
 sandbox = "danger-full-access"
 approval_policy = "never"
 
-[env]
-DISABLE_TELEMETRY = "1"
+# Disable Codex's statsig analytics (DISABLE_TELEMETRY env var is not read by Codex;
+# analytics is the actual config knob. OTel exporters are off by default.)
+[analytics]
+enabled = false
 
 [features]
 multi_agent = true

@@ -3,7 +3,9 @@
 # Manual: cp to ~/.codex/config.toml
 
 model = "gpt-5.5"
-model_reasoning_effort = "xhigh"
+# medium is OpenAI's general-purpose interactive default; reserve high/xhigh for the
+# hardest work and set it per-invocation or per-agent instead of globally.
+model_reasoning_effort = "medium"
 
 [features]
 multi_agent = true
