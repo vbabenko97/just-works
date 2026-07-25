@@ -1,0 +1,85 @@
+{
+  "skill_name": "grok-4-5-prompting",
+  "version": 1,
+  "evals": [
+    {
+      "id": "compress-bloated-coding-prompt",
+      "prompt": "Optimize this 1,500-word coding system prompt for Grok 4.5. Preserve the repo inspection, implementation, testing, and no-fabrication requirements, but remove generic roleplay and repeated instructions.",
+      "expected_behavior": [
+        "Produces a materially shorter prompt",
+        "Preserves observable completion criteria",
+        "Recommends medium or high reasoning based on task complexity",
+        "Does not request hidden chain-of-thought"
+      ]
+    },
+    {
+      "id": "current-research-prompt",
+      "prompt": "Create a Grok 4.5 prompt to compare current API pricing and rate limits for three AI providers, with primary-source citations and a calculation of monthly spend.",
+      "expected_behavior": [
+        "Enables web search and code execution",
+        "Defines an as-of date and source hierarchy",
+        "Separates prompt text from API settings",
+        "Requires citations near claims"
+      ]
+    },
+    {
+      "id": "structured-contract-extraction",
+      "prompt": "Turn my prose prompt for extracting dates, parties, obligations, and conflicts from contracts into a Grok 4.5 production prompt and strict JSON schema.",
+      "expected_behavior": [
+        "Returns a concise semantic prompt",
+        "Uses strict schema fields and null handling",
+        "Defines conflict behavior",
+        "Does not rely on prose-only valid JSON instructions"
+      ]
+    },
+    {
+      "id": "reasoning-parameter-correction",
+      "prompt": "My Grok 4.5 request uses reasoning_effort=none, frequency_penalty=0.4, and stop=[\"END\"]. Fix the request for a difficult architecture review.",
+      "expected_behavior": [
+        "Rejects unsupported reasoning disablement",
+        "Removes incompatible penalties and stop",
+        "Selects high reasoning effort",
+        "Explains runtime controls briefly"
+      ]
+    },
+    {
+      "id": "long-agent-loop",
+      "prompt": "Design a Grok 4.5 prompt and API strategy for a 100-turn research agent with large static reference documents and frequent tool output.",
+      "expected_behavior": [
+        "Front-loads static content for caching",
+        "Uses a stable prompt cache key",
+        "Recommends append-only history and compaction",
+        "Defines bounded tools and stop conditions"
+      ]
+    },
+    {
+      "id": "image-comparison",
+      "prompt": "Create a Grok 4.5 prompt that compares four product screenshots for layout regressions without guessing user intent or hidden implementation details.",
+      "expected_behavior": [
+        "Labels image roles",
+        "Separates observation from inference",
+        "Defines comparison dimensions and output format",
+        "Uses low or medium reasoning effort"
+      ]
+    },
+    {
+      "id": "prompt-only-mode",
+      "prompt": "Write a Grok 4.5 prompt for reviewing a pull request. Output only the prompt, no explanation.",
+      "expected_behavior": [
+        "Outputs only a ready-to-use prompt",
+        "Includes review scope and evidence standards",
+        "Does not append settings or commentary"
+      ]
+    },
+    {
+      "id": "diagnose-ungrounded-prompt",
+      "prompt": "Audit this prompt: 'Using your latest knowledge, tell me today's top security vulnerabilities and exact affected versions. Do not browse.'",
+      "expected_behavior": [
+        "Classifies the prompt as ungrounded and contradictory",
+        "Requires current search or supplied data",
+        "Does not pretend the model cutoff is current",
+        "Returns a corrected prompt"
+      ]
+    }
+  ]
+}

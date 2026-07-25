@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grok 4.5 Prompting"
+  short_description: "Design and optimize prompts for Grok 4.5"
+  default_prompt: "Create or optimize a production-ready prompt for Grok 4.5, including only the model settings and tools the task actually needs."

@@ -1,0 +1,12 @@
+interface:
+  display_name: Claude Opus 5 Prompting
+  short_description: Create, migrate, audit, and debug Claude Opus 5 prompts
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
