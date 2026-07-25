@@ -19,6 +19,8 @@ SKIP_STATUSLINE=false
 SKIP_SKILLS_CLAUDE=false
 SKIP_SKILLS_CODEX=false
 DO_BACKUP=true
+PRUNE=false
+SYNC_REPOS=false
 
 # Colors
 if [[ -t 1 ]]; then
@@ -53,6 +55,12 @@ Options:
   --codex-only    Install only Codex files (~/.codex/, ~/.agents/)
   --dry-run       Show what would be installed without making changes
   --no-backup     Skip backup prompt, disable backups (for CI/non-interactive)
+  --prune         Delete files in the destination that no longer exist in the
+                  source. Without it, entries deleted from this repo survive in
+                  every install target. Skipped entries are listed either way.
+  --repos         Also sync skills into project checkouts under \$HOME that
+                  already contain a skill root. Only updates roots that exist;
+                  never creates new ones. Combine with --dry-run first.
   -h, --help      Show this help message
 
 What gets installed:
@@ -91,6 +99,8 @@ while [[ $# -gt 0 ]]; do
         --skip-skills-claude) SKIP_SKILLS_CLAUDE=true; shift ;;
         --skip-skills-codex)  SKIP_SKILLS_CODEX=true; shift ;;
         --no-backup)   DO_BACKUP=false; shift ;;
+        --prune)       PRUNE=true; shift ;;
+        --repos)       SYNC_REPOS=true; shift ;;
         -h|--help)     usage ;;
         *) error "Unknown option: $1"; usage ;;
     esac
@@ -101,12 +111,22 @@ if $CLAUDE_ONLY && $CODEX_ONLY; then
     exit 1
 fi
 
-# Choose copy method
+# Choose copy method.
+# copy_dir is additive and is what backups use — it must never delete.
+# sync_dir is the install path and honours --prune.
 if command -v rsync &>/dev/null; then
     copy_dir() { rsync -a "$1/" "$2/"; }
+    sync_dir() {
+        if $PRUNE; then rsync -a --delete "$1/" "$2/"; else rsync -a "$1/" "$2/"; fi
+    }
 else
     warn "rsync not found — falling back to cp (existing files may be overwritten)"
     copy_dir() { cp -r "$1/." "$2/"; }
+    sync_dir() { cp -r "$1/." "$2/"; }
+    if $PRUNE; then
+        warn "--prune needs rsync; entries removed from the source will be kept"
+        PRUNE=false
+    fi
 fi
 
 echo -e "${BOLD}just-works installer${NC}"
@@ -169,18 +189,34 @@ prepare_target() {
     fi
 }
 
+# Entries present in the destination but no longer in the source. Silence here is
+# how skills deleted from this repo used to linger in every install target.
+report_extras() {
+    local src="$1" dest="$2"
+    [[ -d "$dest" ]] || return 0
+    local extras
+    extras="$(comm -13 <(ls "$src" 2>/dev/null | sort) <(ls "$dest" 2>/dev/null | sort) | tr '\n' ' ')"
+    [[ -n "${extras// /}" ]] || return 0
+    if $PRUNE; then
+        warn "Pruning from ${dest}: ${extras}"
+    else
+        warn "Not in source, kept (use --prune to remove) in ${dest}: ${extras}"
+    fi
+}
+
 install_dir() {
     local src="$1" dest="$2" label="$3"
     if [[ ! -d "$src" ]]; then
         warn "Source not found, skipping: $src"
         return
     fi
+    report_extras "$src" "$dest"
     prepare_target "$dest"
     if $DRY_RUN; then
         info "Would copy: $src/ -> $dest/"
     else
         mkdir -p "$dest"
-        copy_dir "$src" "$dest"
+        sync_dir "$src" "$dest"
         info "Installed: $label -> $dest/"
     fi
 }
@@ -272,6 +308,39 @@ if ! $CLAUDE_ONLY; then
     fi
 
     install_file "${SCRIPT_DIR}/AGENTS.md"        "${CODEX_HOME}/AGENTS.md" "AGENTS.md"
+    echo ""
+fi
+
+# --- Project checkouts ---
+# install.sh only ever wrote to ~/.claude and ~/.agents, so skill roots committed
+# into project checkouts drifted until someone reinstalled them by hand.
+if $SYNC_REPOS; then
+    echo -e "${BOLD}Project checkouts${NC}"
+    # `|| true`: find exits non-zero on unreadable directories, and pipefail would
+    # otherwise abort the run before a single checkout is touched.
+    repos="$(find "$HOME" -maxdepth 5 -type d \
+        \( -path "*/.claude/skills" -o -path "*/.codex/skills" -o -path "*/.agents/skills" \) 2>/dev/null \
+        | grep -v 'plugins/cache\|just-works-backups\|node_modules\|/\.tmp/\|_backups' \
+        | sed -E 's#/\.(claude|codex|agents)/skills$##' \
+        | sort -u || true)"
+
+    while IFS= read -r repo; do
+        [[ -n "$repo" ]]                || continue
+        [[ "$repo" != "$HOME" ]]        || continue   # the global install, handled above
+        [[ "$repo" != "$SCRIPT_DIR" ]]  || continue   # the source of truth
+        # Only refresh roots the checkout already has; never impose a new layout.
+        # Plain if-blocks, not `[[ ]] && cmd` — under `set -e` a false test as the
+        # last command in the loop body aborts the whole run.
+        if [[ -d "${repo}/.claude/skills" ]] && ! $SKIP_SKILLS_CLAUDE; then
+            install_dir "${SCRIPT_DIR}/.claude/skills" "${repo}/.claude/skills" "$(basename "$repo")/.claude/skills"
+        fi
+        if [[ -d "${repo}/.codex/skills" ]] && ! $SKIP_SKILLS_CODEX; then
+            install_dir "${SCRIPT_DIR}/.codex/skills"  "${repo}/.codex/skills"  "$(basename "$repo")/.codex/skills"
+        fi
+        if [[ -d "${repo}/.agents/skills" ]] && ! $SKIP_SKILLS_CODEX; then
+            install_dir "${SCRIPT_DIR}/.codex/skills"  "${repo}/.agents/skills" "$(basename "$repo")/.agents/skills"
+        fi
+    done <<< "$repos"
     echo ""
 fi
 
