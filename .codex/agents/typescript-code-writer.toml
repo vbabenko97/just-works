@@ -1,5 +1,7 @@
 name = "typescript-code-writer"
 description = "Use when writing or editing TypeScript (.ts) files. Applies typescript-coding skill standards and runs quality checks."
+model = "gpt-5.6-terra"
+model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

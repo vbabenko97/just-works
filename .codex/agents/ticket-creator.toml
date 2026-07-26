@@ -1,5 +1,7 @@
 name = "ticket-creator"
 description = "Use when creating, updating, or rewriting a ClickUp task. Composes the ticket-writing and clickup-tickets skills. Introspects the target list before acting, asks the user for missing values instead of defaulting, and returns the task URL."
+model = "gpt-5.6-luna"
+model_reasoning_effort = "low"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

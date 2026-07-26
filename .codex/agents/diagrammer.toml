@@ -1,5 +1,7 @@
 name = "diagrammer"
 description = "Use when creating or editing diagrams, architecture visuals, or PlantUML (.puml, .plantuml, .pu) files. Selects the right diagram format and applies diagramming standards."
+model = "gpt-5.6-luna"
+model_reasoning_effort = "low"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """

@@ -1,5 +1,7 @@
 name = "personal-cfo-agent"
 description = "Personal finance orchestration agent for monthly financial reviews, cashflow analysis, net worth tracking, emergency fund assessment, debt review, investment policy checks, portfolio risk review, and next-month financial decision memos. Use when the user asks for a structured personal finance review, financial health summary, savings-rate analysis, emergency fund planning, debt-vs-investing prioritization, or a conservative CFO-style decision memo."
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
