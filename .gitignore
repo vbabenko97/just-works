@@ -8,6 +8,12 @@ node_modules/
 .claude/settings.local.json
 .claude/skills/*-workspace/
 
+# Maintenance authorizations are issued per task and bound to a specific HEAD,
+# expiry and nonce, so they are worthless once committed. The spend ledger is
+# local evidence, not shared history.
+.claude/maintenance-auth.json
+.claude/maintenance-uses.jsonl
+
 # private — personal corpora and career data, never published
 my-style-before-llms/
 vitalii-writing-style/

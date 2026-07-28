@@ -1,0 +1,25 @@
+{
+  "version": "tier1-2026-07-28",
+  "note": [
+    "Scripts the repository owner has reviewed and permits agents to execute.",
+    "guard_destructive_bash.py denies execution of any other local script,",
+    "which closes the Write-then-run bypass: an agent can still write",
+    "cleanup.sh, but running it is refused because the path is not listed here.",
+    "A listed script is only permitted while its sha256 still matches. Editing",
+    "an allowlisted script therefore revokes its permission until the owner",
+    "re-reviews it and updates the hash with:",
+    "  shasum -a 256 <path>",
+    "This file is protected from Write/Edit and from Bash redirects, so an agent",
+    "cannot add its own script to the list."
+  ],
+  "scripts": {
+    "scripts/verify/verify_tree_equivalence.py": "ac727166325c3822a3cb0ab392cee951b63412ef266d5b62c6f69d41f12e0f5f",
+    "scripts/verify/bulk_mutate.py": "bce3d18ecc5c8d92d4661212a195f6a3867572bf3b1b2976446779cf468e5649",
+    "tests/reliability/fixtures/make_fixtures.sh": "9b248b152fd8758214c7c2aef0568e0fc973b418fdd429a0392b9ea753525d28",
+    "tests/reliability/test_guard_bash.py": "2b0312e33cc7458c1c03afcbdd7fc83d3173c849c9c32513547e0ca9fcf53007",
+    "tests/reliability/test_script_indirection.py": "a16a62bb5e83acd3a2f2912bd59cf674424f04345801fff60fe3a08017a2708a",
+    "tests/reliability/test_protected_paths.py": "94c190502bb43554da6914f3b13bcc703d26a138987f9138ae0d05e2fef2c13b",
+    "tests/reliability/test_plan_apply_drift.py": "0c782ea010b7f6feebcf858064cfa83ac60b88cd246750321fd4a2b1d064e365",
+    "tests/reliability/test_maintenance_auth.py": "7dc8a6ba08bac95146104a60014668b4db49a5ae2edeec76fc25552396aad138"
+  }
+}
