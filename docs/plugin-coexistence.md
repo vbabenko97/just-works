@@ -104,6 +104,51 @@ would refuse. Overlap during the migration is therefore fail-closed, which is wh
 makes it safe to enforce from the plugin before the project's own matchers are
 removed.
 
+## Where the executing code actually lives
+
+The stage-1 result above — `CLAUDE_PLUGIN_ROOT` pointing at the working tree — was
+correct but not general. It is a property of the marketplace *source type*, and the
+fix is to distribute the other way.
+
+| marketplace source | executing root | edits to the checkout |
+|---|---|---|
+| `directory` (local path) | the checkout itself | apply immediately |
+| `github` (owner/repo) | `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` | ignored until updated |
+
+Re-measured after reinstalling from `vbabenko97/just-works`, recorded by the hook
+process itself rather than read from the environment:
+
+```json
+{"plugin_root":  "~/.claude/plugins/cache/just-works/reliability/0.1.1",
+ "executing_file": "~/.claude/plugins/cache/just-works/reliability/0.1.1/hooks/trace.py",
+ "under_cache": true}
+```
+
+`executing_file` is `pathlib.Path(__file__).resolve()`, so it is what ran, not what
+the harness said should run. Both agree, and both are under the versioned cache.
+
+Three activation properties, each measured:
+
+- **Renaming the source checkout does not break the installed plugin.** With the
+  checkout moved to `just-works-MOVED`, a session in an unrelated directory still
+  fired the hooks and recorded `under_cache: true`. The marketplace is a clone of
+  the remote and the plugin is a copy inside the cache; neither references the
+  working tree.
+- **Editing the checkout does not silently change enforcement.** The trace carries a
+  `SOURCE_MARKER`. Flipped from `stage2-a` to `stage2-b` in the checkout, a session
+  run immediately afterwards still reported `stage2-a`.
+- **Activation requires update, reload, and a version bump.** `claude plugin update`
+  is keyed on the version declared in `plugin.json`, not on the commit: pushing
+  changed code inside an unchanged `0.1.0` produced *"already at the latest version
+  (0.1.0)"* and the cache kept the old file. Only after bumping to `0.1.1`, pushing,
+  `claude plugin marketplace update`, `claude plugin update reliability@just-works`
+  and a new session did the trace report `stage2-b` from `.../0.1.1/`.
+
+Two operational consequences. Any change to enforcement must bump the plugin
+version, or installed copies keep running the previous code with no error anywhere.
+And `claude plugin update reliability` fails with *"Plugin not found"* — the
+qualified `reliability@just-works` is required.
+
 ## Open risks
 
 - **Disarm surface.** `enabledPlugins` lives in `~/.claude/settings.json`, which is
@@ -111,6 +156,10 @@ removed.
   and `claude plugin marketplace remove` mutate it through the CLI, which the Bash
   classifier does not currently recognise. Choosing the plugin route makes those
   commands a bypass, and they have to join the universal denials.
-- **Checkout dependency** of a `directory`-source install, above.
+- **Checkout dependency** applies to `directory` sources only, and is the reason to
+  distribute via the `github` source. A local-path install runs the working tree, so
+  an uncommitted edit changes enforcement immediately and with no record.
+- **Silent staleness.** Because update is version-keyed, an installed copy can run
+  code several commits old while the repository looks current. Nothing warns.
 - **Duplicate handler cost.** Three processes per Bash call during any overlap
   period. Harmless but not free.
