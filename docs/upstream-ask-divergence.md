@@ -129,6 +129,41 @@ interactive session proceeded without a prompt, including targets under
 stdout containing `"permissionDecision": "ask"`, immediately followed by
 `File created successfully at: .../scripts/verify/_probe_delete_me.py`.
 
+## Filed upstream
+
+Added as a comment to `anthropics/claude-code#79449` rather than as a new issue —
+that issue already reports the same symptom on macOS, so a separate report would
+likely be closed as a duplicate:
+
+<https://github.com/anthropics/claude-code/issues/79449#issuecomment-5102886991>
+
+`anthropics/claude-code#79356` is cross-linked there as related evidence: the same
+`ask` non-enforcement on Windows, for both hook decisions and `permissions.ask`
+entries, so the symptom is not macOS-specific.
+
+### On that issue's `CLAUDE_CODE_CHILD_SESSION=1` hypothesis
+
+#79449 attributes the fall-through to a top-level session being adopted by the
+background daemon, which sets `CLAUDE_CODE_CHILD_SESSION=1` and — per its stated
+hypothesis — leaves `ask` with no interactive terminal to resolve against. This
+reproduction does not appear to need that mechanism, and does not disprove it:
+
+- The interactive session was launched from a plain login shell. None of the three
+  shell rc files present on this machine (`~/.profile`, `~/.zprofile`, `~/.zshrc`)
+  set `CLAUDE_CODE_CHILD_SESSION`, and `~/.claude/settings.json` has no `env`
+  block. The environment *inside* that session was not captured, so this is the
+  absence of any known source rather than a measured absence.
+- The print-mode runs did carry `CLAUDE_CODE_CHILD_SESSION=1`, having been launched
+  from inside another Claude Code session, and blocked correctly anyway. Re-run
+  with `env -u CLAUDE_CODE_CHILD_SESSION -u CLAUDECODE -u CLAUDE_CODE_SESSION_ID
+  -u CLAUDE_PID`, print mode still blocked and still recorded the denial. The
+  marker does not decide print-mode behaviour in either direction.
+
+The narrower observation, which bears on that issue's question about `ask`'s
+fallback when no prompt channel exists: print mode has no prompt channel at all
+and fails closed, while the session that fails open is the one with a real TTY. So
+"nothing to prompt against" does not explain the fall-through.
+
 ## What would help
 
 Either make `ask` prompt in interactive sessions under `acceptEdits`, or document
