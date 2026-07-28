@@ -386,6 +386,17 @@ def classify_segment(segment: str, cwd: str, project: str, pol: Policy,
                                     "process side effects")
                 return ("allow", f"inline {base} program with no side effects detected")
             if t == "-m":
+                module = args[i + 1] if i + 1 < len(args) else ""
+                # `python3 -m pip install ./local` carries a payload the command
+                # string does not show. The universal layer defers installer modules
+                # here rather than allowing them, so this branch has to judge it.
+                if module in ("pip",):
+                    rest = args[i + 2:]
+                    if "install" in rest:
+                        local = payload_targets([a for a in rest if a != "install"])
+                        if local:
+                            return reviewed_payloads("`pip install` via -m from a "
+                                                     "local path", local)
                 return ("allow", f"{base} -m module invocation")
         skip = {"run", "-u", "-X", "-W", "-O", "-B", "-q", "--"}
         target = next((a for a in args if not a.startswith("-") and a not in skip),

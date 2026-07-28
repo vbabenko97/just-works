@@ -346,6 +346,71 @@ def universal_deny(command: str, project: str) -> str | None:
     return None
 
 
+INTERPRETERS = {"python", "python2", "python3", "node", "nodejs", "ruby", "perl",
+                "php", "deno", "bun", "Rscript", "osascript", "tsx", "ts-node"}
+
+INLINE_SIDE_EFFECT = re.compile(
+    r"(open\s*\([^)]*['\"][wax]|write_text|writelines|write_bytes|makedirs|"
+    r"\bmkdir\b|copyfile|copytree|copy2|copymode|writeFileSync|appendFileSync|"
+    r"mkdirSync|renameSync|os\.system|subprocess|popen|pty\.spawn|"
+    r"\bexec\s*\(|\beval\s*\(|shutil\.|Path\([^)]*\)\.touch)")
+
+# Installer modules whose local-path arguments are policy, not universal, so `-m` is
+# not blanket-allowed for them.
+INSTALLER_MODULES = {"pip"}
+
+
+def inline_verdict(segment: str, recurse):
+    """Universal verdict for an inline program, or None to fall through.
+
+    This lives in the universal layer because it needs no repository data: whether
+    `python3 -c "..."` touches the filesystem is a property of the text. It also has
+    to run *before* the bounding check, and that ordering is load-bearing — a Python
+    comprehension `[ln for ln in ...]` matches both the `ln` mutator pattern and the
+    shell-loop pattern, so a repository with no policy would otherwise refuse an
+    ordinary read. That exact false positive was a fixed regression in the project
+    guard, where the inline classification happened to sit in the same pass.
+    """
+    toks = tokens(segment)
+    if not toks:
+        return None
+    head, args = head_and_args(toks)
+    if not head:
+        return None
+    base = os.path.basename(head)
+
+    if base in SHELLS:
+        if any(flag_cluster(t, "n") for t in args):
+            return ("allow", f"{base} -n parses without executing")
+        for i, t in enumerate(args):
+            if flag_cluster(t, "c"):
+                inner = args[i + 1] if i + 1 < len(args) else ""
+                if not inner:
+                    return ("deny", f"{base} -c with no readable program")
+                return recurse(inner)
+        return None
+
+    if base in INTERPRETERS:
+        for i, t in enumerate(args):
+            if t in ("-c", "-e"):
+                inner = " ".join(args[i + 1:])
+                if INLINE_SIDE_EFFECT.search(inner):
+                    return ("deny", f"inline {base} program with filesystem or "
+                                    "process side effects")
+                return ("allow", f"inline {base} program with no side effects "
+                                 "detected")
+            if t == "-m":
+                module = args[i + 1] if i + 1 < len(args) else ""
+                if module in INSTALLER_MODULES:
+                    # `-m pip install ./local` carries a payload only the policy
+                    # layer can judge, so defer rather than allow.
+                    return None
+                return ("allow", f"{base} -m module invocation")
+        return None
+
+    return None
+
+
 def unbounded_deny(command: str) -> str | None:
     """Mutation whose target set this classifier cannot bound. Universal: it needs
     no repository data, only the shape of the command."""

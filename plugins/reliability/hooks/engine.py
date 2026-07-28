@@ -52,9 +52,10 @@ def decide_bash(command: str, cwd: str, project: str,
         return ("deny", f"policy configuration error: {pol.reason}. {INVALID_HINT}",
                 POLICY)
 
+    segments = rules.split_segments(command)
+
     if pol.active:
         extra = policy_mod.protected_paths(pol)
-        segments = rules.split_segments(command)
         for segment in segments:
             hit = rules.protected_hit(segment, project, extra)
             if hit:
@@ -62,25 +63,32 @@ def decide_bash(command: str, cwd: str, project: str,
                 return ("deny", f"would modify a path this repository's policy "
                                 f"protects ({entry}; {why})", POLICY)
 
-        def recurse(inner: str) -> tuple[str, str]:
-            if depth >= 2:
-                return ("deny", "nested -c programs beyond the inspection depth")
-            d, r, _ = decide_bash(inner, cwd, project, depth + 1)
-            return (d, f"inside `-c`: {r}")
+    def recurse(inner: str) -> tuple[str, str]:
+        if depth >= 2:
+            return ("deny", "nested -c programs beyond the inspection depth")
+        d, r, _ = decide_bash(inner, cwd, project, depth + 1)
+        return (d, f"inside `-c`: {r}")
 
-        notes: list[str] = []
-        fell_through = False
-        for segment in segments:
+    # One pass over segments, universal rules first. A segment classified here does
+    # not reach the bounding check below, which is what keeps an inline program from
+    # being read as an unbounded mutation.
+    notes: list[str] = []
+    fell_through = False
+    for segment in segments:
+        layer = UNIVERSAL
+        verdict = rules.inline_verdict(segment, recurse)
+        if verdict is None and pol.active:
+            layer = POLICY
             verdict = policy_mod.classify_segment(segment, cwd, project, pol, recurse)
-            if verdict is None:
-                fell_through = True
-                continue
-            decision, why = verdict
-            if decision != "allow":
-                return ("deny", why, POLICY)
-            notes.append(why)
-        if notes and not fell_through:
-            return ("allow", "; ".join(notes), POLICY)
+        if verdict is None:
+            fell_through = True
+            continue
+        decision, why = verdict
+        if decision != "allow":
+            return ("deny", why, layer)
+        notes.append(why)
+    if notes and not fell_through:
+        return ("allow", "; ".join(notes), POLICY if pol.active else UNIVERSAL)
 
     reason = rules.unbounded_deny(command)
     if reason:
