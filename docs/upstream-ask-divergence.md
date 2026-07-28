@@ -17,9 +17,9 @@ differs. `deny` blocks correctly in both. Only `ask` diverges.
 
 The practical consequence is that `ask` cannot be used as a soft gate: a hook
 author who tests headlessly sees it block, and interactively it is a no-op. This
-repository's guards return `deny` for that reason, and
-`scripts/hooks/hook_gate.py` upgrades any `ask` from a child guard into a
-refusal.
+repository's guards return `deny` for that reason, and the reliability plugin's
+`hooks/gate.py` upgrades any `ask` from a child guard into a refusal. Before Stage 3
+that upgrade lived in `scripts/hooks/hook_gate.py`.
 
 ## Minimal fixture
 

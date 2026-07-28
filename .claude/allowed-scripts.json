@@ -2,28 +2,22 @@
   "version": "tier1-2026-07-28",
   "note": [
     "Scripts the repository owner has reviewed and permits agents to execute.",
-    "guard_destructive_bash.py denies execution of any other local script,",
-    "which closes the Write-then-run bypass: an agent can still write",
+    "The reliability plugin's policy layer denies execution of any other local",
+    "script, which closes the Write-then-run bypass: an agent can still write",
     "cleanup.sh, but running it is refused because the path is not listed here.",
     "A listed script is only permitted while its sha256 still matches. Editing",
     "an allowlisted script therefore revokes its permission until the owner",
     "re-reviews it and updates the hash with:",
     "  shasum -a 256 <path>",
     "This file is protected from Write/Edit and from Bash redirects, so an agent",
-    "cannot add its own script to the list."
+    "cannot add its own script to the list. It is named as the allowlist by",
+    ".claude/reliability-policy.json."
   ],
   "scripts": {
     "scripts/verify/verify_tree_equivalence.py": "ac727166325c3822a3cb0ab392cee951b63412ef266d5b62c6f69d41f12e0f5f",
     "scripts/verify/bulk_mutate.py": "bce3d18ecc5c8d92d4661212a195f6a3867572bf3b1b2976446779cf468e5649",
-    "tests/reliability/fixtures/make_fixtures.sh": "9b248b152fd8758214c7c2aef0568e0fc973b418fdd429a0392b9ea753525d28",
-    "tests/reliability/test_guard_bash.py": "2b0312e33cc7458c1c03afcbdd7fc83d3173c849c9c32513547e0ca9fcf53007",
-    "tests/reliability/test_script_indirection.py": "a16a62bb5e83acd3a2f2912bd59cf674424f04345801fff60fe3a08017a2708a",
-    "tests/reliability/test_protected_paths.py": "e2c7a6d8d6371fe07738196080839e6497605f3c71734d5e1c50fb938d99dc88",
     "tests/reliability/test_plan_apply_drift.py": "0c782ea010b7f6feebcf858064cfa83ac60b88cd246750321fd4a2b1d064e365",
-    "tests/reliability/test_maintenance_auth.py": "7dc8a6ba08bac95146104a60014668b4db49a5ae2edeec76fc25552396aad138",
-    "tests/reliability/test_hook_gate.py": "89ef3fc5e5a0d87e0175e12bb39231c56dc0a28347aa34d107df334b9218ac3b",
-    "tests/reliability/test_subagent_receipts.py": "5a0a9c8715c4edd9b0be4e8b975e6ddde12b703ff1157a569df1e543f962a298",
-    "tests/reliability/test_configured_gate.py": "4265fb508ef8f2f901c86409f359915324eb83a6b6bbb188fd0136336b6caa46",
+    "tests/reliability/test_maintenance_auth.py": "dbf6e19552d16700a06cbc187a248b001822b6253f92856f100958298a43fadc",
     "tests/install/test_personal_guard.py": "f84a107a19ba5d2379baf3466a1b4a0665f505a7163badb3098411899c6b7601"
   }
 }

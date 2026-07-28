@@ -8,11 +8,16 @@ without an authorization. That was a deliberate decision — an authorization mu
 never relax the Bash gate — and it means the agent cannot dismantle the harness even
 when asked to.
 
+**Status: complete.** Steps 1–7 have been carried out. The plugin is the only
+enforcement in this repository; the project matchers and guard files are gone. Two
+defects the plan itself contained are recorded in Step 5 and Step 7 — read those before
+using this document as a template for another repository.
+
 ## Step 0 — parity, before any cutover is attempted
 
-**Not yet built.** The plugin observes; it does not decide. Disabling the project
-matchers today would leave the machine unguarded, not migrated. Stage 3 cannot start
-until the plugin has:
+**Done.** Written as a precondition; every row below now exists. The plugin observes and
+decides. Disabling the project matchers before this point would have left the machine
+unguarded rather than migrated. Stage 3 could not start until the plugin had:
 
 | missing | replaces | notes |
 |---|---|---|
@@ -126,7 +131,7 @@ git clean -fdx
 printf 'x' > .claude/settings.json
 claude plugin disable reliability
 npm run build
-bash tests/reliability/fixtures/make_fixtures.sh
+bash install.sh --help
 ```
 
 and each of these must be **allowed**:
@@ -135,13 +140,28 @@ and each of these must be **allowed**:
 ls -la
 git status --short
 git diff --stat
-python3 tests/reliability/test_guard_bash.py
+python3 tests/reliability/test_maintenance_auth.py
 cat README.md
 ```
 
-Subagent receipts, with `require_subagent_receipts: true`: spawn an Explore agent and
-a Plan agent, then confirm one receipt each under `.claude/receipts/<session-id>/`,
-and that a fabricated `agent_id` with no receipt is refused.
+The last must-deny is any local script that is not pinned in
+`.claude/allowed-scripts.json`. It used to read `bash
+tests/reliability/fixtures/make_fixtures.sh`, which was pinned *and* has since been
+deleted, so it demonstrated nothing.
+
+Subagent receipts, with `require_subagent_receipts: true`: spawn an Explore agent and a
+Plan agent, then confirm one receipt each and that a fabricated `agent_id` with no
+receipt is refused. Receipts are written under `${CLAUDE_PLUGIN_DATA}`:
+
+```
+~/.claude/plugins/data/reliability-just-works/receipts/<repo-identity>/<session-id>/<agent-id>.json
+```
+
+**Not** under `.claude/receipts/`. That was the stage-1 location and moving it out of
+the repository is the point: an agent that can write inside the repository must not be
+able to manufacture the proof that it was constrained. `<repo-identity>` is a name plus
+a digest of the git remote, so moving the checkout does not orphan the receipts. The
+manifest still protects `.claude/receipts/` in case an old directory lingers.
 
 In a directory with no manifest — `/tmp/scratch-proj` — `npm run build` must be
 allowed and `rm -rf .` must be denied.
@@ -166,6 +186,11 @@ python3 tests/reliability/test_configured_gate.py
 ```
 
 which reads the command strings out of `.claude/settings.json` and runs them.
+
+That rollback path expired at Step 6. `test_configured_gate.py` was deleted with the
+wiring it asserted, so after the removal commit this step no longer exists: rolling back
+means reverting that commit, not restoring one file. The equivalent check against the
+plugin manifest is the plugin's own `tests/test_manifest_commands.py`.
 
 Optionally disable the plugin while diagnosing:
 
@@ -197,13 +222,43 @@ git rm scripts/hooks/subagent_receipts.py
 .claude/allowed-scripts.json             policy: reviewed script pins
 .claude/reliability-policy.json          policy: the manifest itself
 scripts/verify/                          owner tooling and the issuer
-tests/reliability/                       the frozen 318 checks
+tests/reliability/                       the surviving 28 checks
 ```
 
-Note that removing `scripts/hooks/` makes `tests/reliability/test_configured_gate.py`
-and `test_hook_gate.py` obsolete along with it — 49 of the 318 checks test files that
-will no longer exist. They should be deleted in the same commit, and the README total
-corrected, rather than left to fail.
+### Defect in this list: `reliability_paths.py`
+
+`bulk_mutate.py` imports **two** things from `.claude/hooks/`, not one:
+
+```python
+from reliability_paths import is_protected
+import maintenance_auth
+```
+
+The list above records only `maintenance_auth.py`, so removing
+`.claude/hooks/reliability_paths.py` broke `bulk_mutate.py` outright and with it all 10
+checks in `test_plan_apply_drift.py`:
+
+```
+ModuleNotFoundError: No module named 'reliability_paths'
+```
+
+The repair belongs in `bulk_mutate.py`: a local `is_protected` that reads the protected
+list out of `.claude/reliability-policy.json` rather than restating it, so owner tooling
+and the plugin cannot drift. Note that `scripts/verify/` is itself a protected path and
+the Bash gate is never relaxed by an authorization, so an agent can neither apply that
+patch nor run the suite afterwards without a fresh pin — this is an owner operation:
+
+```
+cd /Users/vitaliibabenko/babenko-dev/just-works
+$EDITOR scripts/verify/bulk_mutate.py
+shasum -a 256 scripts/verify/bulk_mutate.py    # then update the pin in allowed-scripts.json
+python3 tests/reliability/test_plan_apply_drift.py
+```
+
+Removing `scripts/hooks/` also made `test_configured_gate.py` and `test_hook_gate.py`
+obsolete. The plan estimated 49 of the 318 checks would be stranded; the real figure is
+**281 deleted plus 9 trimmed**, because the guard suites went too. `docs/parity-map.md`
+carries the file-by-file outcome.
 
 ## Step 6 — commit the removal
 
@@ -213,26 +268,52 @@ git commit -F <message file>
 git push origin main
 ```
 
+`git add -A` only if the working tree holds nothing else. Stage the cutover paths by
+name otherwise — this repository carried unrelated untracked drafts at the time, and
+they must not ride along in an enforcement commit.
+
 ## Step 7 — plugin-only cold-start acceptance
 
-Fresh session after the commit. Repeat every check in step 3, and additionally:
+Fresh session after the commit. Repeat every check in step 3. The surviving project
+suites, which an agent can run because they are pinned in the allowlist:
 
 ```
-python3 tests/reliability/test_guard_bash.py
-python3 tests/reliability/test_script_indirection.py
-python3 tests/reliability/test_protected_paths.py
-python3 tests/reliability/test_plan_apply_drift.py
 python3 tests/reliability/test_maintenance_auth.py
+python3 tests/reliability/test_plan_apply_drift.py
 python3 tests/install/test_personal_guard.py
-python3 /Users/vitaliibabenko/.claude/plugins/cache/just-works/reliability/<rev>/tests/test_policy_states.py
-python3 .../tests/test_monotonic.py
-python3 .../tests/test_optional_policy.py
-python3 .../tests/test_distribution.py
 ```
 
-The plugin suites run from the installed cache path, not the checkout, so acceptance
-tests the copy that is actually enforcing. Confirm from the trace that
-`executing_file` is under `~/.claude/plugins/cache/` and `under_cache` is true.
+### The plugin suites are an owner operation
+
+The plan listed them as agent-runnable, by absolute path. They are not:
+
+```
+python3 ~/.claude/plugins/cache/just-works/reliability/<rev>/tests/test_policy_states.py
+[reliability/policy] Blocked: execution of a script outside the project: ...
+```
+
+The policy layer refuses execution of any script outside the project, and the guard's
+notion of "the project" is the session's project directory — it comes from
+`CLAUDE_PROJECT_DIR`, so `cd /tmp` first does not change it. Inside a repository with a
+valid manifest, every plugin suite is unreachable by design. Run them yourself, from a
+directory with **no** manifest, where the policy layer is inactive:
+
+```
+cd $(mktemp -d)
+rev=$(basename ~/.claude/plugins/cache/just-works/reliability/*/ | tail -1)
+for t in test_policy_states test_monotonic test_optional_policy test_distribution \
+         test_auth test_gate test_receipts test_bash_corpus test_manifest_commands; do
+  python3 ~/.claude/plugins/cache/just-works/reliability/$rev/tests/$t.py || echo "FAILED: $t"
+done
+```
+
+The suites run from the installed cache path, not the checkout, so acceptance tests the
+copy that is actually enforcing. Confirm from the trace that `executing_file` is under
+`~/.claude/plugins/cache/` and `under_cache` is true:
+
+```
+tail -1 ~/.claude/reliability-trace.jsonl | python3 -m json.tool | grep -E 'under_cache|revision|executing_file'
+```
 
 Then confirm the authorization is inactive and re-prove a protected edit and a
 recursive deletion are still denied.

@@ -6,16 +6,21 @@ tested by breaking exactly one of them and checking the refusal names it:
 
   repository, HEAD, expiry, exact path, exact tool, use budget, nonce ledger
 
-The last two sections matter most. One proves the authorization is literal — an
-entry for `.claude/hooks/` authorizes nothing inside it. The other proves an active
-authorization still leaves `rm -rf`, script indirection and harness redirects denied,
-so this is a maintenance door and not a general amnesty.
+The literalness check matters most: an entry for `.claude/hooks/` authorizes nothing
+inside it, so this is a maintenance door and not a general amnesty.
+
+Scope, after Stage 3. Enforcement moved into the reliability plugin, and the nine
+checks that drove the project's own hook files went with them — three through
+`guard_protected_paths.py`, and six proving that an active authorization still leaves
+`rm -rf`, script indirection and harness redirects denied. Both invariants are covered
+by the plugin's `tests/test_auth.py`; see `docs/parity-map.md`. What remains here is
+every check that exercises `maintenance_auth.py` directly, which is still a live
+component because `scripts/verify/bulk_mutate.py` reads it.
 """
 from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import pathlib
 import shutil
 import subprocess
@@ -82,17 +87,6 @@ def write_auth(project, **over):
 def ledger(project):
     p = project / ".claude" / "maintenance-uses.jsonl"
     return p.read_text().splitlines() if p.exists() else []
-
-
-def run_hook(hook, payload, project):
-    env = os.environ.copy()
-    env["CLAUDE_PROJECT_DIR"] = str(project)
-    proc = subprocess.run([sys.executable, str(HOOKS / hook)],
-                          input=json.dumps(payload), capture_output=True,
-                          text=True, timeout=30, env=env)
-    if proc.returncode != 0 or not proc.stdout.strip():
-        raise SystemExit(f"{hook} failed: {proc.stderr}")
-    return json.loads(proc.stdout)["hookSpecificOutput"]
 
 
 def main() -> int:
@@ -186,54 +180,6 @@ def main() -> int:
         check("unreadable ledger fails closed", False, "budget exhausted", ok, why)
         lp.rmdir()
 
-        print()
-        print("=== through the Write/Edit hook ===")
-        write_auth(project)
-        out = run_hook("guard_protected_paths.py",
-                       {"tool_name": "Edit", "cwd": str(project),
-                        "tool_input": {"file_path": target}}, project)
-        check("authorized Edit is allowed by the hook", True, "authorized",
-              out["permissionDecision"] == "allow", out["permissionDecisionReason"])
-
-        out = run_hook("guard_protected_paths.py",
-                       {"tool_name": "Edit", "cwd": str(project),
-                        "tool_input": {"file_path": str(project / ".claude" / "settings.json")}},
-                       project)
-        check("unlisted protected path still denied", True, "does not list path",
-              out["permissionDecision"] == "deny", out["permissionDecisionReason"])
-
-        # A batch naming one authorized and one unauthorized path must fail whole.
-        write_auth(project)
-        out = run_hook("guard_protected_paths.py",
-                       {"tool_name": "MultiEdit", "cwd": str(project),
-                        "tool_input": {"edits": [{"file_path": target},
-                                                 {"file_path": str(project / ".claude" / "settings.json")}]}},
-                       project)
-        check("partly-authorized batch refused whole", True, "reliability infrastructure",
-              out["permissionDecision"] == "deny", out["permissionDecisionReason"])
-
-        print()
-        print("=== an authorization must not relax the Bash gate ===")
-        write_auth(project, operations=[
-            {"tool": "Edit", "path": ".claude/allowed-scripts.json", "max_uses": 5},
-            {"tool": "bulk_mutate.delete", "path": "scripts/verify/tool.py", "max_uses": 5},
-        ])
-        for command, label in [
-            ("rm -rf " + str(project / "scripts"), "recursive rm"),
-            ("bash cleanup.sh", "unreviewed script"),
-            ("git push --force origin main", "force push"),
-            ("echo x > .claude/allowed-scripts.json", "redirect over an authorized path"),
-            ("cp /tmp/evil.json .claude/allowed-scripts.json", "cp over an authorized path"),
-            ("git apply /tmp/fix.diff", "opaque payload"),
-        ]:
-            out = run_hook("guard_destructive_bash.py",
-                           {"tool_name": "Bash", "cwd": str(project),
-                            "tool_input": {"command": command}}, project)
-            got = out["permissionDecision"]
-            ok = got == "deny"
-            print(f"{'ok' if ok else 'FAIL':6} still denied with an authorization active: {label}")
-            if not ok:
-                failures.append((label, "deny", "", got, out["permissionDecisionReason"]))
     finally:
         shutil.rmtree(root, ignore_errors=True)
 

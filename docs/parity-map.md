@@ -9,8 +9,13 @@ Every frozen check is accounted for under one of four labels.
 **retained** | the project-local component still exists, so the project check stays |
 **retired** | deliberately dropped, with the reason stated |
 
-Totals: 318 frozen checks → 112 ported, 130 equivalent, 37 retained, 39 retired.
+Totals: 318 frozen checks → 121 ported, 130 equivalent, 28 retained, 39 retired.
 Plugin suites total 516 checks.
+
+Retained fell from 37 to 28 when the cutover completed. Nine checks in
+`test_maintenance_auth.py` drove the project's own hook files, so they went when those
+files were deleted; they were already ported to the plugin's `test_auth.py`, and are
+counted there now. No failure mode moved to *retired* — see that section below.
 
 ## test_guard_bash.py — 112 → **ported**, verbatim
 
@@ -66,7 +71,7 @@ be deleted to drop enforcement.
 enforcement, and nothing in the plugin replaces plan/apply drift detection. The suite
 stays exactly as it is and keeps passing.
 
-## test_maintenance_auth.py — 27 → **ported** to `test_auth.py` (34), and **retained**
+## test_maintenance_auth.py — 27 → **ported** to `test_auth.py` (34), and **partially retained** (18 of 27)
 
 Ported: every binding broken in turn — no authorization, malformed, missing keys,
 unknown scope, expired, wrong repository, wrong commit, wrong tool, wrong path, budget
@@ -74,8 +79,28 @@ exhausted, unreadable ledger, and the invariant that an active authorization nev
 relaxes the Bash gate. Added: the global scope, revision binding, and the issuer's own
 input validation.
 
-Retained: `maintenance_auth.py` stays in the project because `bulk_mutate.py` reads it,
-so the frozen suite still covers a live component.
+Retained, 18: everything calling `maintenance_auth.check()` directly. That module stays
+in the project because `bulk_mutate.py` reads it, so the suite still covers a live
+component.
+
+Dropped from the project side at the cutover, 9 — these drove hook files that no longer
+exist, and each is covered by the plugin check named beside it:
+
+| dropped project check | ran through | plugin equivalent |
+|---|---|---|
+| authorized Edit is allowed by the hook | `guard_protected_paths.py` | `test_auth` — authorized-path allow |
+| unlisted protected path still denied | `guard_protected_paths.py` | `test_auth`, `test_monotonic` |
+| partly-authorized batch refused whole | `guard_protected_paths.py` | `test_auth` — MultiEdit all-or-nothing |
+| recursive rm still denied | `guard_destructive_bash.py` | `test_auth` — authorization never relaxes the Bash gate |
+| unreviewed script still denied | `guard_destructive_bash.py` | same |
+| force push still denied | `guard_destructive_bash.py` | same |
+| redirect over an authorized path still denied | `guard_destructive_bash.py` | same |
+| `cp` over an authorized path still denied | `guard_destructive_bash.py` | same |
+| opaque `git apply` payload still denied | `guard_destructive_bash.py` | same |
+
+The invariant those six protected — that a maintenance authorization is a door for
+file edits and never an amnesty for Bash — is the one the plugin asserts structurally:
+`guard_bash.py` does not import the authorization reader at all.
 
 ## test_hook_gate.py — 17 → **ported** to `test_gate.py` (25)
 
@@ -114,5 +139,31 @@ configured command fails closed — is asserted against the plugin manifest inst
 | git-state labels in denial messages | 6 | no verdict depends on them; message detail only |
 | project-wiring assertions | 33 | assert a configuration Stage 3 removes; behaviour re-asserted against the plugin manifest |
 
-Nothing else is dropped. Where a count fell, the failure mode is named above with the
-plugin check that now covers it.
+Only these 39 are genuinely dropped, and only the first 6 lose a behaviour: the
+`git_state()` labels were message text no verdict read. The other 33 assert the
+project's hook wiring — `$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh` resolving,
+`--receipt-only` as its own matcher, the `*` matcher being third — and the fail-closed
+property they existed to protect is asserted against the plugin manifest instead, by
+`test_manifest_commands.py`. Where any other count fell, the failure mode is named
+above with the plugin check that now covers it.
+
+## After the cutover: what is left in this repository
+
+| file | frozen cases | outcome |
+|---|---:|---|
+| `test_guard_bash.py` | 112 | deleted — ported verbatim to `test_bash_corpus.py` |
+| `test_script_indirection.py` | 55 | deleted — 49 equivalent, 6 retired |
+| `test_protected_paths.py` | 45 | deleted — equivalent |
+| `test_hook_gate.py` | 17 | deleted — ported to `test_gate.py` |
+| `test_subagent_receipts.py` | 20 | deleted — ported to `test_receipts.py` |
+| `test_configured_gate.py` | 32 | deleted — equivalent in `test_manifest_commands.py` |
+| `test_maintenance_auth.py` | 27 | **kept, trimmed to 18** |
+| `test_plan_apply_drift.py` | 10 | **kept whole** |
+
+`fixtures/make_fixtures.sh` was deleted with them: it built fixtures for
+`test_guard_bash.py` and `test_script_indirection.py` and had no other consumer.
+
+Every deleted file was removed from `.claude/allowed-scripts.json` in the same commit.
+A pin naming a file that no longer exists is not merely stale — `script_verdict`
+reports "allowlisted script cannot be read", which reads like tampering rather than
+like a tidy-up.

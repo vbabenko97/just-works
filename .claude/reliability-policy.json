@@ -1,0 +1,19 @@
+{
+  "policy_version": 1,
+  "description": "Repository policy for the reliability plugin. Adds to the plugin's universal rules; it cannot weaken them. See docs/plugin-coexistence.md and docs/stage3-cutover.md.",
+  "contract_version": "tier1-2026-07-28",
+  "allowlist": ".claude/allowed-scripts.json",
+  "contract": ".claude/reliability-contract.md",
+  "protected": [
+    "scripts/verify/",
+    "scripts/hooks/",
+    ".claude/hooks/",
+    ".claude/maintenance-auth.json",
+    ".claude/receipts/"
+  ],
+  "maintenance": {
+    "issuer": "scripts/verify/authorize_maintenance.py",
+    "ledger": ".claude/maintenance-uses.jsonl"
+  },
+  "require_subagent_receipts": true
+}

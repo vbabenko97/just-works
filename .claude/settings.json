@@ -106,31 +106,6 @@
           {
             "type": "command",
             "command": "bash -c 'exec \"$HOME/.claude/hooks/rtk-rewrite.sh\"'"
-          },
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh\" guard_destructive_bash.py || exit 2",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh\" guard_protected_paths.py || exit 2",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh\" --receipt-only || exit 2",
-            "timeout": 30
           }
         ]
       }
@@ -142,17 +117,6 @@
           {
             "type": "command",
             "command": "bash -c 'exec \"$HOME/.claude/hooks/notification.sh\"'"
-          }
-        ]
-      }
-    ],
-    "SubagentStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/inject_contract.py\""
           }
         ]
       }

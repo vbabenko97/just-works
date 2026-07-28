@@ -1,6 +1,8 @@
 # Reliability suites
 
-Eight suites, **318 cases**, all passing at `1dd0e8c`.
+Two suites, **28 cases**. Stage 3 moved enforcement into the `reliability@just-works`
+plugin; what remains here covers the project-local components the plugin does not
+replace. `docs/parity-map.md` accounts for every retired and ported check.
 
 ## Exact command
 
@@ -10,72 +12,82 @@ script path it cannot hash — a `for t in ...; python3 tests/reliability/$t.py`
 is denied as a variable-derived script path, by design.
 
 ```
-python3 tests/reliability/test_guard_bash.py
-python3 tests/reliability/test_script_indirection.py
-python3 tests/reliability/test_protected_paths.py
-python3 tests/reliability/test_plan_apply_drift.py
 python3 tests/reliability/test_maintenance_auth.py
-python3 tests/reliability/test_hook_gate.py
-python3 tests/reliability/test_subagent_receipts.py
-python3 tests/reliability/test_configured_gate.py
+python3 tests/reliability/test_plan_apply_drift.py
 ```
 
 ## Counts
 
 | Suite | Cases | Final line |
 |---|---:|---|
-| `test_guard_bash.py` | 112 | `112/112 passed  (65 must-deny, 47 must-allow)` |
-| `test_script_indirection.py` | 55 | `55/55 passed` |
-| `test_protected_paths.py` | 45 | `45/45 passed` |
+| `test_maintenance_auth.py` | 18 | `all checks passed` |
 | `test_plan_apply_drift.py` | 10 | `10/10 passed` |
-| `test_maintenance_auth.py` | 27 | `all checks passed` |
-| `test_hook_gate.py` | 17 | `17/17 passed` |
-| `test_subagent_receipts.py` | 20 | `20/20 passed` |
-| `test_configured_gate.py` | 32 | `32/32 passed` |
-| **total** | **318** | |
+| **total** | **28** | |
 
-`test_maintenance_auth.py` is the one suite that reports no numeric count. That is
-why two commit messages carry wrong totals — 227 instead of 249 at `060cf56`, and
-291 instead of 318 at `1dd0e8c`, the second having omitted this suite's 27 cases
-from the sum entirely. Both messages are corrected by `git notes`; run
-`git log --notes` to see them. Until this suite prints a count, take its 27 from
+`test_maintenance_auth.py` reports no numeric count. Take its 18 from
 `python3 tests/reliability/test_maintenance_auth.py | grep -c '^ok'`.
 
-## Outside the frozen total
+### Known failure: test_plan_apply_drift
 
-`tests/install/test_personal_guard.py` — 26 checks — guards distribution rather
-than enforcement, and is deliberately kept out of this directory so the frozen
-Tier 1 figure above stays a fixed number.
+**Failing as of this commit. The fix is an owner operation.**
+`scripts/verify/bulk_mutate.py` imports `is_protected` from
+`.claude/hooks/reliability_paths.py`, which the Stage 3 removal deleted:
+
+```
+ModuleNotFoundError: No module named 'reliability_paths'
+```
+
+The cutover listed `reliability_paths.py` for removal while recording only
+`maintenance_auth.py` as a `bulk_mutate.py` dependency, so this import was missed. The
+wrapper needs a local `is_protected` deriving its list from
+`.claude/reliability-policy.json`, so it cannot drift from what the plugin enforces.
+`scripts/verify/` is a protected path and the removal is not covered by any
+authorization, so an agent cannot apply that patch. See `docs/stage3-cutover.md`.
+
+## Outside the total
+
+`tests/install/test_personal_guard.py` — 30 checks, reporting `30/30 passed` — guards
+distribution rather than enforcement, and is deliberately kept out of this directory so
+the figure above stays a fixed number. It was 26 until `1346c62` made `--personal`
+refuse unconditionally rather than by inspecting settings content.
 
 ```
 python3 tests/install/test_personal_guard.py
 ```
 
-The configuration in `.claude/settings.json` reaches the guards through
-`$CLAUDE_PROJECT_DIR/scripts/hooks/`, so it only works in this repository.
-`install.sh --personal` would copy it to `~/.claude/settings.json`, where it
-applies to every project and the launcher does not exist — bash exits 127, the
-configured `|| exit 2` makes that a denial, and every matched tool call in every
-project is refused. That suite proves the installer refuses the route, and that a
-live `~/.claude/settings.json` is left byte-identical when it does.
+## Plugin suites
+
+Enforcement itself is tested inside the plugin, against the installed cache copy
+rather than this checkout, so the suites exercise the code that actually runs:
+
+```
+~/.claude/plugins/cache/just-works/reliability/<revision>/tests/
+```
+
+An agent cannot run them from inside this repository. They live outside the project,
+and the policy layer refuses execution of any script outside it:
+
+```
+[reliability/policy] Blocked: execution of a script outside the project: ...
+```
+
+They are an owner operation, run from a directory with no policy manifest, where the
+policy layer is inactive. See `docs/stage3-cutover.md`.
 
 ## What each suite is for
 
-- **test_guard_bash** — the lexical corpus. Half must-deny, half must-allow; a gate
-  that blocks ordinary reads, tests and comparisons is worse than none.
-- **test_script_indirection** — builds real scripts in a throwaway git repo, because
-  these verdicts depend on a file's hash, its allowlist membership and its git state.
-- **test_protected_paths** — the harness must not be editable by the agent it
-  constrains, via Write/Edit or via a Bash redirect. Uses paths no authorization
-  lists, so expectations do not shift when one is active.
+- **test_maintenance_auth** — breaks each binding of a maintenance authorization in
+  turn: repository, HEAD, expiry, exact path, exact tool, use budget, nonce ledger.
+  Exercises `maintenance_auth.py` directly, which is still live because
+  `bulk_mutate.py` reads it. The nine checks that drove the project's deleted hook
+  files were removed with them; the plugin's `tests/test_auth.py` covers both
+  invariants, including that an active authorization never relaxes the Bash gate.
 - **test_plan_apply_drift** — `bulk_mutate.py` must refuse when the world changed
   between plan and apply. Every case runs `--dry-run`.
-- **test_maintenance_auth** — breaks each binding of a maintenance authorization in
-  turn, and proves an active one still leaves the Bash gate fully armed.
-- **test_hook_gate** — every way a guard can fail becomes a refusal.
-- **test_subagent_receipts** — contract delivery to subagents is enforced at tool
-  time, since `SubagentStart` cannot block creation.
-- **test_configured_gate** — the acceptance suite. Runs the command strings read
-  verbatim out of `.claude/settings.json` against a sabotaged replica, plus two live
-  probes against this repository. This is the suite that caught a fail-open the
-  in-process tests could not see.
+
+## History
+
+Eight suites, 318 cases, all passing at `1dd0e8c`, before Stage 3. Two commit messages
+carry wrong totals — 227 instead of 249 at `060cf56`, and 291 instead of 318 at
+`1dd0e8c`, the second having omitted `test_maintenance_auth.py` entirely. Both are
+corrected by `git notes`; run `git log --notes` to see them.
