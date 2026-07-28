@@ -97,12 +97,29 @@ decide, with commands whose project verdict was known and harmless.
 
 So decisions from user-scope plugin hooks and project hooks are unioned, with deny
 taking precedence, and the plugin's decisions are genuinely honoured — the first
-probe alone would not have shown that. The consequence for migration: an older
-copy on either side can only ever be *more* restrictive than the newer one. A
-stale copy can produce a false denial; it cannot permit something the current copy
-would refuse. Overlap during the migration is therefore fail-closed, which is what
-makes it safe to enforce from the plugin before the project's own matchers are
-removed.
+probe alone would not have shown that.
+
+What that does and does not license, stated carefully. **For the permission decisions
+tested here, overlap is conservative: any deny wins, so neither copy can loosen the
+other.** That is a claim about two measured probes, not a general property of running
+two harnesses at once. It does not follow that a stale copy is harmless:
+
+- **False positives.** An older copy denies what the newer one would allow, and the
+  reason surfaced may name rules that no longer exist. This is the common case and it
+  looks like a bug in the newer copy.
+- **State conflicts.** Both copies read and write side state — receipts directories,
+  authorization ledgers, trace files. Two writers with different schema expectations
+  can leave state that neither fully understands. Only one issuer of a given record
+  can be correct.
+- **Execution failures.** A hook that cannot run is a denial by design. During
+  overlap there are more processes that can fail — a missing launcher, a partially
+  updated cache, a moved checkout — and each failure is a refusal, so overlap
+  enlarges the set of ways ordinary work can be blocked.
+- **Cost.** Three handlers per Bash call, each a process.
+
+So coexistence is a temporary migration state, not a supported configuration. It is
+safe enough to *cut over* through, because the failure direction is refusal rather
+than permission, and it should not be left running.
 
 ## Where the executing code actually lives
 

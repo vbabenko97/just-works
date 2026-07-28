@@ -39,12 +39,19 @@ TRACE = pathlib.Path(os.environ.get(
 SOURCE_MARKER = "stage2-c"
 
 
-def plugin_version(root: str) -> str:
+def plugin_revision(root: str) -> str:
+    """What is installed. The manifest declares no version deliberately, so the
+    revision is the directory the plugin manager created for it — which for a
+    git-distributed plugin is the source commit."""
     try:
-        manifest = pathlib.Path(root) / ".claude-plugin" / "plugin.json"
-        return str(json.loads(manifest.read_text()).get("version", "?"))
+        declared = json.loads(
+            (pathlib.Path(root) / ".claude-plugin" / "plugin.json").read_text()
+        ).get("version")
+        if declared:
+            return f"declared:{declared}"
     except Exception:
-        return "?"
+        pass
+    return pathlib.Path(root).name or "unknown"
 
 
 def main() -> int:
@@ -77,7 +84,7 @@ def main() -> int:
         "cwd": cwd,
         "claude_project_dir": project,
         "plugin_root": root,
-        "plugin_version": plugin_version(root),
+        "plugin_revision": plugin_revision(root),
         # The env var says where the harness thinks the plugin lives; __file__ says
         # which copy of the code is actually running. They are recorded separately
         # because the whole question in requirement 1 is whether they agree.
