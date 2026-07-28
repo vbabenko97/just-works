@@ -41,6 +41,24 @@ from the sum entirely. Both messages are corrected by `git notes`; run
 `git log --notes` to see them. Until this suite prints a count, take its 27 from
 `python3 tests/reliability/test_maintenance_auth.py | grep -c '^ok'`.
 
+## Outside the frozen total
+
+`tests/install/test_personal_guard.py` — 26 checks — guards distribution rather
+than enforcement, and is deliberately kept out of this directory so the frozen
+Tier 1 figure above stays a fixed number.
+
+```
+python3 tests/install/test_personal_guard.py
+```
+
+The configuration in `.claude/settings.json` reaches the guards through
+`$CLAUDE_PROJECT_DIR/scripts/hooks/`, so it only works in this repository.
+`install.sh --personal` would copy it to `~/.claude/settings.json`, where it
+applies to every project and the launcher does not exist — bash exits 127, the
+configured `|| exit 2` makes that a denial, and every matched tool call in every
+project is refused. That suite proves the installer refuses the route, and that a
+live `~/.claude/settings.json` is left byte-identical when it does.
+
 ## What each suite is for
 
 - **test_guard_bash** — the lexical corpus. Half must-deny, half must-allow; a gate

@@ -23,6 +23,7 @@
     "tests/reliability/test_maintenance_auth.py": "7dc8a6ba08bac95146104a60014668b4db49a5ae2edeec76fc25552396aad138",
     "tests/reliability/test_hook_gate.py": "89ef3fc5e5a0d87e0175e12bb39231c56dc0a28347aa34d107df334b9218ac3b",
     "tests/reliability/test_subagent_receipts.py": "5a0a9c8715c4edd9b0be4e8b975e6ddde12b703ff1157a569df1e543f962a298",
-    "tests/reliability/test_configured_gate.py": "4265fb508ef8f2f901c86409f359915324eb83a6b6bbb188fd0136336b6caa46"
+    "tests/reliability/test_configured_gate.py": "4265fb508ef8f2f901c86409f359915324eb83a6b6bbb188fd0136336b6caa46",
+    "tests/install/test_personal_guard.py": "403e98531341c45ce72c8c33dcd3c65e861c79239a9efacb178bc2beecd1debe"
   }
 }

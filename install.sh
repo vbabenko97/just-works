@@ -56,6 +56,8 @@ Install just-works agents, skills, and commands globally.
 Options:
   --personal      Use opinionated settings (permissions, hooks, sounds)
                   Default: minimal *.default configs
+                  Refused for the Claude side while .claude/settings.json
+                  activates the project-scoped reliability harness.
   --azure         Use Azure OpenAI config instead of direct OpenAI API
   --skip-config      Skip installing settings/config files
   --skip-statusline  Skip installing statusline-command.sh
@@ -124,6 +126,45 @@ done
 
 if $CLAUDE_ONLY && $CODEX_ONLY; then
     error "--claude-only and --codex-only are mutually exclusive"
+    exit 1
+fi
+
+# --- Portability precondition ---
+# .claude/settings.json activates the Tier 1 reliability harness through commands
+# that resolve inside whichever project is open:
+#     bash "$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh" <guard> || exit 2
+# Copied to ~/.claude/settings.json those hooks apply to every project, while the
+# launcher, the guards' policy files and the contract live only in this repository
+# — the install list below reaches into .claude/ and never into scripts/. In any
+# other checkout bash cannot find the launcher, exits 127, and the configured
+# `|| exit 2` converts that into a denial, so every matched tool call in every
+# project is refused. The harness fails closed, which here means bricking the
+# machine rather than weakening it. So the installer fails closed first.
+#
+# The test is the settings file's own content, not a hardcoded flag ban: once the
+# harness ships portably and nothing resolves through $CLAUDE_PROJECT_DIR, this
+# check stops firing on its own.
+if $PERSONAL && ! $CODEX_ONLY \
+   && [[ -f "${SCRIPT_DIR}/.claude/settings.json" ]] \
+   && grep -q 'CLAUDE_PROJECT_DIR' "${SCRIPT_DIR}/.claude/settings.json"; then
+    error "Refusing --personal: the reliability harness is project-scoped."
+    error ""
+    error "Its PreToolUse hooks in .claude/settings.json run commands that resolve"
+    error "inside the open project:"
+    error '    bash "$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh" <guard> || exit 2'
+    error "Installed as ~/.claude/settings.json those hooks apply to every project,"
+    error "but scripts/hooks/, .claude/allowed-scripts.json and"
+    error ".claude/reliability-contract.md exist only in this repository. Everywhere"
+    error "else the launcher is missing, bash exits 127, and \"|| exit 2\" turns that"
+    error "into a denial — every matched tool call in every project would be refused."
+    error ""
+    error "Global installation needs the harness packaged as a Claude Code plugin, or"
+    error "another portable installation mode that ships the launcher, the guards and"
+    error "the policy files alongside the settings that reference them."
+    error ""
+    error "Nothing was installed; ~/.claude/settings.json is unchanged."
+    error "Available now: omit --personal (installs settings.json.default), or use"
+    error "--personal --codex-only for the Codex side."
     exit 1
 fi
 
