@@ -36,7 +36,7 @@ TRACE = pathlib.Path(os.environ.get(
 # changes what executes, a session run after an edit but before `claude plugin
 # update` reports the new value. A recorded value matching the checkout is evidence
 # that the checkout is executing rather than the installed copy.
-SOURCE_MARKER = "stage2-a"
+SOURCE_MARKER = "stage2-b"
 
 
 def plugin_version(root: str) -> str:
