@@ -44,6 +44,10 @@ child=$!
 # deadline with a gate that returned in 3.
 ( sleep "$deadline"; kill -9 "$child" 2>/dev/null ) >/dev/null 2>&1 &
 watchdog=$!
+# Drop it from the job table before killing it. Otherwise bash announces the kill —
+# "Killed: 9 ( sleep ... )" — on this script's stderr, which is the channel a refusal
+# reason travels on, so the noise ends up quoted in the denial the user reads.
+disown "$watchdog" 2>/dev/null || true
 
 wait "$child"
 rc=$?
