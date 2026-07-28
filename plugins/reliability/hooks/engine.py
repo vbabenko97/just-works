@@ -23,6 +23,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import auth  # noqa: E402
 import policy as policy_mod  # noqa: E402
 import rules  # noqa: E402
 
@@ -90,9 +91,32 @@ def decide_bash(command: str, cwd: str, project: str,
     return ("allow", "no unbounded mutation detected", DEFAULT)
 
 
+def _policy_entry(abs_path: str, project: str,
+                  extra: tuple[str, ...]) -> str | None:
+    root = os.path.realpath(project)
+    try:
+        rel = os.path.relpath(os.path.realpath(abs_path), root).replace(os.sep, "/")
+    except ValueError:
+        return None
+    if rel == ".." or rel.startswith("../"):
+        return None
+    for entry in extra:
+        if entry.endswith("/"):
+            if rel == entry.rstrip("/") or rel.startswith(entry):
+                return entry
+        elif rel == entry:
+            return entry
+    return None
+
+
 def decide_paths(tool: str, paths: list[str], cwd: str,
                  project: str) -> tuple[str, str, str]:
-    """(decision, reason, layer) for a file-editing tool."""
+    """(decision, reason, layer) for a file-editing tool.
+
+    Everything gated is collected first, then the authorization is tested for all of
+    it before a single use is spent. A partly-authorized MultiEdit is refused whole:
+    spending as we went would leave the budget consumed by a call that never applied.
+    """
     resolved = []
     for raw in paths:
         candidate = os.path.expanduser(raw)
@@ -100,41 +124,39 @@ def decide_paths(tool: str, paths: list[str], cwd: str,
             candidate = os.path.join(cwd, candidate)
         resolved.append(candidate)
 
+    pol = policy_mod.load(project)
+    extra = policy_mod.protected_paths(pol) if pol.active else ()
+
+    # (path, why, layer)
+    gated: list[tuple[str, str, str]] = []
     for abs_path in resolved:
         entry = rules.universal_protected_path(abs_path, project)
         if entry:
-            return ("deny", f"{tool} would modify the configuration that governs "
-                            f"this agent ({entry}). Hand the diff to the owner",
-                    UNIVERSAL)
+            gated.append((abs_path, f"{tool} would modify the configuration that "
+                                    f"governs this agent ({entry})", UNIVERSAL))
+            continue
+        if pol.state == policy_mod.INVALID:
+            gated.append((abs_path, f"policy configuration error: {pol.reason}. "
+                                    f"{INVALID_HINT}", POLICY))
+            continue
+        entry = _policy_entry(abs_path, project, extra)
+        if entry:
+            gated.append((abs_path, f"{tool} would modify a path this repository's "
+                                    f"policy protects ({entry})", POLICY))
 
-    pol = policy_mod.load(project)
+    if not gated:
+        return ("allow", "no protected path targeted", DEFAULT)
 
-    if pol.state == policy_mod.INVALID:
-        return ("deny", f"policy configuration error: {pol.reason}. {INVALID_HINT}",
-                POLICY)
+    for abs_path, why, layer in gated:
+        ok, detail = auth.check(tool, abs_path, project, consume=False)
+        if not ok:
+            return ("deny", f"{why}. {detail}", layer)
 
-    if pol.active:
-        extra = policy_mod.protected_paths(pol)
-        root = os.path.realpath(project)
-        for abs_path in resolved:
-            try:
-                rel = os.path.relpath(os.path.realpath(abs_path), root)
-            except ValueError:
-                continue
-            rel = rel.replace(os.sep, "/")
-            if rel == ".." or rel.startswith("../"):
-                continue
-            for entry in extra:
-                if entry.endswith("/"):
-                    if rel == entry.rstrip("/") or rel.startswith(entry):
-                        return ("deny", f"{tool} would modify a path this "
-                                        f"repository's policy protects ({entry})",
-                                POLICY)
-                elif rel == entry:
-                    return ("deny", f"{tool} would modify a path this repository's "
-                                    f"policy protects ({entry})", POLICY)
-
-    return ("allow", "no protected path targeted", DEFAULT)
+    granted = []
+    for abs_path, _, _ in gated:
+        _, detail = auth.check(tool, abs_path, project, consume=True)
+        granted.append(detail)
+    return ("allow", "; ".join(granted), POLICY)
 
 
 def receipt_required(project: str) -> tuple[bool, str]:
