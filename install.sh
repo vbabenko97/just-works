@@ -56,8 +56,9 @@ Install just-works agents, skills, and commands globally.
 Options:
   --personal      Use opinionated settings (permissions, hooks, sounds)
                   Default: minimal *.default configs
-                  Refused for the Claude side while .claude/settings.json
-                  activates the project-scoped reliability harness.
+                  Refused for the Claude side: it would install this repository's
+                  settings.json as ~/.claude/settings.json and there is no merge.
+                  --personal --codex-only remains available.
   --azure         Use Azure OpenAI config instead of direct OpenAI API
   --skip-config      Skip installing settings/config files
   --skip-statusline  Skip installing statusline-command.sh
@@ -129,41 +130,57 @@ if $CLAUDE_ONLY && $CODEX_ONLY; then
     exit 1
 fi
 
-# --- Portability precondition ---
-# .claude/settings.json activates the Tier 1 reliability harness through commands
-# that resolve inside whichever project is open:
-#     bash "$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh" <guard> || exit 2
-# Copied to ~/.claude/settings.json those hooks apply to every project, while the
-# launcher, the guards' policy files and the contract live only in this repository
-# — the install list below reaches into .claude/ and never into scripts/. In any
-# other checkout bash cannot find the launcher, exits 127, and the configured
-# `|| exit 2` converts that into a denial, so every matched tool call in every
-# project is refused. The harness fails closed, which here means bricking the
-# machine rather than weakening it. So the installer fails closed first.
+# --- Personal profile precondition (Claude side) ---
+# `--personal` installs this repository's .claude/settings.json as the user's own,
+# through install_config_file below, and there is no merge anywhere in this script.
+# Both directions are wrong:
 #
-# The test is the settings file's own content, not a hardcoded flag ban: once the
-# harness ships portably and nothing resolves through $CLAUDE_PROJECT_DIR, this
-# check stops firing on its own.
-if $PERSONAL && ! $CODEX_ONLY \
-   && [[ -f "${SCRIPT_DIR}/.claude/settings.json" ]] \
-   && grep -q 'CLAUDE_PROJECT_DIR' "${SCRIPT_DIR}/.claude/settings.json"; then
-    error "Refusing --personal: the reliability harness is project-scoped."
+#   no ~/.claude/settings.json    it is created from a repository-specific file —
+#                                 this repo's permission allowlist and deny list,
+#                                 env pins, statusLine, output style — presented as
+#                                 a machine default it was never written to be.
+#   an existing one               kept by default, but --replace-config overwrites
+#                                 it wholesale, taking the machine-local state a
+#                                 live config accumulates (otel routing, plugin
+#                                 enables and disables, subagent model defaults,
+#                                 per-machine env) that this repository cannot know
+#                                 and cannot restore.
+#
+# This check used to read the settings file and fire only while its hook commands
+# resolved through $CLAUDE_PROJECT_DIR, so that packaging the harness portably
+# would release the route automatically. That condition was wrong. Project-scoped
+# hooks were one of two defects, and moving the harness into a plugin fixes only
+# that one: content-driven release would have re-opened --personal at exactly the
+# moment the replacement problem was still unfixed. So the refusal is unconditional
+# for the Claude side, independent of what the settings file contains, and it stays
+# until this installer can merge into an existing settings.json.
+#
+# Reliability enforcement does not need this route. It ships as the
+# reliability@just-works Claude Code plugin, installed per user by the plugin
+# manager, which does not touch settings.json at all.
+if $PERSONAL && ! $CODEX_ONLY; then
+    error "Refusing --personal for the Claude side: it would install this"
+    error "repository's settings.json as ~/.claude/settings.json, and this"
+    error "installer has no merge for that file."
     error ""
-    error "Its PreToolUse hooks in .claude/settings.json run commands that resolve"
-    error "inside the open project:"
-    error '    bash "$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh" <guard> || exit 2'
-    error "Installed as ~/.claude/settings.json those hooks apply to every project,"
-    error "but scripts/hooks/, .claude/allowed-scripts.json and"
-    error ".claude/reliability-contract.md exist only in this repository. Everywhere"
-    error "else the launcher is missing, bash exits 127, and \"|| exit 2\" turns that"
-    error "into a denial — every matched tool call in every project would be refused."
+    error "With no user settings.json present, the file is created from a"
+    error "repository-specific config — this repo's permission allowlist and deny"
+    error "list, env pins, statusLine, output style — none of which is a sane"
+    error "machine default. With one present, --replace-config overwrites it"
+    error "wholesale, destroying machine-local state the repository cannot know or"
+    error "restore: otel routing, plugin enables and disables, subagent model"
+    error "defaults, per-machine env."
     error ""
-    error "Global installation needs the harness packaged as a Claude Code plugin, or"
-    error "another portable installation mode that ships the launcher, the guards and"
-    error "the policy files alongside the settings that reference them."
+    error "The refusal is unconditional and no longer depends on the settings file's"
+    error "contents. Reliability enforcement is distributed as the"
+    error "reliability@just-works Claude Code plugin, installed per user by the"
+    error "plugin manager, which does not touch settings.json. This route stays"
+    error "closed until the installer merges into an existing file instead of"
+    error "replacing it."
     error ""
     error "Nothing was installed; ~/.claude/settings.json is unchanged."
-    error "Available now: omit --personal (installs settings.json.default), or use"
+    error "Available now: omit --personal (installs settings.json.default, and keeps"
+    error "an existing settings.json unless --replace-config), or use"
     error "--personal --codex-only for the Codex side."
     exit 1
 fi

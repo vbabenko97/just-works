@@ -1,21 +1,27 @@
 #!/usr/bin/env python3
-"""Regression test: `install.sh --personal` must not install the harness globally.
+"""Regression test: `install.sh --personal` must not install this repository's
+settings.json as the user's own.
 
-The reliability harness is activated by .claude/settings.json through commands that
-resolve inside whichever project is open — `$CLAUDE_PROJECT_DIR/scripts/hooks/
-run_gate.sh` — plus policy files that exist only in this repository. Copied to
-~/.claude/settings.json it applies to every project, where the launcher is absent:
-bash exits 127, the configured `|| exit 2` converts that into a denial, and every
-matched tool call in every project is refused. Failing closed is the right
-direction and still bricks the machine, so the installer has to refuse first.
+There is no merge for settings.json anywhere in the installer. With no
+~/.claude/settings.json present, `--personal` creates one from a repository-specific
+file — this repo's permission allowlist and deny list, env pins, statusLine, output
+style. With one present, `--replace-config` overwrites it wholesale, destroying
+machine-local state the repository cannot know or restore. Either way the route is
+unsafe, so the installer refuses before installing anything.
 
-Every case runs the real installer as a subprocess against a throwaway HOME and a
-fixture checkout that carries the installer and the Claude config but *no*
-scripts/hooks/ — the exact layout that would produce the broken global config.
-Two controls install successfully, so a non-zero exit elsewhere cannot be
-dismissed as the fixture being unusable, and one fixture drops the
-$CLAUDE_PROJECT_DIR dependency to prove the refusal is driven by the settings
-file's content rather than by the flag.
+The refusal used to be content-driven: it fired only while the settings file's hook
+commands resolved through `$CLAUDE_PROJECT_DIR`, and would release itself once the
+reliability harness shipped portably. That condition was wrong — the harness moving
+into a plugin removes the project-scoped-hooks defect while leaving the replacement
+defect untouched — so the refusal is now unconditional for the Claude side. Three
+fixtures prove the independence: settings that resolve through the project
+directory, settings that do not, and a config with no hooks at all. All three are
+refused, and a fixture that *has* scripts/hooks/ is refused too, so the decision
+cannot be about the launcher being missing either.
+
+Every case runs the real installer as a subprocess against a throwaway HOME. Two
+controls install successfully, so a non-zero exit elsewhere cannot be dismissed as
+the fixture being unusable.
 """
 from __future__ import annotations
 
@@ -31,7 +37,7 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 
 # The refusal is the only documentation a user gets at the moment it matters, so
 # the message itself is part of the contract.
-MUST_EXPLAIN = ("project-scoped", "CLAUDE_PROJECT_DIR", "plugin", "portable",
+MUST_EXPLAIN = ("merge", "wholesale", "machine-local", "unconditional", "plugin",
                 "unchanged")
 
 # Stands in for the machine-local state a live settings.json accumulates: otel
@@ -51,8 +57,15 @@ def check(ok: bool, label: str, detail: str = "") -> None:
         print(f"        {detail}")
 
 
-def make_repo(root: pathlib.Path, name: str, portable: bool = False) -> pathlib.Path:
-    """A checkout with the installer and the Claude config but no scripts/hooks/."""
+def make_repo(root: pathlib.Path, name: str, portable: bool = False,
+              settings_text: str | None = None,
+              with_launcher: bool = False) -> pathlib.Path:
+    """A checkout with the installer and the Claude config.
+
+    By default it carries no scripts/hooks/, which is the layout the old
+    content-driven refusal was written for. `with_launcher` adds one, so the
+    refusal can be shown not to depend on the launcher being absent either.
+    """
     repo = root / name
     claude = repo / ".claude"
     (claude / "hooks").mkdir(parents=True)
@@ -60,9 +73,15 @@ def make_repo(root: pathlib.Path, name: str, portable: bool = False) -> pathlib.
     shutil.copy2(REPO / ".claude" / "settings.json.default",
                  claude / "settings.json.default")
     (claude / "hooks" / "guard_destructive_bash.py").write_text("# stub\n")
+    if with_launcher:
+        launcher = repo / "scripts" / "hooks"
+        launcher.mkdir(parents=True)
+        (launcher / "run_gate.sh").write_text("#!/bin/bash\nexit 0\n")
 
     settings = (REPO / ".claude" / "settings.json").read_text()
-    if portable:
+    if settings_text is not None:
+        settings = settings_text
+    elif portable:
         # Same structure, nothing resolving through the project directory: the
         # shape a plugin or another portable installation mode would produce.
         settings = settings.replace("$CLAUDE_PROJECT_DIR", "$HOME/.claude")
@@ -164,24 +183,28 @@ def main() -> int:
         check(not (home / ".claude" / "settings.json").exists(),
               "control: --codex-only leaves the Claude side alone")
 
-        # --- the refusal releases itself once the config is portable ----------
-        portable = make_repo(root, "repo-portable", portable=True)
-        home = root / "home-portable"
-        proc = run_install(portable, home, "--personal", "--claude-only")
-        installed = home / ".claude" / "settings.json"
-        check(proc.returncode == 0,
-              "portable settings.json: --personal exits 0",
-              f"exit {proc.returncode}: {proc.stderr[-300:]}")
-        check(installed.exists() and installed.read_text() ==
-              (portable / ".claude" / "settings.json").read_text(),
-              "portable settings.json: --personal installs it unchanged")
+        # --- the refusal does not depend on the settings file's contents -------
+        # Each of these would have been *allowed* by the old content-driven check.
+        # The replacement defect is in the installer, not in the settings file, so
+        # none of them may release the route.
+        for label, repo_kwargs in (
+            ("portable settings (nothing resolves through the project dir)",
+             {"portable": True}),
+            ("settings with no hooks at all", {"settings_text": "{}\n"}),
+            ("a checkout that does ship scripts/hooks/", {"with_launcher": True}),
+        ):
+            fixture = make_repo(root, f"repo-{len(CHECKS)}", **repo_kwargs)
+            home = root / f"home-{len(CHECKS)}"
+            proc = run_install(fixture, home, "--personal", "--claude-only")
+            check(proc.returncode != 0, f"still refused: {label}",
+                  f"exit {proc.returncode}: {proc.stdout[-200:]}")
+            check(not (home / ".claude" / "settings.json").exists(),
+                  f"still refused, nothing installed: {label}")
 
-        # --- the guard is live for this repository, not vacuous ---------------
-        check("CLAUDE_PROJECT_DIR" in (REPO / ".claude" / "settings.json").read_text(),
-              "this repository's settings.json does depend on CLAUDE_PROJECT_DIR")
+        # --- the default route stays open -------------------------------------
         check("CLAUDE_PROJECT_DIR" not in
               (REPO / ".claude" / "settings.json.default").read_text(),
-              "settings.json.default does not, so the default route stays open")
+              "settings.json.default resolves nothing through the project dir")
     finally:
         shutil.rmtree(root, ignore_errors=True)
 
