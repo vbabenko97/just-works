@@ -14,7 +14,7 @@
         "name": "Vitalii Babenko",
         "email": "v.babenko@devrain.com"
       },
-      "description": "Observation-only stage of the reliability harness. Records handler counts per matcher, subagent starts, and per-project policy presence, so plugin/project coexistence can be measured before enforcement moves into the plugin.",
+      "description": "Fail-closed reliability guards: universal destructive-action and self-protection rules in every project, optional repository policy for reviewed-script pinning and protected paths, and verified contract delivery to subagents. Guards that cannot run are refusals, and repository policy can only add restrictions.",
       "homepage": "https://github.com/vbabenko97/just-works/tree/main/plugins/reliability"
     }
   ]

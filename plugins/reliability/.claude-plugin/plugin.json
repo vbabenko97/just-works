@@ -1,6 +1,6 @@
 {
   "name": "reliability",
-  "description": "Observation-only stage of the reliability harness. Records which hook handlers run for each matcher, which subagents start, and what policy each project exposes, so plugin/project coexistence can be measured before any enforcement moves into the plugin. Emits no permission decisions.",
+  "description": "Fail-closed reliability guards for Claude Code. Universal rules apply in every project: recognised destructive operations, unbounded mutation, edits to the configuration governing the agent, and attempts to disable this plugin are denied. A repository may add to them with .claude/reliability-policy.json — reviewed-script pinning, extra protected paths, and verified contract delivery to subagents. A guard that cannot run, answers late, or answers unreadably is treated as a refusal, never as permission. Repository policy can only add restrictions; it can never weaken a universal rule.",
   "author": {
     "name": "Vitalii Babenko",
     "email": "v.babenko@devrain.com"
