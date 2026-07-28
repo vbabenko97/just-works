@@ -27,13 +27,20 @@ import subprocess
 import sys
 import time
 
-# One definition of "protected", shared with the Write/Edit guard and the Bash
-# guard. Without this, the wrapper was a hole in both: it enumerated and deleted
-# targets inside scripts/verify/ and .claude/hooks/ quite happily, which meant the
-# reviewed tool could delete the guards that make it the reviewed tool.
+# One definition of "protected". Without it the wrapper was a hole in the harness: it
+# enumerated and deleted targets inside scripts/verify/ and .claude/hooks/ quite
+# happily, which meant the reviewed tool could delete the guards that make it the
+# reviewed tool.
+#
+# This used to import `.claude/hooks/reliability_paths.py`, which the Stage 3 cutover
+# deleted along with the guards that shared it — breaking this tool outright.
+# `repo_policy.py` is the replacement, and it sits beside this file rather than inside
+# the plugin so the wrapper keeps working with the plugin absent, disabled or
+# mid-update.
 PROJECT_DIR = str(pathlib.Path(__file__).resolve().parents[2])
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_DIR, ".claude", "hooks"))
-from reliability_paths import is_protected  # noqa: E402
+import repo_policy  # noqa: E402
 import maintenance_auth  # noqa: E402
 
 PLAN_VERSION = 1
@@ -41,14 +48,31 @@ PLAN_VERSION = 1
 
 def protected_refusals(targets: list[str], phase: str) -> list[dict]:
     """Protected targets, minus any the owner explicitly authorized by exact path.
-    A use is spent only in the apply phase, so planning stays free to be re-run."""
+    A use is spent only in the apply phase, so planning stays free to be re-run.
+
+    A target this cannot classify refuses the batch instead of passing it. Two cases,
+    and neither is allowed to read as "ordinary path": a target lexically inside the
+    repository that resolves outside it, and a manifest that exists but cannot be
+    trusted. Both are reported per target with the reason, so `plan` and `apply` refuse
+    for something the owner can act on.
+    """
     refused = []
     for t in targets:
-        entry = is_protected(t, PROJECT_DIR)
+        try:
+            entry = repo_policy.is_protected(t, PROJECT_DIR)
+        except repo_policy.OutsideRepository as exc:
+            refused.append({"path": t, "protected_entry": "<escapes the repository>",
+                            "reason": f"refusing to classify a target that escapes "
+                                      f"the repository: {exc}"})
+            continue
+        except repo_policy.PolicyError as exc:
+            refused.append({"path": t, "protected_entry": repo_policy.MANIFEST_REL,
+                            "reason": f"repository policy cannot be trusted: {exc}"})
+            continue
         if not entry:
             continue
         ok, why = maintenance_auth.check(PROJECT_DIR, "bulk_mutate.delete", t,
-                                        consume=(phase == "apply"))
+                                         consume=(phase == "apply"))
         if not ok:
             refused.append({"path": t, "protected_entry": entry, "reason": why})
     return refused

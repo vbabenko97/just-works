@@ -222,19 +222,19 @@ git rm scripts/hooks/subagent_receipts.py
 .claude/allowed-scripts.json             policy: reviewed script pins
 .claude/reliability-policy.json          policy: the manifest itself
 scripts/verify/                          owner tooling and the issuer
-tests/reliability/                       the surviving 28 checks
+tests/reliability/                       the surviving 80 checks
 ```
 
-### Defect in this list: `reliability_paths.py`
+### Defect in this list: `reliability_paths.py` — fixed forward
 
-`bulk_mutate.py` imports **two** things from `.claude/hooks/`, not one:
+`bulk_mutate.py` imported **two** things from `.claude/hooks/`, not one:
 
 ```python
 from reliability_paths import is_protected
 import maintenance_auth
 ```
 
-The list above records only `maintenance_auth.py`, so removing
+The list above recorded only `maintenance_auth.py`, so removing
 `.claude/hooks/reliability_paths.py` broke `bulk_mutate.py` outright and with it all 10
 checks in `test_plan_apply_drift.py`:
 
@@ -242,18 +242,31 @@ checks in `test_plan_apply_drift.py`:
 ModuleNotFoundError: No module named 'reliability_paths'
 ```
 
-The repair belongs in `bulk_mutate.py`: a local `is_protected` that reads the protected
-list out of `.claude/reliability-policy.json` rather than restating it, so owner tooling
-and the plugin cannot drift. Note that `scripts/verify/` is itself a protected path and
-the Bash gate is never relaxed by an authorization, so an agent can neither apply that
-patch nor run the suite afterwards without a fresh pin — this is an owner operation:
+Repaired forward, not by restoring the deleted hook. `scripts/verify/repo_policy.py` now
+owns the question for owner tooling:
 
-```
-cd /Users/vitaliibabenko/babenko-dev/just-works
-$EDITOR scripts/verify/bulk_mutate.py
-shasum -a 256 scripts/verify/bulk_mutate.py    # then update the pin in allowed-scripts.json
-python3 tests/reliability/test_plan_apply_drift.py
-```
+- it defines the mandatory universal repository set, duplicated from the plugin's
+  `hooks/rules.py` and drift-checked by parsing that source in
+  `tests/reliability/test_owner_policy.py`. Duplication rather than import, because an
+  owner tool must keep working with the plugin absent, disabled or mid-update;
+- it loads and validates the manifest strictly, and **raises** on a manifest that is
+  present but malformed, unsupported, carrying unknown keys, or naming a path that
+  climbs out of the repository;
+- it returns the union of the universal and policy-declared sets;
+- it raises on a path lexically inside the repository that resolves outside it, rather
+  than reporting an escape route as an ordinary path;
+- it keeps the home-scope set, because this wrapper can genuinely reach it: `install.sh`
+  syncs skills into `${CLAUDE_HOME}/skills` and `${AGENTS_HOME}/skills`, so a cleanup
+  rooted at `~/.claude` would otherwise be free to enumerate `~/.claude/hooks/`.
+
+`bulk_mutate.protected_refusals()` turns either exception into a refusal, in both the
+plan and apply phases. The pre-existing containment invariant (`within()`, checked in
+both phases) is untouched and still fires first on an escaping target.
+
+Both files live under `scripts/verify/`, which is protected, so the repair needed a
+plugin maintenance authorization — `Write` on the new module, `Edit` on the wrapper,
+`Edit` on the allowlist to re-pin the changed hash. The Bash gate is never relaxed by
+one, so `rm` on these paths stays refused throughout.
 
 Removing `scripts/hooks/` also made `test_configured_gate.py` and `test_hook_gate.py`
 obsolete. The plan estimated 49 of the 318 checks would be stranded; the real figure is
@@ -278,6 +291,7 @@ Fresh session after the commit. Repeat every check in step 3. The surviving proj
 suites, which an agent can run because they are pinned in the allowlist:
 
 ```
+python3 tests/reliability/test_owner_policy.py
 python3 tests/reliability/test_maintenance_auth.py
 python3 tests/reliability/test_plan_apply_drift.py
 python3 tests/install/test_personal_guard.py

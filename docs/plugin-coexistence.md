@@ -180,3 +180,38 @@ qualified `reliability@just-works` is required.
   code several commits old while the repository looks current. Nothing warns.
 - **Duplicate handler cost.** Three processes per Bash call during any overlap
   period. Harmless but not free.
+
+### The arbitrary-inline-code trust boundary
+
+`python3 -c "<program>"` is classified by matching the *text* of the program against
+`INLINE_SIDE_EFFECT`. Anything that pattern does not name is allowed, and what runs is
+a full interpreter. This is a deliberate boundary, not an oversight: the alternative is
+refusing every inline program, which would deny ordinary reads. It is recorded here
+because the boundary is wider than the pattern list suggests.
+
+Concrete examples, both classified `allow`:
+
+```
+python3 -c "import runpy; runpy.run_path('/tmp/outside.py')"
+-> ('allow', 'inline python3 program with no side effects detected', 'policy')
+```
+
+`runpy.run_path` executes a script the gate would otherwise refuse two ways over — as
+an unreviewed script absent from `.claude/allowed-scripts.json`, and as a script
+outside the project. Neither denial survives being reached through an inline program,
+because the classifier sees `runpy`, not the file it will run. `importlib` and
+`exec(open(...).read())` are the same shape; the second is caught only because `exec (`
+happens to be in the pattern list.
+
+The honest summary is that the inline-program allowance is a trust boundary, and the
+pattern list is a speed bump on one side of it. What the gate reliably stops is the
+*careless* destructive command — the shell loop, the glob, the recursive `rm` — not an
+agent deliberately routing around it. That is the threat model the corpus was built
+for, and it is worth stating plainly rather than leaving the pattern list to imply
+more than it delivers.
+
+Not changed here deliberately. Widening the classifier to chase `runpy` invites the
+whack-a-mole the lexical design exists to avoid, and every added pattern costs false
+positives on ordinary reads — the `ln` and `patch` regressions in
+`docs/parity-map.md` came from exactly that. Closing it properly means not trusting
+inline programs at all, which is a design decision, not a patch.

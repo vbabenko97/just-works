@@ -5,17 +5,23 @@ Every frozen check is accounted for under one of four labels.
 | label | meaning |
 |---|---|
 **ported** | the same cases, individually, against the plugin |
-**equivalent** | a named plugin check exercising the same failure mode, consolidated |
+**equivalent or replaced** | a named plugin check exercising the same failure mode — consolidated, or asserted against the plugin manifest instead of the project's wiring |
 **retained** | the project-local component still exists, so the project check stays |
-**retired** | deliberately dropped, with the reason stated |
+**retired** | deliberately dropped, and the behaviour is genuinely gone |
 
-Totals: 318 frozen checks → 121 ported, 130 equivalent, 28 retained, 39 retired.
-Plugin suites total 516 checks.
+Totals: 318 frozen checks → **121 ported, 163 equivalent or replaced, 28 retained,
+6 retired**.
+
+Only 6 checks are retired. An earlier version of this table counted 39, folding in the
+33 project-wiring assertions — that was wrong. A check whose failure mode is still
+asserted, against a different configuration file, has been *replaced*, not dropped.
+Calling it retired overstated what the cutover gave up by more than a factor of six,
+and in the one direction that matters: it made lost coverage look acceptable.
 
 Retained fell from 37 to 28 when the cutover completed. Nine checks in
 `test_maintenance_auth.py` drove the project's own hook files, so they went when those
-files were deleted; they were already ported to the plugin's `test_auth.py`, and are
-counted there now. No failure mode moved to *retired* — see that section below.
+files were deleted; they were already ported to the plugin's `test_auth.py` and are
+counted there.
 
 ## test_guard_bash.py — 112 → **ported**, verbatim
 
@@ -137,15 +143,26 @@ configured command fails closed — is asserted against the plugin manifest inst
 | retired | count | why |
 |---|---|---|
 | git-state labels in denial messages | 6 | no verdict depends on them; message detail only |
-| project-wiring assertions | 33 | assert a configuration Stage 3 removes; behaviour re-asserted against the plugin manifest |
 
-Only these 39 are genuinely dropped, and only the first 6 lose a behaviour: the
-`git_state()` labels were message text no verdict read. The other 33 assert the
-project's hook wiring — `$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh` resolving,
-`--receipt-only` as its own matcher, the `*` matcher being third — and the fail-closed
-property they existed to protect is asserted against the plugin manifest instead, by
-`test_manifest_commands.py`. Where any other count fell, the failure mode is named
-above with the plugin check that now covers it.
+Six, and no more. `git_state()` was called only to build a denial message — "untracked",
+"modified relative to git", "tracked and unmodified" — and no verdict ever read it. The
+plugin's reason names the allowlist and the pinned-versus-actual hash instead, which is
+the actionable part, and it saves two subprocesses on every refusal. This is the one
+place where a behaviour was dropped rather than moved.
+
+### Replaced, not retired: the 33 project-wiring assertions
+
+These assert the project's hook wiring — `$CLAUDE_PROJECT_DIR/scripts/hooks/run_gate.sh`
+resolving, `--receipt-only` as its own matcher, the `*` matcher being third. Stage 3
+removed that configuration, so the assertions cannot run as written. The property they
+existed to protect is not the wiring; it is that **the outermost configured command
+fails closed**, and that is asserted against the plugin manifest by
+`test_manifest_commands.py` — the same nine sabotages, read verbatim out of
+`hooks.json`, run against a sabotaged replica.
+
+They are counted under *equivalent or replaced* for that reason. Counting them as
+retired implied 39 checks' worth of coverage had been abandoned when the real figure is
+6, which is the kind of error that makes a migration look cheaper than it was.
 
 ## After the cutover: what is left in this repository
 
@@ -158,10 +175,22 @@ above with the plugin check that now covers it.
 | `test_subagent_receipts.py` | 20 | deleted — ported to `test_receipts.py` |
 | `test_configured_gate.py` | 32 | deleted — equivalent in `test_manifest_commands.py` |
 | `test_maintenance_auth.py` | 27 | **kept, trimmed to 18** |
-| `test_plan_apply_drift.py` | 10 | **kept whole** |
+| `test_plan_apply_drift.py` | 10 | **kept whole, 10/10** |
 
 `fixtures/make_fixtures.sh` was deleted with them: it built fixtures for
 `test_guard_bash.py` and `test_script_indirection.py` and had no other consumer.
+
+Added after the cutover, outside the frozen 318 because it covers code that did not
+exist when the total was frozen:
+
+| file | cases | covers |
+|---|---:|---|
+| `test_owner_policy.py` | 52 | `scripts/verify/repo_policy.py`, and `bulk_mutate.py` consulting it in both phases |
+
+That module exists because removing `.claude/hooks/reliability_paths.py` broke
+`bulk_mutate.py`, which had imported it. Its universal tuples are duplicated from the
+plugin's `hooks/rules.py` — an owner tool must keep working with the plugin absent,
+disabled or mid-update — so the suite parses the plugin source and fails on drift.
 
 Every deleted file was removed from `.claude/allowed-scripts.json` in the same commit.
 A pin naming a file that no longer exists is not merely stale — `script_verdict`

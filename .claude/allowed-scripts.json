@@ -15,7 +15,8 @@
   ],
   "scripts": {
     "scripts/verify/verify_tree_equivalence.py": "ac727166325c3822a3cb0ab392cee951b63412ef266d5b62c6f69d41f12e0f5f",
-    "scripts/verify/bulk_mutate.py": "bce3d18ecc5c8d92d4661212a195f6a3867572bf3b1b2976446779cf468e5649",
+    "scripts/verify/bulk_mutate.py": "dbcd8b5a2b5b1a4b06d104a9fcd837ab83afd061c0efd8ffad84dc3bea5c4f67",
+    "tests/reliability/test_owner_policy.py": "c89eaeb6a879f84de339adaf57c1d89af7b41ae9739cfd5104c7e74988995820",
     "tests/reliability/test_plan_apply_drift.py": "0c782ea010b7f6feebcf858064cfa83ac60b88cd246750321fd4a2b1d064e365",
     "tests/reliability/test_maintenance_auth.py": "dbf6e19552d16700a06cbc187a248b001822b6253f92856f100958298a43fadc",
     "tests/install/test_personal_guard.py": "f84a107a19ba5d2379baf3466a1b4a0665f505a7163badb3098411899c6b7601"
