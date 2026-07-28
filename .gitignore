@@ -14,6 +14,9 @@ node_modules/
 .claude/maintenance-auth.json
 .claude/maintenance-uses.jsonl
 
+# Subagent contract receipts are per-session proof of delivery, not shared history.
+.claude/receipts/
+
 # private — personal corpora and career data, never published
 my-style-before-llms/
 vitalii-writing-style/

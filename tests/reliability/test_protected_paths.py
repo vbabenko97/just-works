@@ -51,8 +51,11 @@ EDIT_CASES = [
     ("Write", {"file_path": str(REPO / "scripts/verify/anything_new.py")}, PROTECTED),
     ("Write", {"file_path": "~/.claude/settings.json"}, PROTECTED),
     ("Write", {"file_path": "~/.claude/hooks/whatever.sh"}, PROTECTED),
-    # Relative and traversal forms must resolve to the same verdict.
-    ("Edit", {"file_path": ".claude/settings.json"}, PROTECTED),
+    # Relative and traversal forms must resolve to the same verdict. Both use
+    # paths no authorization lists, so the expectation does not depend on whether
+    # one happens to be active — an earlier revision of this case used
+    # .claude/settings.json and flipped to allow the moment it was authorized.
+    ("Edit", {"file_path": ".claude/reliability-contract.md"}, PROTECTED),
     ("Edit", {"file_path": "tests/../.claude/hooks/maintenance_auth.py"}, PROTECTED),
     ("NotebookEdit", {"notebook_path": str(REPO / ".claude/hooks/x.ipynb")}, PROTECTED),
     ("MultiEdit", {"edits": [{"file_path": str(REPO / "README.md")},

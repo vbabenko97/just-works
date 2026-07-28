@@ -18,8 +18,11 @@
     "tests/reliability/fixtures/make_fixtures.sh": "9b248b152fd8758214c7c2aef0568e0fc973b418fdd429a0392b9ea753525d28",
     "tests/reliability/test_guard_bash.py": "2b0312e33cc7458c1c03afcbdd7fc83d3173c849c9c32513547e0ca9fcf53007",
     "tests/reliability/test_script_indirection.py": "a16a62bb5e83acd3a2f2912bd59cf674424f04345801fff60fe3a08017a2708a",
-    "tests/reliability/test_protected_paths.py": "94c190502bb43554da6914f3b13bcc703d26a138987f9138ae0d05e2fef2c13b",
+    "tests/reliability/test_protected_paths.py": "e2c7a6d8d6371fe07738196080839e6497605f3c71734d5e1c50fb938d99dc88",
     "tests/reliability/test_plan_apply_drift.py": "0c782ea010b7f6feebcf858064cfa83ac60b88cd246750321fd4a2b1d064e365",
-    "tests/reliability/test_maintenance_auth.py": "7dc8a6ba08bac95146104a60014668b4db49a5ae2edeec76fc25552396aad138"
+    "tests/reliability/test_maintenance_auth.py": "7dc8a6ba08bac95146104a60014668b4db49a5ae2edeec76fc25552396aad138",
+    "tests/reliability/test_hook_gate.py": "89ef3fc5e5a0d87e0175e12bb39231c56dc0a28347aa34d107df334b9218ac3b",
+    "tests/reliability/test_subagent_receipts.py": "5a0a9c8715c4edd9b0be4e8b975e6ddde12b703ff1157a569df1e543f962a298",
+    "tests/reliability/test_configured_gate.py": "4265fb508ef8f2f901c86409f359915324eb83a6b6bbb188fd0136336b6caa46"
   }
 }

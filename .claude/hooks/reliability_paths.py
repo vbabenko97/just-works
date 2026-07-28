@@ -21,7 +21,11 @@ PROTECTED_RELATIVE = (
     ".claude/allowed-scripts.json",
     ".claude/maintenance-auth.json",
     ".claude/maintenance-uses.jsonl",
+    ".claude/receipts/",
     "scripts/verify/",
+    # The launcher and the fail-closed gate are enforcement, so they are protected
+    # on the same terms as the guards they run.
+    "scripts/hooks/",
 )
 
 # Same protection for the user-level copies, so a global install cannot be

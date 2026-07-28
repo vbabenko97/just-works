@@ -56,6 +56,25 @@ def main() -> int:
     except Exception:
         pass  # logging must not break the subagent
 
+    # Issue the receipt that PreToolUse will demand. This is the enforceable half:
+    # the append-only log above proves delivery after the fact, but nothing reads
+    # it, so a failed injection was invisible. SubagentStart cannot refuse to
+    # create the subagent — if this write does not happen, the subagent still
+    # starts, and hook_gate.py then refuses its first tool call.
+    try:
+        sys.path.insert(0, str(HERE.parents[1] / "scripts" / "hooks"))
+        import subagent_receipts
+        subagent_receipts.issue(str(HERE.parents[1]), payload, VERSION, len(text))
+    except Exception as exc:
+        # Deliberately not fatal here: emitting the contract still helps, and the
+        # missing receipt is what enforces the failure downstream.
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "SubagentStart",
+            "additionalContext": (f"<!-- reliability-contract {VERSION} -->\n{text}\n"
+                                  f"<!-- receipt not issued: {exc} -->"),
+        }}))
+        return 0
+
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "SubagentStart",
         "additionalContext": f"<!-- reliability-contract {VERSION} -->\n{text}",
