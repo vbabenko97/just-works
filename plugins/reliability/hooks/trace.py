@@ -32,6 +32,12 @@ TRACE = pathlib.Path(os.environ.get(
     "RELIABILITY_TRACE_FILE",
     pathlib.Path.home() / ".claude" / "reliability-trace.jsonl"))
 
+# Changed deliberately to test activation semantics. If editing the source checkout
+# changes what executes, a session run after an edit but before `claude plugin
+# update` reports the new value. A recorded value matching the checkout is evidence
+# that the checkout is executing rather than the installed copy.
+SOURCE_MARKER = "stage2-a"
+
 
 def plugin_version(root: str) -> str:
     try:
@@ -72,6 +78,13 @@ def main() -> int:
         "claude_project_dir": project,
         "plugin_root": root,
         "plugin_version": plugin_version(root),
+        # The env var says where the harness thinks the plugin lives; __file__ says
+        # which copy of the code is actually running. They are recorded separately
+        # because the whole question in requirement 1 is whether they agree.
+        "executing_file": str(pathlib.Path(__file__).resolve()),
+        "under_cache": str(pathlib.Path(__file__).resolve()).startswith(
+            str(pathlib.Path.home() / ".claude" / "plugins" / "cache")),
+        "source_marker": SOURCE_MARKER,
         # What policy this project would expose to a policy-aware build. Recorded
         # so the plugin copy and the project copy can be compared on identical
         # inputs, before either is allowed to act on them.
