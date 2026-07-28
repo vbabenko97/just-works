@@ -1,0 +1,22 @@
+{
+  "name": "just-works",
+  "description": "Vitalii Babenko's Claude Code configuration. Hosts the reliability harness as a plugin so its hooks and scripts stay colocated and reachable by a stable installed path, rather than through whichever project happens to be open.",
+  "owner": {
+    "name": "Vitalii Babenko",
+    "email": "v.babenko@devrain.com"
+  },
+  "plugins": [
+    {
+      "name": "reliability",
+      "version": "0.1.0",
+      "source": "./plugins/reliability",
+      "category": "security",
+      "author": {
+        "name": "Vitalii Babenko",
+        "email": "v.babenko@devrain.com"
+      },
+      "description": "Observation-only stage of the reliability harness. Records handler counts per matcher, subagent starts, and per-project policy presence, so plugin/project coexistence can be measured before enforcement moves into the plugin.",
+      "homepage": "https://github.com/vbabenko97/just-works/tree/main/plugins/reliability"
+    }
+  ]
+}

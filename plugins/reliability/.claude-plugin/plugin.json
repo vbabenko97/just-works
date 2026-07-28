@@ -1,0 +1,10 @@
+{
+  "name": "reliability",
+  "version": "0.1.0",
+  "description": "Observation-only stage of the reliability harness. Records which hook handlers run for each matcher, which subagents start, and what policy each project exposes, so plugin/project coexistence can be measured before any enforcement moves into the plugin. Emits no permission decisions.",
+  "author": {
+    "name": "Vitalii Babenko",
+    "email": "v.babenko@devrain.com"
+  },
+  "homepage": "https://github.com/vbabenko97/just-works/tree/main/plugins/reliability"
+}
