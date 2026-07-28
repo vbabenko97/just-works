@@ -168,12 +168,17 @@ def decide_paths(tool: str, paths: list[str], cwd: str,
 
 
 def receipt_required(project: str) -> tuple[bool, str]:
-    """Whether subagents in this project must present a contract receipt.
+    """Whether this repository's *policy* asks for subagent receipts.
 
-    Absent policy means no, because nothing has been injected to present. Invalid
-    policy also means no: mutation is already refused, and demanding a receipt no
-    hook is issuing would deny every subagent's first read for a reason the user
-    cannot act on."""
+    No longer consulted by guard_common.py's PreToolUse gate: verifying a current
+    receipt for any payload carrying agent_id is universal as of the Tier-2
+    epistemic contract (compose_contract delivers the universal and bundled
+    operational parts to every repository unconditionally, so verifying delivery
+    before every gated tool call is universal too). Repository policy can add
+    contract text; it cannot opt a repository out of that verification. This
+    function is retained because it's still meaningful information about what a
+    repository's manifest declares, and existing tests exercise it directly — but
+    nothing here uses its return value to decide whether to verify."""
     pol = policy_mod.load(project)
     if pol.state == policy_mod.ABSENT:
         return (False, "no policy manifest; subagent receipts are not required")

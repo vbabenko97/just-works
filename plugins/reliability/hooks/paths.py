@@ -26,9 +26,18 @@ import json
 import os
 import pathlib
 import subprocess
+from typing import NamedTuple
+
+import policy as policy_mod
 
 HERE = pathlib.Path(__file__).resolve().parent
 PLUGIN_NAME = "reliability"
+
+# Bumped whenever the composition algorithm itself changes shape (part order, join
+# delimiter, what counts as mandatory) — independent of the content of any part. A
+# receipt's schema tag must match this exactly, so a plugin upgrade invalidates old
+# receipts even in the freak case where the digest happened not to change.
+COMPOSITION_SCHEMA = "reliability-contract-compose-v1"
 
 
 def plugin_root() -> pathlib.Path:
@@ -114,22 +123,81 @@ def receipts_dir(project: str) -> pathlib.Path:
     return plugin_data() / "receipts" / repo_identity(project)
 
 
-def contract_text(project: str, pol) -> tuple[str, str]:
-    """(text, source). The repository's contract when its manifest declares one and
-    the file is readable; otherwise the copy bundled with the plugin. A repository
-    may replace the text; it cannot remove the delivery."""
+class ComposedContract(NamedTuple):
+    """Result of composing the delivered contract. `ok=False` means composition
+    failed — never a placeholder, never a receipt: SubagentStart must not issue one
+    and SubagentStop must not accept one when this is the state."""
+    ok: bool
+    text: str
+    sources: tuple[str, ...]
+    digest: str | None
+    schema: str
+    error: str | None
+
+
+def _read_bundled(name: str) -> tuple[str | None, str | None]:
+    """(text, error). A bundled file is part of what this plugin guarantees, so a
+    read failure here is a composition failure, not something to paper over."""
+    try:
+        return (plugin_root() / name).read_text(), None
+    except Exception as exc:
+        return None, f"{name} unavailable: {exc}"
+
+
+def compose_contract(project: str, pol) -> ComposedContract:
+    """Universal epistemic contract, then the bundled operational contract, then an
+    optional but — once declared — mandatory repository addition, then a fixed
+    closing reminder. The two bundled files are always required. A `contract` key
+    in policy, once present, is also required: a repository that declares one and
+    then can't deliver it fails composition exactly like a missing bundled file,
+    rather than silently running with less than it asked for. Only the absence of
+    the `contract` key at all is optional.
+
+    This guarantees verified delivery of text. It does not, and cannot by
+    concatenation alone, guarantee that any agent behaviorally follows any part of
+    it — see the closing paragraph of epistemic-contract.md.
+    """
+    epistemic, err = _read_bundled("epistemic-contract.md")
+    if err:
+        return ComposedContract(False, "", (), None, COMPOSITION_SCHEMA, err)
+    operational, err = _read_bundled("contract.md")
+    if err:
+        return ComposedContract(False, "", (), None, COMPOSITION_SCHEMA, err)
+    reminder, err = _read_bundled("epistemic-reminder.md")
+    if err:
+        return ComposedContract(False, "", (), None, COMPOSITION_SCHEMA, err)
+
+    parts = [epistemic, operational]
+    sources = ["plugin: epistemic-contract.md", "plugin: contract.md"]
+
     declared = pol.data.get("contract") if getattr(pol, "active", False) else None
     if isinstance(declared, str):
         candidate = pathlib.Path(project) / declared
+        resolved, problem = policy_mod.safe_regular_file(str(candidate), project)
+        if resolved is None:
+            return ComposedContract(False, "", (), None, COMPOSITION_SCHEMA,
+                                    f"declared contract {declared} {problem}")
         try:
-            resolved = candidate.resolve()
-            root = pathlib.Path(project).resolve()
-            if root in resolved.parents and resolved.is_file():
-                return (resolved.read_text(), f"repository: {declared}")
-        except Exception:
-            pass
-    bundled = plugin_root() / "contract.md"
-    try:
-        return (bundled.read_text(), "plugin: contract.md")
-    except Exception:
-        return ("", "unavailable")
+            repo_bytes = pathlib.Path(resolved).read_bytes()
+        except Exception as exc:
+            return ComposedContract(False, "", (), None, COMPOSITION_SCHEMA,
+                                    f"declared contract {declared} could not be "
+                                    f"read: {exc}")
+        try:
+            repo_text = repo_bytes.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            return ComposedContract(False, "", (), None, COMPOSITION_SCHEMA,
+                                    f"declared contract {declared} is not valid "
+                                    f"UTF-8: {exc}")
+        parts.append("## Repository additions (lower priority — see the "
+                     "reminder below)\n\n" + repo_text)
+        sources.append(f"repository: {declared}")
+
+    parts.append(reminder)
+    sources.append("plugin: epistemic-reminder.md")
+
+    text = "\n\n".join(parts)
+    digest = hashlib.sha256(
+        f"{COMPOSITION_SCHEMA}\n{text}".encode("utf-8")).hexdigest()
+    return ComposedContract(True, text, tuple(sources), digest, COMPOSITION_SCHEMA,
+                            None)

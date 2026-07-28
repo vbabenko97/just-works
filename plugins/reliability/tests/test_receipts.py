@@ -47,11 +47,22 @@ def main() -> int:
     try:
         import engine  # noqa: E402  (after RELIABILITY_DATA_DIR is set)
         import paths  # noqa: E402
+        import policy as policy_mod  # noqa: E402
         import receipts  # noqa: E402
 
         policed = build(root, "policed", manifest=VALID_MANIFEST)
         plain = build(root, "plain", manifest=None)
         broken = build(root, "broken", manifest='{"policy_version": 91}')
+
+        # Real composition against the real bundled files — this suite exercises
+        # what actually ships, not a stand-in.
+        composed = paths.compose_contract(str(policed), policy_mod.load(str(policed)))
+        check(composed.ok, "composition succeeds for a policed repository",
+              composed.error or "")
+        composed_plain = paths.compose_contract(str(plain),
+                                                 policy_mod.load(str(plain)))
+        check(composed_plain.ok, "composition succeeds with no policy at all",
+              composed_plain.error or "")
 
         # ---- who must present one --------------------------------------------
         need, why = engine.receipt_required(str(policed))
@@ -73,8 +84,7 @@ def main() -> int:
               "a main-session payload is not, so it is never asked for a receipt")
 
         # ---- issue, then verify ----------------------------------------------
-        written = receipts.issue(str(policed), payload_for(), CONTRACT, 1234,
-                                 "repository: contract.md")
+        written = receipts.issue(str(policed), payload_for(), CONTRACT, composed)
         check(written is not None and written.is_file(), "issue writes a receipt",
               str(written))
         check(str(data) in str(written),
@@ -84,28 +94,40 @@ def main() -> int:
         check(paths.repo_identity(str(policed)) != paths.repo_identity(str(plain)),
               "two repositories get different identities")
 
-        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
         check(ok, "a matching receipt verifies", why)
         check(receipts.count(str(policed), SESSION) == 1,
               "exactly one receipt for one agent")
 
+        # issue() must refuse a composition that failed, on principle, not just for
+        # repositories that happen to fail today.
+        failed = paths.ComposedContract(False, "", (), None, composed.schema,
+                                        "simulated composition failure")
+        check(receipts.issue(str(policed), payload_for(agent="agent-refused"),
+                             CONTRACT, failed) is None,
+              "issue refuses to write a receipt for a failed composition")
+
         # ---- every way it must fail ------------------------------------------
         failures = {
             "no receipt at all": (payload_for(agent="agent-never"), str(policed),
-                                  CONTRACT),
+                                  CONTRACT, composed),
             "different session": (payload_for(session="sess-beta"), str(policed),
-                                  CONTRACT),
+                                  CONTRACT, composed),
             "different agent": (payload_for(agent="agent-two"), str(policed),
-                                CONTRACT),
+                                CONTRACT, composed),
             "different agent type": (payload_for(agent_type="Plan"), str(policed),
-                                     CONTRACT),
-            "different contract version": (payload_for(), str(policed), "tier0-old"),
-            "different repository": (payload_for(), str(plain), CONTRACT),
+                                     CONTRACT, composed),
+            "different contract version": (payload_for(), str(policed), "tier0-old",
+                                           composed),
+            "different repository": (payload_for(), str(plain), CONTRACT,
+                                     composed_plain),
             "no session_id": ({"agent_id": AGENT, "agent_type": "Explore"},
-                              str(policed), CONTRACT),
+                              str(policed), CONTRACT, composed),
+            "composition currently unavailable": (payload_for(), str(policed),
+                                                   CONTRACT, failed),
         }
-        for label, (row, project, contract) in failures.items():
-            ok, why = receipts.verify(row, project, contract)
+        for label, (row, project, contract, comp) in failures.items():
+            ok, why = receipts.verify(row, project, contract, comp)
             check(not ok, f"refused: {label}", why)
 
         # Tampering with the stored record.
@@ -114,29 +136,69 @@ def main() -> int:
         original = target.read_text()
 
         target.write_text("{not json")
-        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
         check(not ok, "refused: unreadable receipt", why)
 
         record = json.loads(original)
         record["issued_at"] = int(time.time()) + 3600
         target.write_text(json.dumps(record))
-        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
         check(not ok, "refused: dated in the future", why)
 
         record["issued_at"] = int(time.time()) - receipts.MAX_AGE_SECONDS - 60
         target.write_text(json.dumps(record))
-        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
         check(not ok, "refused: stale", why)
 
         record["issued_at"] = int(time.time())
         record.pop("issued_at")
         target.write_text(json.dumps(record))
-        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
         check(not ok, "refused: no issue time", why)
 
         target.write_text(original)
-        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
         check(ok, "restoring the record verifies again", why)
+
+        # ---- every mandatory field, removed one at a time ---------------------
+        for field in receipts.MANDATORY_FIELDS:
+            record = json.loads(original)
+            record.pop(field, None)
+            target.write_text(json.dumps(record))
+            ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
+            check(not ok, f"refused: receipt missing {field}", why)
+        target.write_text(original)
+
+        # An old-format receipt (pre-digest schema) is indistinguishable from one
+        # missing every mandatory field at once — same refusal.
+        record = json.loads(original)
+        for field in receipts.MANDATORY_FIELDS:
+            record.pop(field, None)
+        record["contract_bytes"] = 1234
+        record["contract_source"] = "repository: contract.md"  # old single-field shape
+        target.write_text(json.dumps(record))
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
+        check(not ok, "refused: old-format (pre-digest) receipt", why)
+
+        # Correct version, wrong digest: the exact gap a manually-bumped label
+        # alone would miss.
+        record = json.loads(original)
+        record["contract_sha256"] = "0" * 64
+        target.write_text(json.dumps(record))
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
+        check(not ok, "refused: correct version, wrong digest", why)
+
+        # Wrong composition schema, correct everything else.
+        record = json.loads(original)
+        record["composition_schema"] = "some-older-scheme-v0"
+        target.write_text(json.dumps(record))
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
+        check(not ok, "refused: composition schema mismatch", why)
+
+        target.write_text(original)
+        ok, why = receipts.verify(payload_for(), str(policed), CONTRACT, composed)
+        check(ok, "restoring the record verifies again (post mandatory-field pass)",
+              why)
 
         # ---- delivery through the real hook ----------------------------------
         env = os.environ.copy()
@@ -152,7 +214,7 @@ def main() -> int:
         check("additionalContext" in proc.stdout,
               "contract.py emits the contract text", proc.stdout[:120])
         ok, why = receipts.verify(payload_for(session="sess-live", agent="agent-live"),
-                                  str(policed), CONTRACT)
+                                  str(policed), CONTRACT, composed)
         check(ok, "the receipt it issued verifies", why)
 
         # A repository with no manifest still gets the contract, and its subagents

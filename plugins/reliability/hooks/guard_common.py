@@ -23,6 +23,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
 import engine  # noqa: E402
 import observe  # noqa: E402
+import paths  # noqa: E402
 import policy as policy_mod  # noqa: E402
 import receipts  # noqa: E402
 
@@ -63,18 +64,21 @@ def main() -> int:
     pol = policy_mod.load(project)
 
     if receipts.is_subagent(payload):
-        required, why = engine.receipt_required(project)
-        if required:
-            ok, detail = receipts.verify(payload, project, pol.contract_version)
-            if not ok:
-                observe.record("PreToolUse:receipt", payload, project,
-                               decision="deny", layer=engine.POLICY,
-                               policy=pol.state, detail=detail)
-                emit("deny", f"subagent contract not delivered: {detail}",
-                     engine.POLICY)
-                return 0
-        else:
-            detail = why
+        # Universal as of the Tier-2 epistemic contract: the contract is delivered
+        # to every subagent in every repository unconditionally (compose_contract
+        # doesn't consult policy for the two bundled parts), so verifying it before
+        # every gated tool call is universal too. Repository policy can no longer
+        # opt out via require_subagent_receipts — see engine.receipt_required's
+        # docstring, which now describes a value nothing here consults anymore.
+        composed = paths.compose_contract(project, pol)
+        ok, detail = receipts.verify(payload, project, pol.contract_version, composed)
+        if not ok:
+            observe.record("PreToolUse:receipt", payload, project,
+                           decision="deny", layer=engine.UNIVERSAL,
+                           policy=pol.state, detail=detail)
+            emit("deny", f"subagent contract not delivered: {detail}",
+                 engine.UNIVERSAL)
+            return 0
 
     if tool in PATH_TOOLS:
         paths_wanted = target_paths(tool, tool_input)

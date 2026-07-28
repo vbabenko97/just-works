@@ -103,7 +103,7 @@ class Policy:
         return self.state == VALID
 
 
-def _safe_regular_file(path: str, root: str) -> tuple[str | None, str]:
+def safe_regular_file(path: str, root: str) -> tuple[str | None, str]:
     """Resolve `path` and require that it is a regular file inside `root`.
 
     A symlink is permitted only when its canonical target is still inside the
@@ -153,7 +153,7 @@ def load(project: str) -> Policy:
     def invalid(why: str) -> Policy:
         return Policy(INVALID, f"{MANIFEST_REL} {why}", path=manifest)
 
-    resolved, problem = _safe_regular_file(manifest, project)
+    resolved, problem = safe_regular_file(manifest, project)
     if resolved is None:
         return invalid(problem)
     try:
@@ -205,7 +205,7 @@ def load(project: str) -> Policy:
         allow_path = os.path.join(project, declared)
         if not os.path.lexists(allow_path):
             return invalid(f"declares an allowlist that does not exist: {declared}")
-        allow_resolved, problem = _safe_regular_file(allow_path, project)
+        allow_resolved, problem = safe_regular_file(allow_path, project)
         if allow_resolved is None:
             return invalid(f"allowlist {declared} {problem}")
         try:

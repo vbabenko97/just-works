@@ -38,11 +38,22 @@ def _path(project: str, session_id: str, agent_id: str) -> pathlib.Path:
     return paths.receipts_dir(project) / safe_session / f"{safe_agent}.json"
 
 
+# Fields a valid receipt must carry, beyond the identity keys checked by name below.
+# An old-format receipt (issued before this schema existed) is missing every one of
+# these, and must be refused, not grandfathered in.
+MANDATORY_FIELDS = ("composition_schema", "contract_sha256", "contract_sources",
+                    "contract_bytes", "plugin_revision")
+
+
 def issue(project: str, payload: dict, contract_version: str,
-          contract_bytes: int, source: str) -> pathlib.Path | None:
+          composed) -> pathlib.Path | None:
     """Record delivery. Returns the receipt path, or None if it could not be written
-    — the caller does not fail on that, because the missing receipt is itself the
-    enforcement."""
+    or the contract could not be composed — the caller does not fail on that,
+    because the missing receipt is itself the enforcement. Never issue a receipt for
+    a contract that failed to compose: that would make a failure look like proof of
+    delivery."""
+    if not getattr(composed, "ok", False):
+        return None
     try:
         target = _path(project, payload.get("session_id", ""),
                        payload.get("agent_id", ""))
@@ -53,8 +64,10 @@ def issue(project: str, payload: dict, contract_version: str,
             "agent_id": payload.get("agent_id"),
             "agent_type": payload.get("agent_type"),
             "contract_version": contract_version,
-            "contract_bytes": contract_bytes,
-            "contract_source": source,
+            "composition_schema": composed.schema,
+            "contract_sources": list(composed.sources),
+            "contract_bytes": len(composed.text),
+            "contract_sha256": composed.digest,
             "plugin_revision": paths.installed_revision(),
             "issued_at": int(time.time()),
         }, indent=2) + "\n")
@@ -63,15 +76,26 @@ def issue(project: str, payload: dict, contract_version: str,
         return None
 
 
-def verify(payload: dict, project: str, contract_version: str) -> tuple[bool, str]:
+def verify(payload: dict, project: str, contract_version: str,
+          composed) -> tuple[bool, str]:
     """(ok, reason). Every failure mode gets a distinct reason: a refusal nobody can
-    diagnose gets switched off, which is worse than not having it."""
+    diagnose gets switched off, which is worse than not having it.
+
+    `composed` is the contract as it exists *right now*, recomputed by the caller at
+    verify time — not what it was when the receipt was issued. A receipt is only as
+    good as its match against the current state, which is what makes mutation after
+    issuance, and mutation after a prior successful call, both get caught here."""
     session_id = payload.get("session_id")
     agent_id = payload.get("agent_id")
     agent_type = payload.get("agent_type")
     if not session_id:
         return (False, "the payload carries no session_id, so no receipt can be "
                        "matched to it")
+
+    if not getattr(composed, "ok", False):
+        error = getattr(composed, "error", "unknown")
+        return (False, f"the current contract cannot be composed ({error}); no "
+                       f"receipt can be valid while that is true")
 
     target = _path(project, session_id, agent_id or "")
     if not target.is_file():
@@ -96,6 +120,19 @@ def verify(payload: dict, project: str, contract_version: str) -> tuple[bool, st
     if contract_version and data.get("contract_version") != contract_version:
         return (False, f"the receipt is for contract {data.get('contract_version')}, "
                        f"and the current contract is {contract_version}")
+
+    for field in MANDATORY_FIELDS:
+        if not data.get(field):
+            return (False, f"the receipt has no {field} (issued before digest "
+                           f"verification existed, or corrupted); it cannot be "
+                           f"trusted against the current contract")
+    if data.get("contract_sha256") != composed.digest:
+        return (False, "the receipt's contract digest does not match the currently "
+                       "composed contract; the content changed since delivery")
+    if data.get("composition_schema") != composed.schema:
+        return (False, f"the receipt's composition schema "
+                       f"({data.get('composition_schema')}) differs from the "
+                       f"current one ({composed.schema})")
 
     issued = data.get("issued_at")
     if not isinstance(issued, int):

@@ -316,10 +316,25 @@ directory with **no** manifest, where the policy layer is inactive:
 cd $(mktemp -d)
 rev=$(basename ~/.claude/plugins/cache/just-works/reliability/*/ | tail -1)
 for t in test_policy_states test_monotonic test_optional_policy test_distribution \
-         test_auth test_gate test_receipts test_bash_corpus test_manifest_commands; do
+         test_auth test_gate test_receipts test_bash_corpus test_manifest_source \
+         test_manifest_cache_parity test_contract_composition test_stop_gate \
+         test_universal_receipt_gate test_agent_definitions; do
   python3 ~/.claude/plugins/cache/just-works/reliability/$rev/tests/$t.py || echo "FAILED: $t"
 done
 ```
+
+`test_manifest_cache_parity.py` in that loop runs in default (pre-install-tolerant) mode: an
+absent or stale install is a printed deployment-state line, not a failure, so the loop above
+is not itself proof the ship took. This step is post-commit, so require it to be current:
+
+```
+python3 ~/.claude/plugins/cache/just-works/reliability/$rev/tests/test_manifest_cache_parity.py \
+  --require-current || echo "FAILED: test_manifest_cache_parity --require-current"
+```
+
+This must print `deployment state: CURRENT`. `STALE` or `NOT_INSTALLED` here is a real
+deployment bug — push, `claude plugin marketplace update just-works`, `claude plugin update
+reliability@just-works`, restart, and rerun before trusting anything else in this section.
 
 The suites run from the installed cache path, not the checkout, so acceptance tests the
 copy that is actually enforcing. Confirm from the trace that `executing_file` is under

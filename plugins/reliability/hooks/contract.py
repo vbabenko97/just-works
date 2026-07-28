@@ -37,21 +37,33 @@ def main() -> int:
     cwd = payload.get("cwd") or os.getcwd()
     project = os.environ.get("CLAUDE_PROJECT_DIR") or cwd
     pol = policy_mod.load(project)
-    text, source = paths.contract_text(project, pol)
+    composed = paths.compose_contract(project, pol)
 
     written = None
-    if receipts.is_subagent(payload):
-        written = receipts.issue(project, payload, pol.contract_version,
-                                 len(text), source)
+    if receipts.is_subagent(payload) and composed.ok:
+        written = receipts.issue(project, payload, pol.contract_version, composed)
 
     observe.record("SubagentStart", payload, project, policy=pol.state,
-                   contract_source=source, contract_bytes=len(text),
+                   contract_ok=composed.ok,
+                   contract_source="+".join(composed.sources) if composed.ok else "",
+                   contract_bytes=len(composed.text), contract_error=composed.error,
                    receipt=str(written) if written else None)
 
-    if text:
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "SubagentStart",
-            "additionalContext": text}}))
+    if composed.ok:
+        context_text = composed.text
+    else:
+        # No placeholder pretending to be contract content, and — critically — no
+        # receipt was issued above, so the very next gated tool call denies on "no
+        # contract receipt". This text only explains why, it grants nothing.
+        context_text = (
+            f"[reliability] Contract delivery failed: {composed.error}. No valid "
+            f"receipt was issued. Every gated tool call will be denied until this "
+            f"is fixed and a new subagent is started. Report this to whoever is "
+            f"reading your output; do not attempt to route around it.")
+
+    print(json.dumps({"hookSpecificOutput": {
+        "hookEventName": "SubagentStart",
+        "additionalContext": context_text}}))
     return 0
 
 
