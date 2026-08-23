@@ -193,6 +193,8 @@ themes and lessons, and store them in [X]. Make sure you know to reference [X] f
 future use.
 ```
 
+In Claude Code specifically, automatic memory now captures work and preference lessons on its own — reserve explicit memory-system instructions for custom harnesses and API-level agents.
+
 ### Explicit Self-Verification
 
 Make self-verification explicit in long-run prompts. Separate, fresh-context verifier subagents tend to outperform self-critique:
@@ -262,10 +264,10 @@ Add this tool whenever your UX depends on delivering content or direct user inte
 
 ## Carried-Over Fundamentals
 
-Cross-model practices that still apply on Fable 5 — condensed; full treatment in the prompting best-practices doc and `opus-4-8-prompting`:
+Cross-model practices that still apply on Fable 5 — condensed; full treatment in the prompting best-practices doc and `opus-5-prompting`:
 
 - **Explicit instructions with motivation.** State scope explicitly; a rule with a reason is followed more consistently.
-- **XML tags** for unambiguous separation of instructions, context, examples, and inputs. 3-5 precise examples; every example is a pattern the model may reproduce.
+- **XML tags** for unambiguous separation of instructions, context, examples, and inputs. Prefer expressive interfaces (tool parameters, schemas, rubrics) over usage examples — examples constrain exploration on this generation; where format-pinning examples are needed, keep 3-5 precise ones, since every example is a pattern the model may reproduce.
 - **Long context**: documents at the top, query at the end; ground answers in extracted quotes.
 - **Calm tool language.** `Use this tool when...` — not `CRITICAL: You MUST...`. Aggressive markers overcorrect.
 - **No prefills.** Last-assistant-turn prefill returns 400. Use Structured Outputs or "Respond with a JSON object only. No preamble or explanation."
@@ -293,6 +295,7 @@ Source: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallb
 - **Refactor existing prompts and skills.** Skills developed for prior models are often too prescriptive for Fable 5 and can degrade output quality. Remove older instructions if default performance is better. Fable 5 also updates skills on the fly based on what it learns from the task at hand.
 - **Don't instruct Claude to reproduce its reasoning in the response** — triggers `reasoning_extraction` refusals.
 - **Create a send-to-user tool** for long, asynchronous agents.
+- **Hand Fable 5 rich references.** Code-based specs, test suites, rubrics, and artifacts steer it with higher fidelity than markdown descriptions of the same intent.
 
 ## Prompt Migration Checklist
 
@@ -314,7 +317,7 @@ Source: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallb
 
 ### From Opus 4.7 or older
 
-Apply the migration checklists in `opus-4-8-prompting` first (adaptive thinking, sampling-parameter removal, prefill replacement, aggressive-language softening), then the Fable 5 steps above.
+Apply the "From Opus 4.7 or older" checklist in `opus-5-prompting` first (parameter-level thinking, sampling-parameter removal, prefill replacement, aggressive-language softening), then the Fable 5 steps above.
 
 ## Anti-Patterns
 
@@ -339,3 +342,4 @@ Apply the migration checklists in `opus-4-8-prompting` first (adaptive thinking,
 - Adaptive thinking: https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking
 - Refusals and fallback: https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback
 - Models overview: https://platform.claude.com/docs/en/about-claude/models/overview
+- Context engineering for Claude 5-generation models: https://claude.com/blog/the-new-rules-of-context-engineering-for-claude-5-generation-models
