@@ -19,7 +19,7 @@ Just copy `.claude/` into any project — or install globally — and get pre-co
 **Agents** — file-type-triggered writers (`python`, `typescript`, `swift`, `csharp`, `react`), plus `prompt-writer`, `diagrammer`, and `ticket-creator`. 9 per provider.
 **Commands** — `project-docs` and `git-sync` (Claude & Codex), `plan-reviewer` (Codex).
 
-**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` checklist critique), model-specific prompt engineering (Claude Opus 5 & Fable 5, GPT-5.6, Gemini 3, Grok 4.5), and behavioral modes (`minimal-coding` for least-code solutions). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
+**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` checklist critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` information-preserving compression), model-specific prompt engineering (Claude Opus 5 & Fable 5, GPT-5.6, Gemini 3, Grok 4.5), and behavioral modes (`minimal-coding` for least-code solutions). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
 
 **Security** — `settings.json` blocks agent access to `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and databases.
 
