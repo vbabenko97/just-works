@@ -19,6 +19,9 @@
     "tests/reliability/test_owner_policy.py": "c89eaeb6a879f84de339adaf57c1d89af7b41ae9739cfd5104c7e74988995820",
     "tests/reliability/test_plan_apply_drift.py": "0c782ea010b7f6feebcf858064cfa83ac60b88cd246750321fd4a2b1d064e365",
     "tests/reliability/test_maintenance_auth.py": "dbf6e19552d16700a06cbc187a248b001822b6253f92856f100958298a43fadc",
-    "tests/install/test_personal_guard.py": "f84a107a19ba5d2379baf3466a1b4a0665f505a7163badb3098411899c6b7601"
+    "tests/install/test_personal_guard.py": "f84a107a19ba5d2379baf3466a1b4a0665f505a7163badb3098411899c6b7601",
+    ".claude/skills/msca-pf-european-2026/scripts/audit_text_bundle.py": "89db9373521978ab85e013673ee28bd441090b8250b5c7dc6802500502623284",
+    ".codex/skills/msca-pf-european-2026/scripts/audit_text_bundle.py": "89db9373521978ab85e013673ee28bd441090b8250b5c7dc6802500502623284"
+
   }
 }
