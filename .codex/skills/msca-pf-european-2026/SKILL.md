@@ -8,6 +8,7 @@ description: Draft, review, red-team, and final-audit Horizon Europe MSCA Postdo
 ## When NOT to use
 
 - Evaluator-style scoring, score-loss mapping, and repair prioritization of an existing draft — use `msca-pf-2026-reviewer` (this skill's reviewer pair), which owns the critique and output format. The REVIEW workflow below is the fallback for when that skill is unavailable or when review is one mode inside a larger drafting session.
+- Line-level voice work on text that already exists — de-AI-ing, naturalizing, or compressing prose to B2-C1 register without changing the proposal's substance — use `msca-text-humanizer`.
 - Non-MSCA funding applications, or MSCA calls other than the 2026 Postdoctoral Fellowship.
 
 ## Operating principle
