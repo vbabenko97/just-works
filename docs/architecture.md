@@ -20,16 +20,15 @@ Two parallel provider directories plus distribution scaffolding:
 - `flutter-code-writer` (Dart/Flutter)
 - `prompt-writer` (Fable, Opus, GPT, Gemini)
 - `diagrammer` (PlantUML)
-- `ticket-creator` (ClickUp MCP)
 
-**Skills** (`.claude/skills/`, `.codex/skills/`) — 22 mirrored skill directories: coding standards per language, architecture patterns (DDD, feature-driven), model-specific prompting (`fable-5-prompting`, `opus-5-prompting`, `gpt-5-6-prompting`, `gemini-3-prompting`), domain skills (`ticket-writing`, `clickup-tickets`, `sprint-estimation`, `plantuml-diagramming`, `rest-api`), and behavioral modes (`caveman`, `minimal-coding`).
+**Skills** (`.claude/skills/`, `.codex/skills/`) — 56 skill directories in the Claude root, a subset mirrored for Codex: coding standards per language, architecture patterns (DDD, feature-driven), model-specific prompting (`fable-5-prompting`, `opus-5-prompting`, `gpt-5-6-prompting`, `gemini-3-prompting`), ML and document work (`ml-system-design`, `ml-system-design-review`, `ai-stage-gate`, `lossless-doc-compress`), grant writing (`msca-pf-european-2026`, `msca-pf-2026-reviewer`, `msca-text-humanizer`), personal finance, domain skills (`ticket-writing`, `sprint-estimation`, `plantuml-diagramming`, `rest-api`), and behavioral modes (`caveman`, `minimal-coding`).
 
 **Commands** (`.claude/commands/`, `.codex/prompts/`) — multi-phase workflows:
 - `project-docs` — 5-phase documentation pipeline (Detect → Explore → Synthesize → Write → Verify)
 - `git-sync` — sync repos and submodules to default branch
 - `plan-reviewer` — Codex-only, reviews plans authored by Claude Opus
 
-Dependency direction: Agents → Skills (declared in agent frontmatter). Commands → Agents and Skills (referenced in command prompts). Skills may compose (`clickup-tickets` pairs with `ticket-writing`). No reverse dependencies.
+Dependency direction: Agents → Skills (declared in agent frontmatter). Commands → Agents and Skills (referenced in command prompts). Skills may compose (`sprint-estimation` pairs with `ticket-writing`; `ml-system-design` pairs with `ml-system-design-review`). No reverse dependencies.
 
 ## Data Flow
 

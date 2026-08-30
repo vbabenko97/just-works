@@ -1,6 +1,6 @@
 ---
 name: ticket-writing
-description: Apply when writing, rewriting, or reviewing issue-tracker tickets (Jira, Linear, ClickUp, GitHub Issues, Asana). Covers titles, sections per type (PBI / Bug / Spike / Discovery), acceptance-criteria formats, bug reproduction fields, INVEST, linking, and common anti-patterns. Tool-agnostic. Project conventions always override these defaults.
+description: Apply when writing, rewriting, reviewing, or filing issue-tracker tickets (Jira, Linear, ClickUp, GitHub Issues, Asana). Covers titles, sections per type (PBI / Bug / Spike / Discovery), acceptance-criteria formats, bug reproduction fields, INVEST, linking, native-field discipline, tracker introspection, update-vs-create, and common anti-patterns. Tool-agnostic. Project conventions always override these defaults.
 ---
 
 # Ticket Writing
@@ -23,6 +23,11 @@ These are unconditional. They prevent ambiguity, lost provenance, and wasted tri
 - **Never block work on a dependency without linking the blocker.** If ticket A can't start until B ships, use a blocked-by link so the board and dependency tooling can surface it.
 - **Never create a ticket without checking that a similar one isn't already open.** Duplicates fragment discussion, split assignment, and waste triage. Search the target tracker by title keywords and by likely tags first. Surface near-matches to the requester and let them decide: dedupe, link as relates-to, or proceed.
 - **Never include a section, field, or value the user didn't request or you haven't confirmed.** Required fields for the type get asked, not guessed (Spike's Timebox, Bug's Severity, Bug's Priority). Optional sections stay omitted unless the user supplies the content (Out of scope, Open questions, Attachments, Links). Inventing values to match a template pollutes the ticket with content the user must re-check, and erodes trust that the body reflects their intent.
+- **Never put a structured attribute in the body when the tracker has a native field for it.** Due dates, start dates, owners, priority, effort, parent, and blocked-by all have fields. A date in prose is dead data; the same date in a native field drives reminders, filters, and dependency views.
+- **Never auto-fill a field the user didn't specify.** Priority, due date, assignees, labels, sprint, status, estimate, parent, custom fields. If the user didn't say, ask. The user can't distinguish your guess from their input and ends up auditing every field. Only exception: the user explicitly grants discretion ("use your judgment", "you decide").
+- **Never create a ticket without at least one assignee** unless the user says there isn't one yet. Unowned tickets drift.
+- **Never guess the target list, board, or project — or any ID.** Ticket IDs, list IDs, user IDs, and custom-field IDs come from discovery or from the user. Asking is cheaper than filing in the wrong place.
+- **Never overwrite an existing ticket's body on update.** Append under a dated marker (`--- update 2026-04-20 ---`). Single-valued fields (priority, assignee, due date, status) are safe to overwrite; narrative is not.
 
 ## Vocabulary
 
@@ -66,6 +71,51 @@ Aim for under ~70 characters when possible — that's the width where titles sta
 - **Capitalize proper nouns** — environment names (`Prod`, `Stage`, `Dev`), browser names (`Chrome`, `Firefox`, `Safari`), OS names (`Windows`, `macOS`), service and team names (`Platform`, `AI backend`, `Ops`), vendor names (`AWS`, `Slack`), and standard acronyms (`API`, `URL`, `HTTP`).
 - **Length** — 200–300 words is a reasonable soft target for PBIs and Bugs. Spikes and Discovery tickets may run longer when framing demands it. Shorter is fine when the problem is genuinely simple. Length is an artifact of clarity, not a goal.
 - **Code, logs, error messages** — fenced code blocks for verbatim multi-line content; inline backticks for short identifiers. Don't paraphrase error messages; quote them exactly.
+
+## Fields vs body
+
+Every tracker splits a ticket into native fields and a narrative body. The body is for prose a human reads; fields are for data the tool acts on.
+
+| Attribute | Goes in | Not in |
+|-----------|---------|--------|
+| Due date, start date | The date field | Body prose ("Due: 25 Apr") |
+| Priority | The priority field | Body ("Priority: High") |
+| Owner | The assignee field | Body ("Assigned to: Kostia") |
+| Blocks / blocked-by | A dependency link | Body ("Blocked by: TASK-123") |
+| Relates to | A linked-ticket reference | Body ("Related to: TASK-123") |
+| Parent / epic | The parent field or sub-task relationship | Body ("Parent: EPIC-5") |
+| Sprint membership, story points | The native field, else the team's established label convention | Body |
+| Effort estimate | The estimate field | Body |
+| Attachment | A real file upload | A URL pasted into prose |
+
+Rule: if it's searchable, filterable, sortable, or automatable, it belongs in a field. One deliberate exception — Bug severity has no native field in most trackers, so it stays in the body while priority goes to the field.
+
+**Priority is a triage verdict, not a default.** Unset means "not yet triaged", which is real information. Setting the middle value (`normal`, `medium`) without a triage decision destroys that signal. Leave it unset until someone decides.
+
+## Working in a tracker
+
+**Introspect before filing in an unfamiliar list.** Discover, once per list per session: available statuses (each board defines its own — don't set one that doesn't exist), existing labels and their conventions, custom fields and their types, and how to resolve member names to users. Reuse the conventions you find exactly; don't invent a variant of an existing pattern. If a concept the user mentioned has no existing convention, ask rather than inventing one.
+
+**Update vs create.** Update when the user says "update", "edit", "append", "fix this ticket", or supplies a ticket URL or ID. Create when they say "create", "add", "new ticket", "file a bug".
+
+**Prefer typed fields over free text.** URL, Date, Email, Number, and Dropdown fields preserve sort, filter, and automation. A date in a text field is a string.
+
+**When you can't write to the tracker** — no integration, no credentials, or the user wants to paste it themselves — output the body plus an explicit field summary so nothing is silently dropped:
+
+```
+**List / project:** <name or id>
+**Assignees:** <names>
+**Priority:** <level, or "unset — not triaged">
+**Due date:** <YYYY-MM-DD or none>
+**Labels:** <comma-separated>
+**Parent:** <id or none>
+**Blocked by:** <ids>
+**Relates to:** <ids>
+---
+<ticket body>
+```
+
+Surface every field, including the empty ones. An omitted field reads as "not applicable" when it usually means "not yet decided".
 
 ## PBI (Product Backlog Item)
 
@@ -160,7 +210,7 @@ Enough detail to reproduce:
 
 **Priority** — business urgency to fix: Urgent (before other work) / High (current sprint) / Medium (next sprint or two) / Low (when convenient).
 
-Severity and priority are independent. A homepage typo during a product launch is Trivial severity + Urgent priority. A crash in a dev-only admin tool is Blocker severity + Low priority. Severity has no native tracker field and stays in the body; priority, when the tracker has a native field (see `clickup-tickets`), is set there rather than duplicated in the body.
+Severity and priority are independent. A homepage typo during a product launch is Trivial severity + Urgent priority. A crash in a dev-only admin tool is Blocker severity + Low priority. Severity has no native tracker field and stays in the body; priority, when the tracker has a native field, is set there rather than duplicated in the body. See Fields vs body.
 
 **Attachments** (when relevant)
 Screenshot, screen recording, log excerpt, HAR file. Redact PII before attaching.
@@ -280,6 +330,11 @@ Skip formal DoR if refinement conversations already cover these items. The check
 - **Stories treated as full specification documents** — three pages of prose for a two-day change. Tickets are conversation starters; use docs for deep specs and link them.
 - **Filing without a duplicate search** — filing a near-duplicate fragments the discussion, splits the work, and signals weak hygiene. Search first; surface candidates to the requester before creating.
 - **Inventing values to look complete** — filling Severity, Priority, Timebox, Out of scope, or any other field with a guess so the ticket "feels finished". The user can't tell guess from confirmed and ends up re-checking everything. Ask, or omit.
+- **Body-stuffing** — "Due: Apr 25. Blocked by TASK-123. Assigned to Kostia." Every one of those has a native field. See Fields vs body.
+- **Defaulting priority to the middle value** — makes untriaged tickets indistinguishable from deliberately-medium ones. Leave unset until triage.
+- **Sub-task used as a dependency** — sub-tasks mean "part of", not "waits on". If B can't start until A ships, they're peer tickets with a blocked-by link, not parent and child.
+- **Inventing a label** — reuse the board's existing convention exactly, or ask. A near-miss variant (`sprint-12` next to `sprint:12`) splits every filter that depends on it.
+- **Overwriting a body on update** — history matters. Append under a dated marker.
 
 ## Rewrite examples
 

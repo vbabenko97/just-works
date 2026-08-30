@@ -1,6 +1,6 @@
 ---
 name: sprint-estimation
-description: Apply when the user explicitly asks to estimate a task ("how many points", "estimate this") or when a ticket-creation flow explicitly requests story points. Provides a calibration framework for assigning accurate Fibonacci story points (1–13) based on work volume, complexity, uncertainty, and risk. Triggers context gathering (code exploration, clarifying questions) before committing to a point value. Pairs with ticket-writing for body content and clickup-tickets for field discipline. Project conventions always override these defaults.
+description: Apply when the user explicitly asks to estimate a task ("how many points", "estimate this") or when a ticket-creation flow explicitly requests story points. Provides a calibration framework for assigning accurate Fibonacci story points (1–13) based on work volume, complexity, uncertainty, and risk. Triggers context gathering (code exploration, clarifying questions) before committing to a point value. Pairs with ticket-writing for body content and field discipline. Project conventions always override these defaults.
 ---
 
 # Sprint Estimation
@@ -68,7 +68,7 @@ Factors: volume [L/M/H], complexity [L/M/H], uncertainty [L/M/H], risk [L/M/H]
 
 **When creating a ticket that requests points** (used alongside ticket-writing):
 
-Route the value to the tracker's native field when one exists — in ClickUp, the native `points` field or the Space's discovered tag convention per `clickup-tickets`, never the description. Only when the tracker has no native points field, include `**Story points:** X` in the body. No separate estimation block needed — the work is internalized.
+Route the value to the tracker's native field when one exists — a native points field, or the board's discovered label convention per `ticket-writing`, never the body. Only when the tracker has no native points field, include `**Story points:** X` in the body. No separate estimation block needed — the work is internalized.
 
 ## ClickUp integration
 
