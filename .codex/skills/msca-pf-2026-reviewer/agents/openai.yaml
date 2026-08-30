@@ -1,0 +1,12 @@
+interface:
+  display_name: MSCA-PF 2026 Reviewer
+  short_description: Score, red-team, and prioritize fixes for European PF proposals.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

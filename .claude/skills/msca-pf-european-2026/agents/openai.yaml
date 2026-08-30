@@ -1,0 +1,12 @@
+interface:
+  display_name: MSCA-PF 2026 European
+  short_description: Draft, score, red-team, and submission-audit European PF proposals.
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true
