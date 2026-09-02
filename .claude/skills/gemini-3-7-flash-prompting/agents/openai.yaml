@@ -1,0 +1,4 @@
+interface:
+  display_name: Gemini 3.7 Flash Prompting
+  short_description: Design and migrate prompts for Gemini 3.7 Flash.
+  default_prompt: Create or review a Gemini 3.7 Flash prompt using the model contract, concise native-thinking guidance, and explicit verification.
