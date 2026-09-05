@@ -1,0 +1,6 @@
+interface:
+  display_name: "GPT-6 Prompting"
+  short_description: "Write and audit GPT-6 prompts with clear constraints"
+  default_prompt: "Use $gpt-6-prompting to improve this prompt while preserving its intent, language, and hard constraints."
+policy:
+  allow_implicit_invocation: false
