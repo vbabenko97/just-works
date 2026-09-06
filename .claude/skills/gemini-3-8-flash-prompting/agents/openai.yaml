@@ -1,0 +1,6 @@
+interface:
+  display_name: "Gemini 3.8 Flash Prompting"
+  short_description: "Create and refine prompts for Gemini 3.8 Flash"
+  default_prompt: "Use $gemini-3-8-flash-prompting to create or improve a prompt for my task, preserving my constraints and separating prompt text from any API settings."
+policy:
+  allow_implicit_invocation: false

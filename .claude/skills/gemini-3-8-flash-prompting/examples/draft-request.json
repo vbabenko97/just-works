@@ -1,0 +1,9 @@
+{
+  "model": "gemini-3.8-flash",
+  "store": false,
+  "system_instruction": "Write in the language requested by the user. Preserve supplied facts. Return only the requested deliverable.",
+  "input": "Draft a warm English email, 70 to 100 words, inviting a colleague to review a two-page design note. Leave the date as [DATE]. Do not invent a venue or an attachment.",
+  "generation_config": {
+    "thinking_level": "low"
+  }
+}
