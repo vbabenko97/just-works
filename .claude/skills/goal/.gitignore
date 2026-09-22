@@ -1,0 +1,5 @@
+# Local Codex bridge config — machine-specific paths, never committed.
+router.local.json
+
+# Run artifacts: JSONL stdout, stderr, final messages, reports.
+logs/

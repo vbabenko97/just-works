@@ -1,0 +1,23 @@
+{
+  "_comment": "Copy to router.local.json and edit. Never put secrets in this file — Codex auth comes from the CLI's own stored login, not from here. router.local.json should be gitignored.",
+
+  "backend_enabled": false,
+  "_backend_enabled_note": "Leave false until you have confirmed local Codex auth, which provider/account it bills, and that you accept sending this repo's code to a second provider. --run without this does nothing.",
+
+  "codex_executable": "/Users/vitaliibabenko/.nvm/versions/node/v24.12.0/bin/codex",
+  "_codex_executable_note": "Absolute path, deliberately pinned. PATH codex is 0.154.0; /Applications/ChatGPT.app/Contents/Resources/codex is a different build (0.155.0-alpha.9.2). They are not interchangeable — pick one.",
+
+  "repo_root": "/Users/vitaliibabenko/babenko-dev/just-works",
+
+  "model": "gpt-6-astra",
+  "effort": "high",
+  "_model_note": "Taken from the working ~/.codex/config.toml (model gpt-6-astra). That config's own default effort is 'ultra' and is left untouched; 'high' here applies only to this invocation via -c model_reasoning_effort.",
+
+  "profile": null,
+  "_profile_note": "Optional Codex profile name (-p). Leave null to use the default auth route. Do not point this at the Azure profile unless you intend to change both billing and where the code is processed.",
+
+  "timeout_seconds": 900,
+  "log_dir": "/Users/vitaliibabenko/babenko-dev/just-works/.claude/skills/goal/logs",
+
+  "provider_note": "ChatGPT subscription login (per `codex login status`), not an API key and not Azure"
+}
