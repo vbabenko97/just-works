@@ -161,6 +161,11 @@ databases.
 "absent from this file" does not by itself establish the effective values — Claude Code merges
 several settings scopes and the inherited environment.
 
+Both variables are read by the 2.1.280 binary, each with a user-facing refusal message. The depth
+variable sits beside `maxSubagentSpawnDepthFromGrowthBook`, so when it is unset the effective depth
+can be supplied by remote configuration — an argument for setting it explicitly rather than relying
+on a documented default.
+
 `/goal` dispatches from the main conversation (its `SKILL.md` declares no `context:` key), so its
 specialists sit at depth 1 and a depth-1 cap would not prevent them from spawning.
 
@@ -168,6 +173,29 @@ These are concurrency and nesting controls, **not** a spend guarantee: `/goal`'s
 delegated calls" is an instruction to the model rather than an enforced counter, there is no total
 session spawn limit, the concurrency limit has documented exceptions, and no cap spans Claude and
 Codex together.
+
+### Settings keys — one unrecognised key, verified
+
+Checked 2026-09-22 against the 2.1.280 binary and the schema this file declares
+(`json.schemastore.org/claude-code-settings.json`, 142 top-level properties). Of the 15 top-level
+keys in `.claude/settings.json`, 14 validate. One does not:
+
+| Key | Status | Evidence |
+|---|---|---|
+| `maxSkillDescriptionChars` | **not a setting** | absent from the schema; zero occurrences in the binary |
+| `skillListingMaxDescChars` | the real key | schema-present (`integer`, `default: 1536`); binary reads `Ye().skillListingMaxDescChars ?? 1536` |
+| `awaySummaryEnabled` | valid — keep | schema-present (`boolean`, `default: true`); 11 occurrences in the binary |
+| `skillListingBudgetFraction` | valid | schema-present (`number`, max 1, `default: 0.01`); `0.05` is in range |
+
+So `maxSkillDescriptionChars: 2048` has no effect and per-skill descriptions truncate at the 1536
+default. The schema sets `additionalProperties: true`, which is why validation never flagged it.
+
+An earlier note in this session also called `awaySummaryEnabled` unrecognised. That was wrong; the
+table above supersedes it.
+
+**Prepared, not applied:** rename the key in place and add the two subagent caps to the existing
+`env` object. Acceptance: `jq` confirms `skillListingMaxDescChars == 2048`, the old key is gone, and
+both caps read back — then a restart, since `env` is frozen at session launch.
 
 ### Supported surfaces
 
@@ -190,11 +218,11 @@ auth configuration unchanged.
 | 2026-09-22 | `6633a1c`, `ce7e828` | subagent depth/concurrency caps | **deferred** | Agreed in principle; to be set directly rather than by importing upstream's settings |
 | 2026-09-22 | 12 file deletions | remove Dart/Flutter/Python-architecture/sprint capabilities | **deferred** | Retirement is a separate decision; see the per-path table |
 | 2026-09-22 | `2766626`, `9a4e396` | migrate rtk hook to native invocation | **deferred** | Needs a coordinated settings + installed-hook change and a behaviour comparison |
-| 2026-09-22 | `3370412` | drop unrecognised settings keys; `~/`-anchored deny rules | **candidate — under review** | The deny-rule half is already present here; the unrecognised-key half may apply. See open items |
+| 2026-09-22 | `3370412` | drop unrecognised settings keys; `~/`-anchored deny rules | **adapted — patch prepared, not applied** | Deny-rule half already present (5 `Read(~/…)` rules). Unrecognised-key half applies to exactly one key here; upstream's diff touches keys this fork does not have, so the fix is re-derived rather than imported. See "Settings keys" |
 | 2026-09-22 | `a31e42c` | add `synthetic-user-research` skill | **deferred** | No identified need |
 | 2026-09-22 | `1836546` | change `minimal-coding` trigger | **deferred** | Behaviour change; evaluate against `/goal` routing |
 | 2026-09-22 | `180677a` | statusline rewrite | **deferred** | Adopt only if it fixes an actual problem |
 | 2026-09-22 | `78521a7` | remove ClickUp MCP server | **deferred** | Separate decommissioning decision |
 | 2026-09-22 | `18d672d`, `6e81e71`, `523c880`, others | pruning, docs, skill removals | **deferred** | Reviewed, nothing required here |
 
-**Batch status: reviewed, zero imported.**
+**Batch status: reviewed. Zero imported; one adapted (`3370412`), prepared but not yet applied.**
