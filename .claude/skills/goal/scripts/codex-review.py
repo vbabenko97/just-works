@@ -61,8 +61,14 @@ def load_config(path: Path) -> dict:
     if not root.is_dir():
         raise RunnerError(f"repo_root is not a directory: {root}")
 
-    if not isinstance(cfg["timeout_seconds"], int) or cfg["timeout_seconds"] <= 0:
+    # bool is an int subclass, so `true` would otherwise pass as a 1-second timeout.
+    if isinstance(cfg["timeout_seconds"], bool) or not isinstance(cfg["timeout_seconds"], int) or cfg["timeout_seconds"] <= 0:
         raise RunnerError("timeout_seconds must be a positive integer")
+
+    # Must be a real JSON boolean: bool("false") is True, so a quoted "false"
+    # would silently enable the backend while reading as disabled.
+    if not isinstance(cfg.get("backend_enabled", False), bool):
+        raise RunnerError('backend_enabled must be a JSON boolean (true/false), not a quoted string')
 
     for key in ("model", "effort"):
         if not isinstance(cfg[key], str) or not cfg[key].strip():
@@ -296,8 +302,13 @@ def main(argv: list[str] | None = None) -> int:
         argv_preview = build_argv(cfg, run_dir / "last-message.txt")
         enabled = bool(cfg.get("backend_enabled", False))
 
-        if not args.run or not enabled:
-            reason = "no --run flag" if not args.run else "backend_enabled is false in config"
+        if args.dry_run or not args.run or not enabled:
+            if args.dry_run:
+                reason = "--dry-run given (overrides --run)"
+            elif not args.run:
+                reason = "no --run flag"
+            else:
+                reason = "backend_enabled is false in config"
             report = {
                 "mode": "dry-run",
                 "inference": "none",

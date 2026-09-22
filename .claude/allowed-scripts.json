@@ -22,7 +22,7 @@
     "tests/install/test_personal_guard.py": "f84a107a19ba5d2379baf3466a1b4a0665f505a7163badb3098411899c6b7601",
     ".claude/skills/msca-pf-european-2026/scripts/audit_text_bundle.py": "89db9373521978ab85e013673ee28bd441090b8250b5c7dc6802500502623284",
     ".codex/skills/msca-pf-european-2026/scripts/audit_text_bundle.py": "89db9373521978ab85e013673ee28bd441090b8250b5c7dc6802500502623284",
-    ".claude/skills/goal/scripts/codex-review.py": "e6e58d923c565eb126ee43f1cc4e6d38f75e7f6b90e95f9064c750992c2246fa",
+    ".claude/skills/goal/scripts/codex-review.py": "cd68bb07b906e62abc5149af198f42a90a45768a4c8cd9ff8db1c3c35c4387ae",
     "tests/goal/run-tests.py": "81c1bfcf0410bf40c6d2cb4c73f43227a386ed7dc6b33c4c22a6f5a49a6de3e1",
     "tests/goal/fake-codex.py": "21334f82fb20a3f84e9db8fb98525c90ee3801ba2ea3436080293b01420e2935"
   }
