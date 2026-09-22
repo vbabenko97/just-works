@@ -19,7 +19,7 @@
 |---|---|---|---|---|
 | Architect | `claude-fable-5-1` | xhigh | Read, Glob, Grep | 12 |
 | Implementer | `claude-opus-5-5` | medium | Read, Glob, Grep, Edit, Write, Bash | 24 |
-| Security | `claude-opus-5-5` | max | Read, Glob, Grep | 12 |
+| Security | `claude-opus-5-5` | xhigh | Read, Glob, Grep | 12 |
 | Codex reviewer | `gpt-6-astra` | high | read-only sandbox | — |
 
 Models are set by the `model:` frontmatter field, not by the agent's name or by telling it what it is.
@@ -92,7 +92,7 @@ The first should stay in the main session with no delegation at all. The second 
 
 ## Known limitations
 
-- Effort `max` on the security role follows the task spec. Claude Code's settings schema tops `effortLevel` out at `xhigh`, so confirm `max` is accepted in agent frontmatter on your first real run.
-- `claude-fable-5-1` availability on this account has not been verified — it is listed as current in Anthropic's docs, but presence in a config or catalogue is not proof of access.
+- Effort is `xhigh` everywhere except the implementer. `max` exists and is accepted, but the top of the range earns its cost only where measurement shows headroom at `xhigh` — escalate deliberately for a specific audit rather than standing.
+- Opus 5.5 requires Claude Code 2.1.280+. A host pinned to an older build (for example an IDE extension shipping its own binary) rejects the implementer and security roles with a 400, regardless of local config.
 - The implementer holds `Bash`, so its "do not launch other CLIs" boundary is an instruction, not enforced isolation.
 - Concurrent editing is unsupported. It would need separate worktrees and explicit integration.

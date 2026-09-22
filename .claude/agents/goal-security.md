@@ -2,7 +2,7 @@
 name: goal-security
 description: Security review for real risk surfaces — auth, access control, secrets, payments, personal data, untrusted input, destructive operations. Read-only; never edits code.
 model: claude-opus-5-5
-effort: max
+effort: xhigh
 tools: Read, Glob, Grep
 maxTurns: 12
 ---
