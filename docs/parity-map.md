@@ -30,6 +30,26 @@ MUST_ALLOW cases copied case by case, including the three historical false posit
 the loop variable named `ln`, the word `patch` appearing as search data, and the
 unexpanded `$CLAUDE_PROJECT_DIR` in a script path that must *stay* refused.
 
+**Open, not yet in the corpus (observed 2026-09-26):** the same class as `patch`. The
+read-only `ls tests/install/*.py` is refused with "mutation with a target set this gate
+cannot bound: glob", because `\binstall\b` in `MUTATORS` (`plugins/reliability/hooks/rules.py:68`) matches
+the path segment and the glob then trips `UNBOUNDED`. Controls: `ls tests/goal/*.py` and
+`ls tests/install/` both pass. Any command naming a path containing `install` next to a
+glob — `install.sh` with `*.py` in one line, for instance — is refused the same way.
+Recorded only; the rule is unchanged.
+
+**Also observed 2026-09-26, policy layer.** A session judges every command by its own
+project's policy: `guard_bash.py:49-50` takes the project from `CLAUDE_PROJECT_DIR`,
+the policy is loaded from it (`engine.py:46`), and a `cd` inside the command is not
+followed. From a just-works session, commands run in another repository are held to
+this repository's policy. That fails closed — following a `cd` would let a command
+step outside the policy — so work on another repository from a session opened there.
+Inside that behaviour sits one defect: `deno` is listed as an interpreter
+(`policy.py:77-78`) and only `run` is skipped before the script argument
+(`policy.py:401-405`), so `deno fmt`, `deno lint` and `deno check`, which execute
+nothing, are refused as the unreviewed scripts `fmt`, `lint` and `check`. `deno test`
+executes local code and is refused correctly. Recorded only; the rules are unchanged.
+
 The fixture mirrors this repository's policy — a valid manifest and an allowlist
 pinning the same reviewed scripts by hash — because that is the configuration the
 original verdicts were recorded under.
