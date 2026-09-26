@@ -245,10 +245,19 @@ the source, `diff -r` against both copies, copy over, and repeat the verificatio
 name the scripts reference (`scenario-blender-expert`, `scenario-blender-sculpting`) exists here.
 Not verified: GUI-only paths (`bx_gui` strokes over a live bridge) and the per-domain workflows.
 
-**Open — reliability gate does not cover `blender -P`.** The policy layer's script check runs for `source`,
-shells, `INTERPRETERS`, and command heads that look like scripts
+**Accepted (2026-09-26, owner) — reliability gate does not cover `blender -P`.** The policy layer's
+script check runs for `source`, shells, `INTERPRETERS`, and command heads that look like scripts
 (`plugins/reliability/hooks/policy.py:314-411`); `blender` matches none, and no rule in the plugin names
 it, so `blender -b --python <any file>` in this repo runs without an allowlist check — the
-Write-then-run path the allowlist closes for `python3`. The Blender skills depend on that
-invocation, so adding `blender` to `INTERPRETERS` would block them in this repo. Owner decision; no
-change made.
+Write-then-run path the allowlist closes for `python3`. Left as is because:
+
+1. The allowlist is repository policy and only this repo carries one; elsewhere `python3 x.py` is
+   unchecked too, so `blender -P` opens nothing new where Blender work actually happens.
+2. The interpreter list is already incomplete: `/usr/bin/swift`, `/usr/bin/tclsh` and
+   `/usr/bin/jshell` are installed and absent from `INTERPRETERS` (`policy.py:77-78`). One more entry
+   would imply a completeness the list does not have.
+3. A bare `blender` entry misparses its flags: in the skills' own `--python-exit-code 1` invocation
+   the gate would take `1` as the script path and deny with a misleading reason.
+
+Revisit as one gate review covering every uncovered interpreter, with Blender-aware argument parsing
+and tests, not as a one-off entry.
