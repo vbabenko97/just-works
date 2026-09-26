@@ -8,20 +8,21 @@ Two parallel provider directories plus distribution scaffolding:
 - `.codex/` — OpenAI Codex agents, prompts, skills, config, hooks, plan-reviews
 - `bin/cli.mjs` — Node.js installer published as `npx @dynokostya/just-works`
 - `install.sh`, `install.bat` — shell installers for macOS/Linux and Windows
-- `src/evals/` — pytest eval harness validating skill files against frontier models
 - `CLAUDE.md` / `AGENTS.md` / `CLAUDE-CHAT.md` — shared behavioral guidelines at root
 - `.mcp.json` — per-project MCP server declarations (Playwright)
 
 ## Module Boundaries
 
-**Agents** (`.claude/agents/`, `.codex/agents/`) — 9 specialized agents per provider, file-type-triggered via `description` frontmatter:
+**Agents** (`.claude/agents/`, `.codex/agents/`) — 19 Claude and 16 Codex agents; the three Claude-only ones are the `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`). Writers are file-type-triggered via `description` frontmatter:
 - `python-code-writer`, `typescript-code-writer`, `swift-code-writer`, `csharp-code-writer`
 - `react-code-writer` (React/Tailwind/shadcn)
 - `flutter-code-writer` (Dart/Flutter)
 - `prompt-writer` (Fable, Opus, GPT, Gemini)
 - `diagrammer` (PlantUML)
 
-**Skills** (`.claude/skills/`, `.codex/skills/`) — 56 skill directories in the Claude root, a subset mirrored for Codex: coding standards per language, architecture patterns (DDD, feature-driven), model-specific prompting (`fable-5-prompting`, `opus-5-prompting`, `gpt-5-6-prompting`, `gemini-3-prompting`), ML and document work (`ml-system-design`, `ml-system-design-review`, `ai-stage-gate`, `lossless-doc-compress`), grant writing (`msca-pf-european-2026`, `msca-pf-2026-reviewer`, `msca-text-humanizer`), personal finance, domain skills (`ticket-writing`, `sprint-estimation`, `plantuml-diagramming`, `rest-api`), and behavioral modes (`caveman`, `minimal-coding`).
+The rest are task agents — `reviewer`, `test-runner`, `docs-agent`, `refactor-agent` — and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`).
+
+**Skills** (`.claude/skills/`, `.codex/skills/`) — 74 skill directories in `.claude/skills/` and 56 in `.codex/skills/`; the 47 present in both are identical, the rest are provider-only: coding standards per language, architecture patterns (DDD, feature-driven), model-specific prompting (`fable-5-prompting`, `opus-5-prompting`, `gpt-5-6-prompting`, `gemini-3-prompting`), ML and document work (`ml-system-design`, `ml-system-design-review`, `ai-stage-gate`, `lossless-doc-compress`), grant writing (`msca-pf-european-2026`, `msca-pf-2026-reviewer`, `msca-text-humanizer`), personal finance, domain skills (`ticket-writing`, `sprint-estimation`, `plantuml-diagramming`, `rest-api`), and behavioral modes (`caveman`, `minimal-coding`).
 
 **Commands** (`.claude/commands/`, `.codex/prompts/`) — multi-phase workflows:
 - `project-docs` — 5-phase documentation pipeline (Detect → Explore → Synthesize → Write → Verify)
@@ -42,11 +43,11 @@ Commands orchestrate multi-phase work: `project-docs` spawns three parallel `Exp
 
 ## Key Patterns
 
-- **Dual-provider mirror** — `.claude/` (Markdown with YAML frontmatter) and `.codex/` (TOML) hold parallel copies of the same agents and skills; Codex can't resolve `@file` references, so skills must be duplicated.
+- **Dual-provider mirror** — `.claude/` (Markdown with YAML frontmatter) and `.codex/` (TOML) hold parallel copies of the shared agents and skills; Codex can't resolve `@file` references, so a skill wanted in both is copied into both trees. The trees are not required to match: `/goal` and its three agents are Claude-only, and each side carries skills the other lacks.
 - **File-extension-triggered selection** — agent `description` fields declare target file types; the orchestrator matches on descriptions, not names.
 - **Skill composition** — agents stack multiple skills (e.g., `react-code-writer` loads `react-coding` + `tailwind-css-coding` + `shadcn-ui-coding`).
 - **Permission deny-list** — shipped `settings.json` blocks `.env`, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, and DB files.
-- **Evidence-gated documentation** — `project-docs` discards claims without source citations during verification.
+- **Evidence-gated documentation** — `project-docs` discards claims without source citations during verification. It does not check that a cited path exists: entries for a `src/evals/` harness, removed on 2026-09-26, cited files that were never committed.
 - **Personal vs default configs** — `settings.json` + `settings.json.default` pair, `config.toml` + `config.toml.default` pair; installer `--personal` flag picks the opinionated variants.
 
 ## Entry Points
@@ -56,8 +57,7 @@ Commands orchestrate multi-phase work: `project-docs` spawns three parallel `Exp
 - `.claude/commands/project-docs.md` — documentation pipeline
 - `.claude/commands/git-sync.md` — multi-repo branch sync
 - `.codex/prompts/plan-reviewer.md` — Codex plan review
-- `.claude/agents/*.md`, `.codex/agents/*.toml` — 9 specialized agents per provider
-- `src/evals/` — pytest harness for skill validation via OpenRouter
+- `.claude/agents/*.md`, `.codex/agents/*.toml` — 19 and 16 agents respectively
 
 ---
-*Generated: 2026-07-07 | Commit: ef80bb5*
+*Generated: 2026-07-07 | Commit: ef80bb5 · Corrected by hand 2026-09-26: agent and skill counts, mirroring, `src/evals/` removed (never committed)*
