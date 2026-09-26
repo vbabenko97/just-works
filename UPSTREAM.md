@@ -226,3 +226,29 @@ auth configuration unchanged.
 | 2026-09-22 | `18d672d`, `6e81e71`, `523c880`, others | pruning, docs, skill removals | **deferred** | Reviewed, nothing required here |
 
 **Batch status: reviewed. Zero imported; one adapted (`3370412`), prepared but not yet applied.**
+
+## Vendored third-party skills
+
+Copied verbatim into both `.claude/skills/` and `.codex/skills/`; no local edits. To refresh: clone
+the source, `diff -r` against both copies, copy over, and repeat the verification listed.
+
+| Skills | Source | Revision | License | Added in | Verified |
+|---|---|---|---|---|---|
+| `ai-stage-gate` | `ML-SystemDesign/MLSystemDesign` | `main`, SHA not recorded | MIT | `83d0f66` | — |
+| `lossless-doc-compress` | `ML-SystemDesign/MLSystemDesign` | `main`, SHA not recorded | MIT | `8acf4c7` | — |
+| `ml-system-design-review` | `ML-SystemDesign/MLSystemDesign` | `main`, SHA not recorded | MIT | `86b3e63` | — |
+| `scenario-blender-*` (13: router + 12 specialists) | `scenario-labs/skills`, `skills/dcc/blender/` (family `README.md` not copied) | `9624e295fa33` | MIT | 2026-09-26 | see below |
+
+**Blender family, verified 2026-09-26 on Blender 5.2.0 LTS** (upstream tested 5.2.1), headless with
+`--factory-startup` via `--python-expr`: all 15 `bx_*.py` modules import; `bx_audit.audit` and
+`bx_review.review` run on the default cube and the review sheet renders all rows and views; every skill
+name the scripts reference (`scenario-blender-expert`, `scenario-blender-sculpting`) exists here.
+Not verified: GUI-only paths (`bx_gui` strokes over a live bridge) and the per-domain workflows.
+
+**Open — reliability gate does not cover `blender -P`.** The policy layer's script check runs for `source`,
+shells, `INTERPRETERS`, and command heads that look like scripts
+(`plugins/reliability/hooks/policy.py:314-411`); `blender` matches none, and no rule in the plugin names
+it, so `blender -b --python <any file>` in this repo runs without an allowlist check — the
+Write-then-run path the allowlist closes for `python3`. The Blender skills depend on that
+invocation, so adding `blender` to `INTERPRETERS` would block them in this repo. Owner decision; no
+change made.
