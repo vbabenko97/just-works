@@ -1,8 +1,8 @@
 # just-works
 
-I am tired of manually prompting Claude Code each time to include all tools, best practices, aggressive language — that's why I created this repo.
-
 Drop-in AI agent workflows, coding skills, and prompt standards for **Claude Code** and **OpenAI Codex**.
+
+Fork of [dynokostya/just-works](https://github.com/dynokostya/just-works), maintained independently; upstream changes are reviewed and recorded in [UPSTREAM.md](UPSTREAM.md).
 
 Just copy `.claude/` into any project — or install globally — and get pre-configured agents, quality guardrails, and documentation pipelines out of the box.
 
@@ -25,95 +25,60 @@ Just copy `.claude/` into any project — or install globally — and get pre-co
 
 ## Installation
 
-Installs agents, skills, commands, and settings globally to `~/.claude/` and `~/.codex/`. Existing files get backed up automatically.
-
-> **For the best experience, add `--personal`** — installs my full opinionated config instead of the minimal defaults:
->
-> ```bash
-> curl -fsSL https://raw.githubusercontent.com/dynokostya/just-works/main/bootstrap.sh | bash -s -- --personal
-> ```
-
-### My `--personal` config vs default
-
-`--personal` swaps the minimal `*.default` files for my opinionated config:
-
-| | Default | `--personal` (my config) |
-|---|---|---|
-| Permissions | prompts for everything | `bypassPermissions` + safe read-only allow-list |
-| Security deny-list | empty | blocks reads of keys, credentials, lockfiles, build dirs |
-| Model / effort | Claude Code defaults | `best` model + `max` effort (main agent & subagents) |
-| Output style | `default` | `Compressed` (fewer tokens) |
-| Codex | model + basic status line | `workspace-write` sandbox, no approval prompts, MCP server (Playwright) |
-| Hooks (Claude) | none | completion sounds |
-
-**One `--personal` hook needs extra setup to work:**
-
-- **Completion sounds** use `afplay` + `/System/Library/Sounds/Glass.aiff`, which are **macOS-only**. On Linux/Windows the notification hooks fail silently (no sound) — swap `afplay` for your player (`paplay`/`aplay` on Linux), or remove the hook.
-
-### Quick install (recommended)
-
-One-liner, no Node.js required. Needs `curl` and `tar` (preinstalled on macOS/Linux).
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/dynokostya/just-works/main/bootstrap.sh | bash
-```
-
-With flags:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/dynokostya/just-works/main/bootstrap.sh | bash -s -- --personal
-curl -fsSL https://raw.githubusercontent.com/dynokostya/just-works/main/bootstrap.sh | bash -s -- --dry-run
-```
-
-Pin to a specific version:
-
-```bash
-JUST_WORKS_REF=v1.1.3 curl -fsSL https://raw.githubusercontent.com/dynokostya/just-works/main/bootstrap.sh | bash
-```
-
-To update: re-run the same command.
-
-### Via npm
-
-Requires [Node.js](https://nodejs.org/) 18+.
-
-```bash
-npx @dynokostya/just-works              # default settings
-npx @dynokostya/just-works --personal   # opinionated settings (permissions, hooks, sounds)
-npx @dynokostya/just-works@latest       # update
-```
+`install.sh` installs agents, skills, commands, and settings globally to `~/.claude/`, `~/.codex/`, and `~/.agents/skills/`. Before copying, it asks whether to back up the existing destinations to `~/just-works-backups/<timestamp>/`; without a terminal it backs up without asking, and answering "n" or passing `--no-backup` turns backups off. An existing `settings.json`, `config.toml`, or `hooks.json` is kept unless you pass `--replace-config`, and entries you added under names this repo doesn't ship are left in place. On each side that runs, `CLAUDE.md` and `CLAUDE-CHAT.md` (Claude) and `AGENTS.md` (Codex) are overwritten — `--skip-config` does not protect them — and so is `statusline-command.sh` unless you pass `--skip-statusline`; all are backed up when backups are on.
 
 ### From source
 
 ```bash
-git clone https://github.com/dynokostya/just-works.git
+git clone https://github.com/vbabenko97/just-works.git
 cd just-works
-./install.sh            # macOS / Linux
-install.bat             # Windows
+./install.sh
 ```
 
-To update: `git pull && ./install.sh`
+To update: `git pull && ./install.sh` (existing config files are kept; add `--replace-config` to refresh them).
+
+The protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script without them: it has no `--prune`, `--replace-config`, `--repos`, or `--personal` refusal, it overwrites existing config files, and with backups off it deletes each destination directory before copying.
+
+`bootstrap.sh` (upstream's `curl | bash` one-liner) downloads `dynokostya/just-works` and runs that repository's own installer unless `JUST_WORKS_REPO` (set in `bash`'s environment) names another repository; the npm package `@dynokostya/just-works` is upstream's. By default both install upstream, not this fork — use the source checkout above.
+
+### `--personal`
+
+`install.sh` refuses `--personal` for the Claude side and exits before installing anything: it would install this repository's `.claude/settings.json` as `~/.claude/settings.json`, and the installer cannot merge into an existing one. `--personal --codex-only` remains available and installs the opinionated Codex `config.toml` instead of `config.toml.default`:
+
+| `~/.codex/config.toml` (without `--azure`) | Default | `--personal --codex-only` |
+|---|---|---|
+| Model | `gpt-5.5`, `medium` reasoning effort | not set |
+| Sandbox / approvals | not set | `workspace-write`, `approval_policy = "never"` |
+| MCP servers | none | Playwright |
+
+Both profiles install the same `hooks.json`, a `Stop` hook that plays a sound with `afplay /System/Library/Sounds/Glass.aiff`; only the personal `config.toml` sets `[features] hooks = true`. `afplay` and that sound file are **macOS-only** — on Linux/Windows swap `afplay` for your player (`paplay`/`aplay` on Linux), or remove the hook.
 
 ### Options
 
+`install.sh` accepts:
+
 ```bash
---personal              # opinionated settings (pre-approved commands, hooks, sounds)
+--personal              # opinionated profile; refused for the Claude side, use with --codex-only
+--azure                 # Codex: Azure OpenAI config instead of the direct OpenAI API
 --dry-run               # preview without changes
---skip-config           # skip settings.json
+--skip-config           # skip settings.json, config.toml, hooks.json
 --skip-statusline       # skip statusline-command.sh
 --skip-skills-claude    # skip Claude Code skills
 --skip-skills-codex     # skip Codex skills
 --claude-only           # skip Codex
 --codex-only            # skip Claude
---no-backup             # skip backup prompt (for CI/scripts)
+--no-backup             # skip backup prompt, disable backups (for CI/scripts)
+--prune                 # delete entries a previous run installed that are gone from the source (tracked in ~/.just-works-manifest)
+--replace-config        # overwrite existing settings.json / config.toml / hooks.json (backed up when backups are on)
+--repos                 # also sync skills into checkouts under $HOME that already have a skill root
+-h, --help              # show help
 ```
 
 ### Codex Azure config
 
-Default install copies `config.toml.default` → `~/.codex/config.toml` (minimal model config).
-Personal (my) install copies `config.toml` → `~/.codex/config.toml` (includes MCP servers).
+Azure configs are installed only with `--azure`: `.codex/config/azure/config.toml.default` → `~/.codex/config.toml`, or `.codex/config/azure/config.toml` with `--personal --codex-only --azure`. An existing `~/.codex/config.toml` is kept unless you also pass `--replace-config`.
 
-Either way, edit the file — replace `<your-resource-name>` with your Azure OpenAI resource and set your environment variable:
+Then edit the file — replace `<your-resource-name>` with your Azure OpenAI resource and set your environment variable:
 
 ```bash
 export AZURE_OPENAI_API_KEY="your-key-here"
