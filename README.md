@@ -43,7 +43,7 @@ Installs agents, skills, commands, and settings globally to `~/.claude/` and `~/
 | Security deny-list | empty | blocks reads of keys, credentials, lockfiles, build dirs |
 | Model / effort | Claude Code defaults | `best` model + `max` effort (main agent & subagents) |
 | Output style | `default` | `Compressed` (fewer tokens) |
-| Codex | model + basic status line | `danger-full-access`, no approval prompts, MCP servers (Playwright, ClickUp) |
+| Codex | model + basic status line | `workspace-write` sandbox, no approval prompts, MCP server (Playwright) |
 | Hooks (Claude) | none | Bash command rewriting + completion sounds |
 
 **Two `--personal` hooks need extra setup to work:**
