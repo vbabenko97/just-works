@@ -4,24 +4,24 @@ Drop-in AI agent workflows, coding skills, and prompt standards for **Claude Cod
 
 Fork of [dynokostya/just-works](https://github.com/dynokostya/just-works), maintained independently; upstream changes are reviewed and recorded in [UPSTREAM.md](UPSTREAM.md).
 
-Just copy `.claude/` into any project — or install globally — and get pre-configured agents, quality guardrails, and documentation pipelines out of the box.
+Copy `.claude/` into any project — or install globally — and get pre-configured agents, quality guardrails, and documentation pipelines out of the box.
 
-**`.codex/` works only if you install it globally (only skills folder works per-project).**
+Use the global installer for Codex setup. This repo's `.codex/config.toml` also loads as a project layer when Codex trusts this checkout; see [Codex ownership](UPSTREAM.md#codex-ownership--installation-baseline-and-a-live-project-layer).
 
 ## What's Inside
 
-**Lean by default** — `caveman` and the `compressed` output style trim response tokens (filler, hedging, emojis); `minimal-coding` forces least-code solutions. Less context burned, lower cost.
+**Concise responses** — `minimal-coding` guides least-code solutions; invoke `caveman` for compressed conversation output. This repo's `.claude/settings.json` selects the `compressed` output style, which trims filler, hedging, and emojis to reduce response tokens and context use, potentially lowering token-based costs. The global installer uses `settings.json.default`, which selects `default` (and keeps an existing config unless `--replace-config` is passed).
 
-**Full Claude Code fluency** — uses the whole toolset by default: `AskUserQuestion` for structured choices, rich markdown, `TaskCreate` progress tracking, and parallel tool calls — not plain-text walls.
+**Full Claude Code fluency** — uses the whole toolset by default: `AskUserQuestion` for structured choices, rich markdown, `TaskCreate` progress tracking, and parallel tool calls.
 
 **Context-isolating subagents** — delegates file-type work (`python`, `react`, `swift`, …) to subagents that carry their own context, so the main thread stays lean and focused.
 
 **Agents** — file-type-triggered writers (`python`, `typescript`, `swift`, `csharp`, `react`, `flutter`), plus `prompt-writer`, `diagrammer`, `reviewer`, `test-runner`, `docs-agent`, `refactor-agent`, `cv-claim-verifier`, and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`). 17 per provider, plus three Claude-only `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`).
 **Commands** — `project-docs` and `git-sync` (Claude & Codex), `plan-reviewer` (Codex).
 
-**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` information-preserving compression), model-specific prompt engineering (Claude Opus 5 & Fable 5, GPT-5.6, Gemini 3, Grok 4.5), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), job applications (`career-application-builder` evidence-checked CVs and letters, `job-triage` vacancy screening, `interview-drill` mock interviews), and behavioral modes (`minimal-coding` for least-code solutions). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
+**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` information-preserving compression), model-specific prompt engineering (Claude Opus 5 & Fable 5, GPT-5.6, Gemini 3, Grok 4.5), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), job applications (`career-application-builder` evidence-checked CVs and letters, `job-triage` vacancy screening, `interview-drill` mock interviews), and behavioral modes (`minimal-coding`). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
 
-**Security** — `settings.json` blocks agent access to `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and databases.
+**Permission rules** — this repo's `.claude/settings.json` denies `Read` access to `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and database files. The global install template, `settings.json.default`, has an empty deny-list.
 
 ## Installation
 

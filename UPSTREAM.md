@@ -109,7 +109,7 @@ output instead of what the tool printed. Removed together: the `PreToolUse` entr
 `~/.claude/hooks/rtk-rewrite.sh` stays until the project copies of `settings.json` that still call
 it are cleaned up. Bringing rtk back is a new decision that starts with measuring what it saves here.
 
-The 2026-09-22 reasoning, kept for the record:
+Historical rationale from 2026-09-22 (superseded by the removal above):
 
 Upstream `2766626` and `9a4e396` replace the `rtk-rewrite.sh` shell hook with a native
 `rtk hook claude` invocation. This is a plausible upstream improvement, not proof that the local
@@ -119,10 +119,10 @@ wrapper can safely disappear.
 the installed hook, installer behaviour and any trust approval must move together. A git commit
 alone does not coordinate a live settings file outside the repository.
 
-**This pass: keep the existing hook.** Before migrating, check the installed rtk version and compare
-the local script's behaviour with the native hook. Acceptance must cover rewritten and
-non-rewritten commands, argument and failure-behaviour preservation, and continued operation of the
-protection mechanism. No automatic trust re-pinning.
+**Decision at that time: keep the existing hook.** The proposed migration required checking the
+installed rtk version and comparing the local script's behaviour with the native hook. Acceptance
+had to cover rewritten and non-rewritten commands, argument and failure-behaviour preservation,
+and continued operation of the protection mechanism. No automatic trust re-pinning.
 
 ### `.codex/` ownership — installation baseline, and a live project layer
 
@@ -156,7 +156,7 @@ bypasses that guard and would destroy the state; do not pass it unless that is t
 
 **Unresolved:** the tracked baseline defines `[mcp_servers.playwright]` and the live file does not.
 This difference has **not** been classified as intentional or accidental, and nothing was changed.
-Whole-file divergence between baseline and live is expected; *this particular difference* is simply
+Whole-file divergence between baseline and live is expected; *this particular difference* is
 unexamined. Resolve it only if a desired behaviour requires it — and then by a targeted, reviewed
 change to that one setting, never by replacing the file.
 
@@ -168,10 +168,11 @@ databases.
 
 ### Operational limits
 
-`.claude/settings.json` sets no `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` or
-`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS`. Documented defaults are depth 3 and concurrency 20, but
-"absent from this file" does not by itself establish the effective values — Claude Code merges
-several settings scopes and the inherited environment.
+Commit `d92d6fe` (2026-09-22) set `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` and
+`CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS=2` in `.claude/settings.json`. These are the tracked project
+values, not a measurement of a running session — Claude Code merges several settings scopes and
+the inherited environment. The global install template, `settings.json.default`, sets neither cap.
+The 2026-09-22 review recorded documented defaults of depth 3 and concurrency 20.
 
 Both variables are read by the 2.1.280 binary, each with a user-facing refusal message. The depth
 variable sits beside `maxSubagentSpawnDepthFromGrowthBook`, so when it is unset the effective depth
@@ -179,18 +180,18 @@ can be supplied by remote configuration — an argument for setting it explicitl
 on a documented default.
 
 `/goal` dispatches from the main conversation (its `SKILL.md` declares no `context:` key), so its
-specialists sit at depth 1 and a depth-1 cap would not prevent them from spawning.
+specialists sit at depth 1 and the configured depth-1 cap permits those direct dispatches.
 
 These are concurrency and nesting controls, **not** a spend guarantee: `/goal`'s "at most four
 delegated calls" is an instruction to the model rather than an enforced counter, there is no total
 session spawn limit, the concurrency limit has documented exceptions, and no cap spans Claude and
 Codex together.
 
-### Settings keys — one unrecognised key, verified
+### Settings keys — unrecognised key corrected
 
-Checked 2026-09-22 against the 2.1.280 binary and the schema this file declares
-(`json.schemastore.org/claude-code-settings.json`, 142 top-level properties). Of the 15 top-level
-keys in `.claude/settings.json`, 14 validate. One does not:
+Before `d92d6fe`, the 2026-09-22 check against the 2.1.280 binary and the declared schema
+(`json.schemastore.org/claude-code-settings.json`, 142 top-level properties) identified one
+unrecognised key among the 15 top-level keys then in `.claude/settings.json`:
 
 | Key | Status | Evidence |
 |---|---|---|
@@ -199,15 +200,13 @@ keys in `.claude/settings.json`, 14 validate. One does not:
 | `awaySummaryEnabled` | valid — keep | schema-present (`boolean`, `default: true`); 11 occurrences in the binary |
 | `skillListingBudgetFraction` | valid | schema-present (`number`, max 1, `default: 0.01`); `0.05` is in range |
 
-So `maxSkillDescriptionChars: 2048` has no effect and per-skill descriptions truncate at the 1536
-default. The schema sets `additionalProperties: true`, which is why validation never flagged it.
+The old `maxSkillDescriptionChars: 2048` had no effect, leaving the per-skill description cap at
+the 1536 default. The schema sets `additionalProperties: true`, which is why validation never flagged it.
 
-An earlier note in this session also called `awaySummaryEnabled` unrecognised. That was wrong; the
-table above supersedes it.
-
-**Prepared, not applied:** rename the key in place and add the two subagent caps to the existing
-`env` object. Acceptance: `jq` confirms `skillListingMaxDescChars == 2048`, the old key is gone, and
-both caps read back — then a restart, since `env` is frozen at session launch.
+**Applied in `d92d6fe` (2026-09-22):** renamed the key to `skillListingMaxDescChars: 2048` and added
+depth `1` and concurrency `2` to the existing `env` object. Rechecked the tracked JSON on 2026-09-27:
+the new value and both caps are present, and the old key is absent. A session restart and live
+enforcement of the caps have not been verified here.
 
 ### Supported surfaces
 
@@ -227,10 +226,10 @@ auth configuration unchanged.
 | Date | Upstream SHA | Change | Disposition | Reason |
 |---|---|---|---|---|
 | 2026-09-22 | `fd8a20b`, `8ddedd7` | force one model for all subagents | **rejected** | Collapses per-role routing; verified against the running binary |
-| 2026-09-22 | `6633a1c`, `ce7e828` | subagent depth/concurrency caps | **deferred** | Agreed in principle; to be set directly rather than by importing upstream's settings |
+| 2026-09-22 | `6633a1c`, `ce7e828` | subagent depth/concurrency caps | **adapted — applied in `d92d6fe`** | Set depth 1 and concurrency 2 directly in this fork's settings |
 | 2026-09-22 | 12 file deletions | remove Dart/Flutter/Python-architecture/sprint capabilities | **deferred** | Retirement is a separate decision; see the per-path table |
 | 2026-09-22 | `2766626`, `9a4e396` | migrate rtk hook to native invocation | **deferred** | Needs a coordinated settings + installed-hook change and a behaviour comparison |
-| 2026-09-22 | `3370412` | drop unrecognised settings keys; `~/`-anchored deny rules | **adapted — patch prepared, not applied** | Deny-rule half already present (5 `Read(~/…)` rules). Unrecognised-key half applies to exactly one key here; upstream's diff touches keys this fork does not have, so the fix is re-derived rather than imported. See "Settings keys" |
+| 2026-09-22 | `3370412` | drop unrecognised settings keys; `~/`-anchored deny rules | **adapted — applied in `d92d6fe`** | Deny-rule half already present (5 `Read(~/…)` rules). Renamed the one unrecognised key here; upstream's diff touches keys this fork does not have, so the fix was re-derived rather than imported. See "Settings keys" |
 | 2026-09-22 | `a31e42c` | add `synthetic-user-research` skill | **deferred** | No identified need |
 | 2026-09-22 | `1836546` | change `minimal-coding` trigger | **deferred** | Behaviour change; evaluate against `/goal` routing |
 | 2026-09-22 | `180677a` | statusline rewrite | **deferred** | Adopt only if it fixes an actual problem |
@@ -238,7 +237,8 @@ auth configuration unchanged.
 | 2026-09-22 | `18d672d`, `6e81e71`, `523c880`, others | pruning, docs, skill removals | **deferred** | Reviewed, nothing required here |
 | 2026-09-27 | `2766626`, `9a4e396` | migrate rtk hook to native invocation | **rejected** | The rtk hook is removed here instead; see "rtk hook" |
 
-**Batch status: reviewed. Zero imported; one adapted (`3370412`), prepared but not yet applied.**
+**Batch status: reviewed. Zero imported; two change groups adapted (caps and settings-key rename),
+both applied in `d92d6fe`. The rtk migration was subsequently rejected on 2026-09-27.**
 
 ## Vendored third-party skills
 

@@ -10,7 +10,7 @@ Developers using Claude Code (Anthropic CLI) or OpenAI Codex who want pre-built 
 
 ## Why
 
-Setting up AI-assisted development from scratch requires defining agent behaviors, coding standards, permission models, and prompt-engineering patterns per project. This scaffold provides a tested, drop-in foundation distributed via npx or shell installers.
+Setting up AI-assisted development from scratch requires defining agent behaviors, coding standards, permission models, and prompt-engineering patterns per project. This fork provides a tested, drop-in foundation installed from a source checkout with the included shell installers; the `@dynokostya/just-works` npm package distributes upstream.
 
 ---
 *Generated: 2026-04-21 | Commit: 2dc99fd*
