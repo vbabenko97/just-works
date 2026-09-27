@@ -274,3 +274,42 @@ Write-then-run path the allowlist closes for `python3`. Left as is because:
 
 Revisit as one gate review covering every uncovered interpreter, with Blender-aware argument parsing
 and tests, not as a one-off entry.
+
+### Removed 2026-09-27 — ResumeSkills-derived Codex career skills
+
+Commit `895d25e` copied eight skills from `Paramchoudhary/ResumeSkills` (`skills/<name>/SKILL.md`,
+upstream `main`, now at `74ae19e7c62b`) into `.codex/skills/` without a row in the table above:
+`application-form-filler`, `interview-prep-generator`, `job-description-analyzer`,
+`linkedin-profile-optimizer`, `resume-bullet-writer`, `resume-formatter`, `resume-tailor`,
+`resume-version-manager`. Two were verbatim; the rest carried partial safety edits, and several still
+held worked examples that invented metrics, customers and awards, or upgraded "assisted" to "led".
+They were removed together with the locally written `career-facts-guardrail`, whose rules moved into
+`career-application-builder`. Replacements are written here, not vendored: `job-triage`,
+`interview-drill`, and the `cv-claim-verifier` agent.
+
+The copies remain in git history between `895d25e` and their removal. Upstream notice, for that
+history:
+
+```text
+MIT License
+
+Copyright (c) 2026 Resume Skills
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

@@ -16,10 +16,10 @@ Just copy `.claude/` into any project — or install globally — and get pre-co
 
 **Context-isolating subagents** — delegates file-type work (`python`, `react`, `swift`, …) to subagents that carry their own context, so the main thread stays lean and focused.
 
-**Agents** — file-type-triggered writers (`python`, `typescript`, `swift`, `csharp`, `react`, `flutter`), plus `prompt-writer`, `diagrammer`, `reviewer`, `test-runner`, `docs-agent`, `refactor-agent`, and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`). 16 per provider, plus three Claude-only `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`).
+**Agents** — file-type-triggered writers (`python`, `typescript`, `swift`, `csharp`, `react`, `flutter`), plus `prompt-writer`, `diagrammer`, `reviewer`, `test-runner`, `docs-agent`, `refactor-agent`, `cv-claim-verifier`, and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`). 17 per provider, plus three Claude-only `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`).
 **Commands** — `project-docs` and `git-sync` (Claude & Codex), `plan-reviewer` (Codex).
 
-**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` information-preserving compression), model-specific prompt engineering (Claude Opus 5 & Fable 5, GPT-5.6, Gemini 3, Grok 4.5), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), and behavioral modes (`minimal-coding` for least-code solutions). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
+**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` information-preserving compression), model-specific prompt engineering (Claude Opus 5 & Fable 5, GPT-5.6, Gemini 3, Grok 4.5), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), job applications (`career-application-builder` evidence-checked CVs and letters, `job-triage` vacancy screening, `interview-drill` mock interviews), and behavioral modes (`minimal-coding` for least-code solutions). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
 
 **Security** — `settings.json` blocks agent access to `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and databases.
 
@@ -146,7 +146,7 @@ Requires `npx` (Node.js) in your PATH.
 .codex/
   agents/           # Codex custom agent definitions (TOML)
   prompts/          # Codex slash commands (plan-reviewer, ...)
-  skills/           # Shared standards copied from .claude/, plus Codex-only skills
+  skills/           # Skills copied from .claude/ (a subset)
   config/azure/     # config.toml.default + config.toml
   hooks.json        # Lifecycle hooks (notification)
 bin/cli.mjs         # npx installer

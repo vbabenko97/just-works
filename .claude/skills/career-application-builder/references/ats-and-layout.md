@@ -44,7 +44,16 @@ What it can tell you: whether the file has a text layer at all, whether expected
 
 What it cannot tell you: whether any particular employer's parser will succeed. Report it to the user in those terms.
 
-Reading the output, look for: contact details appearing near the top, employers and dates adjacent to their roles rather than pooled together, section headings intact, no runs of garbage characters.
+Reading the output, look for: contact details appearing near the top, employers and dates adjacent to their roles rather than pooled together, section headings intact, no runs of garbage characters, no words broken into spaced-out letters.
+
+## Vendor-documented checks
+
+Some vendors publish specific causes of failed parses. These are concrete compatibility checks against a named system — not a universal ATS score, and not proof that other systems behave the same way — but they're cheap to run on any upload.
+
+Greenhouse documents two that are easy to miss ([Unsuccessful resume parse](https://support.greenhouse.io/hc/en-us/articles/200989175-Unsuccessful-resume-parse), checked 2026-09-27):
+
+- **File size.** "Greenhouse Recruiting can't parse resumes larger than 2.5MB." Large files usually come from embedded high-resolution images. The extraction script doesn't check size, so check the file directly before upload.
+- **Spaces between letters.** A résumé "with spaces between the letters" may look cohesive, but "the parser won't recognize the separate letters as a single word". This is a check on the extracted text, not a ban on typographic tracking: letter-spacing can extract as whole words or as split letters depending on how the file was generated. Look in the extraction output for headings or a name broken into single letters (`E X P E R I E N C E`); if they appear, remove the typed spaces or the tracking on that text and re-check.
 
 ## Keyword use
 

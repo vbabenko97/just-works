@@ -1,0 +1,124 @@
+{
+  "skill_name": "interview-drill",
+  "_note": "All candidate material here is invented: vacancies, employers, clients, CVs, ledgers, and transcripts. Do not seed these fixtures from a real person's work history — this file ships publicly, and a realistic-looking CV or interview transcript built from real details publishes them.",
+  "evals": [
+    {
+      "id": 0,
+      "name": "first-turn-one-question",
+      "prompt": "I have a second-round interview on Thursday for this role. Drill me.\n\nVACANCY — Senior Data Engineer, Fernhollow Payments (Amsterdam, hybrid)\nWe're looking for someone to own our move from batch to streaming.\nMust have: 5+ years in data engineering; Python and SQL; Spark Structured Streaming or Flink in production; data-quality monitoring; mentoring other engineers.\nNice to have: dbt; payments or ledger domain.\n\nCV I SENT (the exact version attached to the application):\nData Engineer, Quillmere Analytics, 2019-present\n- Led migration of 40 nightly batch jobs to Spark Structured Streaming\n- Cut data-freshness lag from 24 hours to 15 minutes\n- Built data-quality checks with Great Expectations across core tables\n- Mentored two junior engineers\nData Analyst, Tern Street Retail, 2016-2019\n- Built dbt models for weekly sales reporting\nSkills: Python, SQL, Spark, Airflow, dbt, Great Expectations",
+      "expected_output": "Opens with at most one short line of setup (for example the role and roughly how many questions), then asks exactly one interview question and ends the turn. The question targets something in the supplied material — a CV claim such as 'Led migration of 40 nightly batch jobs', the 24-hours-to-15-minutes figure, or a core requirement such as streaming in production or mentoring — rather than a generic opener. Forbidden: answering the question or hinting at what a good answer contains, a model or sample answer, listing or previewing upcoming questions, a second question bundled with the first, coaching tips, asking which CV version was sent (the user already said), and stating any fact about the candidate that is not in the CV.",
+      "files": [],
+      "assertions": [
+        "Asks exactly one question in the whole reply, and it is an interview question addressed to the candidate",
+        "Nothing follows the question — the reply ends there",
+        "Any setup before the question is at most one short line and contains no coaching tips",
+        "The question targets a specific CV claim, number, ownership verb, or stated vacancy requirement, not a generic opener unconnected to the supplied material",
+        "Does not answer the question, hint at what a good answer should contain, or give a model or sample answer",
+        "Does not list, number, or preview upcoming questions or the question plan",
+        "Does not ask which CV version was submitted, since the user said which one was attached",
+        "States no fact about the candidate that is not in the supplied CV"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "vague-answer-gets-probed",
+      "prompt": "[Earlier in this conversation]\nMe: Mock interview for this role, please. Vacancy and the CV I sent are below.\n\nVACANCY — Backend Engineer (Platform), Harrowgate Mobility (Lisbon, hybrid)\nMust have: Java or Go services in production; AWS (ECS or EKS); owning CI/CD pipelines; performance tuning of backend services.\nNice to have: Terraform; logistics domain.\n\nCV SENT:\nBackend Engineer, Pellmoor Freight Tech, 2020-present\n- Led migration of the booking service from EC2 virtual machines to ECS Fargate\n- Improved deployment speed and reliability of the booking service\n- Maintain Java 17 services that serve carrier quote requests\nSkills: Java, Go (basic), AWS, Terraform, GitHub Actions\n\nYou: Around six questions for the Harrowgate platform role; say stop whenever you like. First one: your CV says you led the migration of the booking service from EC2 to ECS Fargate. Walk me through that migration.\n\n[My reply now]\nI led the migration and it made things much faster.",
+      "expected_output": "Does not move on. Gives one or two sentences of feedback naming the problem — the answer restates the CV line and says neither what the candidate personally did nor what got faster — then asks a single follow-up that presses on both words: what 'led' meant in practice (their own part versus the team's, what they decided or owned) and what became faster and how that was measured, or whether it was measured at all. Ends the turn after the follow-up. Forbidden: invented or illustrative figures (deployment times, percentages, durations, team sizes), a model answer or rewritten version of the candidate's answer, a new interview question or topic, and a long critique.",
+      "files": [],
+      "assertions": [
+        "Asks what 'led' meant concretely — the candidate's own part versus the team's, or what they personally decided or owned",
+        "Asks what became faster and how that was measured — or whether it was measured at all, or against what baseline",
+        "Before the follow-up, gives brief feedback (one or two sentences) that the answer is too vague or only restates the CV line",
+        "Contains no invented or illustrative numbers — no example deployment times, percentages, durations, or team sizes",
+        "Does not move on to a new planned question or a different topic",
+        "Does not provide a model answer or a rewritten version of the candidate's answer",
+        "Ends the turn after the follow-up, with no content after it"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "model-answer-request-uses-placeholders",
+      "prompt": "[Earlier in this conversation]\nMe: Please drill me for this interview. Vacancy and the CV I submitted are below.\n\nVACANCY — Product Analyst, Lindqvale Grocers (Copenhagen)\nMust have: advanced SQL; designing and analysing A/B tests; presenting findings to non-technical stakeholders.\n\nCV SUBMITTED:\nAnalyst, Corvane Travel, 2021-present\n- Designed and analysed an A/B test of a simplified checkout page\n- Built weekly SQL dashboards for the marketing team\n\nYou: Five or six questions for the Lindqvale analyst role; stop me any time. First: your CV says you designed and analysed an A/B test of a simplified checkout page. Walk me through it — what happened, and what did the business do with the result?\n\n[My reply now]\nSo I designed it together with the PM, and I wrote all the SQL for the analysis. It ran for about three weeks. Conversion went up, I think, but I don't remember the number, and I'm not sure they ever rolled it out. Honestly, just write me a great answer to that.",
+      "expected_output": "Provides the requested answer as a structure (STAR or similar) rather than refusing, filled only with what the candidate has supplied: an A/B test of a simplified checkout page, designed together with the PM, the candidate wrote all the SQL for the analysis, it ran about three weeks, and conversion may have gone up. Everything else is a bracketed placeholder — at minimum the size of the conversion change and whether the change was rolled out, and typically also why the test was run, the primary metric, and whether the result was significant. Keeps the shared ownership with the PM. Hands the practice back by asking the candidate to deliver it in their own words or fill the placeholders. Forbidden: any invented number (uplift percentage, sample size, revenue, p-value, confidence level), stating that the result was significant or that the change was rolled out, upgrading the candidate's role to led or owned, and inventing stakeholders, presentations, decisions, or business impact.",
+      "files": [],
+      "assertions": [
+        "Provides a structured answer (STAR or similar) rather than refusing or giving only general advice",
+        "Uses only facts the candidate supplied: the checkout-page A/B test, designed with the PM, the candidate wrote the analysis SQL, and it ran about three weeks",
+        "Uses bracketed placeholders for missing facts, including at least the size of the conversion change and whether the change was rolled out",
+        "Contains no invented number — no uplift percentage, sample size, revenue figure, p-value, or confidence level",
+        "Does not state that the result was statistically significant or that the change was rolled out",
+        "Does not present the conversion increase as a confirmed fact; it is a placeholder or explicitly marked as needing confirmation",
+        "Does not upgrade the candidate's role — no 'led', 'owned', or sole-ownership phrasing for a test designed with the PM",
+        "Does not invent stakeholders, presentations, decisions, or business impact",
+        "Hands the practice back — asks the candidate to deliver the answer in their own words or to fill the placeholders"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "close-marks-new-facts-pending",
+      "prompt": "[Earlier in this conversation: a mock interview for the ML Engineer (Search Ranking) role at Ottermoor Home, drilling the CV I submitted.]\n\nCV bullets we covered:\n- Built a learning-to-rank model for product search, improving NDCG@10 by 8% offline\n- Owned the search A/B testing framework\n- Reduced p95 search latency by 30%\n\nYou: Walk me through the learning-to-rank model. What did you build, and how was the 8% measured?\nMe: I built a LambdaMART model in LightGBM and did the feature engineering myself, about 60 features. The 8% is NDCG@10 on a held-out week of click logs against the BM25 baseline. It never ran online; the project was paused in a reorg.\nYou: Who chose the held-out week and the baseline?\nMe: I did, and my manager reviewed it.\nYou: That holds up. Next: your CV says you owned the search A/B testing framework. What did owning it involve?\nMe: Honestly, another team built and runs it. I wrote the experiment configs for our search tests and read the results dashboards.\nYou: That's narrower than 'owned'. Next: what was behind the 30% reduction in p95 latency?\nMe: That was mostly the infrastructure team moving us to a new cluster. I'm not sure how they measured it. Oh, and I also set up the feature store the ranking model reads from — that's not on my CV.\n\n[My message now]\nok let's stop here. how did I do?",
+      "expected_output": "Stops asking interview questions and gives a brief close with four parts. (1) Stories that held up and how far: the learning-to-rank story survived a probe — LambdaMART in LightGBM, about 60 features engineered by the candidate, NDCG@10 on a held-out week against BM25, offline only. (2) CV claims to soften or cut, each with what the candidate can actually support: 'Owned the search A/B testing framework' (another team built and runs it; the candidate wrote experiment configs and read results) and 'Reduced p95 search latency by 30%' (mostly the infrastructure team's cluster move, and the candidate does not know how it was measured). (3) New facts that could go into the evidence ledger, explicitly marked user-stated and pending confirmation — at least the feature-store setup, possibly also the ~60 features, the held-out-week evaluation against BM25, and that the model never ran online. (4) Topics to prepare, such as why the model never went online and how it would be validated online, the latency story, and the candidate's actual part in search experiments. Forbidden: asking another interview question, marking any new fact as verified or confirmed, writing the feature store into a finished CV bullet, inventing figures (for example a feature-store metric or a revised latency percentage), and treating the 30% latency claim as defended.",
+      "files": [],
+      "assertions": [
+        "Asks no further interview question",
+        "Identifies the learning-to-rank story as the one that held up, including that it survived a probe",
+        "Recommends softening or cutting 'Owned the search A/B testing framework', because another team built and runs it",
+        "Recommends softening or cutting the 30% p95 latency claim, because the work was mostly the infrastructure team's and the candidate does not know how it was measured",
+        "Lists the feature-store setup as a new fact for the evidence ledger, explicitly marked as user-stated and pending confirmation",
+        "Does not mark any newly stated fact as verified or confirmed, and does not put the feature store into a finished CV bullet",
+        "Includes topics to prepare (for example the offline-only evaluation and why the model never went online, or the latency story)",
+        "Invents no figures — no new metrics for the feature store, latency, or experiments",
+        "The close is a short structured summary, not a rewritten CV"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "unclear-submitted-version",
+      "prompt": "Can you run a mock interview with me? First-round call tomorrow with Wrenfield Payments for their Analytics Engineer role.\n\nVACANCY — Analytics Engineer, Wrenfield Payments (Berlin)\nMust have: dbt in production; strong SQL; dimensional data modelling; working with finance stakeholders.\nNice to have: Looker; CI for analytics code.\n\nI've got two CVs in my folder for this one and honestly can't remember which I attached:\n\ncv-wrenfield-v2\nAnalytics Engineer, Stonecrake Energy, 2022-present\n- Maintain dbt models for billing and settlement reporting\n- Built Looker dashboards for the finance team\n\ncv-wrenfield-v3\nAnalytics Engineer, Stonecrake Energy, 2022-present\n- Led the redesign of the billing data model in dbt (dimensional, 40+ models)\n- Built Looker dashboards for the finance team\n- Introduced dbt tests and CI for the analytics repo",
+      "expected_output": "Before drilling, asks which version was actually submitted and points to where to check (the application portal, the confirmation email, or the sent attachment). May say in a line why it matters: the interviewer holds the sent version, and v3's 'Led the redesign', '40+ models', and 'dbt tests and CI' claims do not appear in v2. Forbidden: assuming v3 (the stronger or newer one) was sent, starting the drill or asking any interview question in the same reply, making other material a precondition for starting, and stating any fact about the candidate not in the CVs.",
+      "files": [],
+      "assertions": [
+        "Asks which CV version was actually submitted",
+        "Suggests where to check, such as the application portal, confirmation email, or sent-mail attachment",
+        "Does not assume v3 (the stronger or newer version) was the one sent",
+        "Asks no interview question in this reply; the version question is the only question",
+        "Does not make an evidence ledger or other extra material a precondition for starting",
+        "Any explanation is brief (a line or two), for example that the versions differ on claims an interviewer would probe"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "overclaim-and-internal-only-flagged",
+      "prompt": "[Earlier in this conversation]\nMe: Drill me for this. Vacancy, the CV I submitted, and an excerpt of my claims ledger are below.\n\nVACANCY — Site Reliability Engineer, Oxbrook Cloud Services (remote, EU)\nMust have: on-call for customer-facing services; incident response and postmortems; Prometheus and Grafana; Kubernetes; Terraform.\n\nCV SUBMITTED:\nPlatform Engineer, Gannet Pay, 2021-present\n- Participated in the payments API on-call rotation; led 4 postmortems\n- Built Prometheus alerting for payout services\n- Manage Terraform modules for staging and production\n\nCLAIMS LEDGER (excerpt)\n| claim area | allowed public wording | evidence source | status | boundary / prohibited overclaim |\n| On-call | participated in the rotation (1 week in 6) | rota export | verified | did not own the rotation or its runbooks; never say 'owned on-call' |\n| Postmortems | led 4 postmortems | postmortem docs | verified | none |\n| Client names | none | contracts | internal-only | never name clients |\n\nYou: About six questions for the Oxbrook SRE role; say stop any time. First: tell me about the most serious incident you handled on call. What happened, and what did you do?\n\n[My reply now]\nThe worst one was a payout delay for Tallowmere Bank. A queue consumer got stuck after a deploy and payouts backed up for about two hours. I owned the on-call rotation at the time, so I was first responder: I spotted the consumer lag on the Grafana dashboard, rolled back the deploy, and drained the queue manually. I ran the postmortem afterwards and we added an alert on consumer lag.",
+      "expected_output": "Gives brief feedback that credits the concrete parts (spotting consumer lag in Grafana, rolling back, draining the queue, running the postmortem, adding a lag alert) and flags two problems, quoting them: 'I owned the on-call rotation' goes beyond the CV and crosses the ledger boundary, which supports only participation in the rotation (an interviewer holding the CV would see 'participated'); and naming Tallowmere Bank discloses a client the ledger marks internal-only. Then asks exactly one question — either a single probe on this answer (for example how the lag was noticed or what the new alert fires on) or the next interview question — and stops. Forbidden: accepting 'owned on-call' or suggesting it be added to the CV, inventing durations, impact, or team details the candidate did not give, rewriting the answer as a model answer, and asking more than one question.",
+      "files": [],
+      "assertions": [
+        "Flags 'I owned the on-call rotation' as an overclaim: the CV and ledger support only participation in the rotation",
+        "Flags naming the client (Tallowmere Bank) because the ledger marks client names internal-only",
+        "Credits at least one concrete, well-supported element of the answer (for example spotting consumer lag in Grafana, rolling back, running the postmortem, or adding the lag alert)",
+        "Feedback is concise — a few lines, not an essay",
+        "Does not suggest adding 'owned on-call' or similar ownership wording to the CV",
+        "Invents no details the candidate did not give — no detection times, customer-impact figures, team sizes, or amounts",
+        "Does not rewrite the candidate's answer as a model answer",
+        "Ends with exactly one question (a single probe on this answer or the next interview question), with nothing after it"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "workspace-submission-record-and-risk-targeting",
+      "prompt": "Mock interview for the Brindlecombe role, please. The call is on Monday. Start with whatever they're most likely to catch me on. Here's the relevant part of my workspace.\n\nREADME.md (workspace root)\nOne folder per vacancy under applications/. submission.md is written only after an application is sent and names the exact files that went out; any cv-v* file it doesn't name is a draft. claims-ledger.md says what may be claimed publicly. questions.md keeps interview questions and how my answers went.\n\napplications/brindlecombe-backend/: job-ad.md, fit-analysis.md, claims-ledger.md, cv-v2.md, cv-v3.md, submission.md, questions.md\n\n--- job-ad.md ---\nBackend Engineer, Brindlecombe Robotics (Rotterdam, hybrid)\nMust have: Python services in production; PostgreSQL query tuning; Kafka or a similar event-streaming platform; on-call for production services.\nNice to have: Kubernetes; warehouse or logistics domain.\n\n--- submission.md ---\nSent via the Brindlecombe careers portal. Files sent: cv-v2.md. Receipt: portal confirmation email.\n\n--- cv-v2.md ---\nSoftware Engineer, Dunmarrow Parcel, 2020-present\n- Build and maintain Python services for parcel routing\n- Tuned slow PostgreSQL queries in the routing service, cutting p95 query time from 900 ms to 120 ms\n- Worked with Kafka-based event pipelines\nSkills: Python, PostgreSQL, Kafka, Docker\n\n--- cv-v3.md ---\nSoftware Engineer, Dunmarrow Parcel, 2020-present\n- Build and maintain Python services for parcel routing\n- Tuned slow PostgreSQL queries in the routing service, cutting p95 query time from 900 ms to 120 ms\n- Built Kafka consumers for parcel-status events\n- Mentored two new engineers\nSkills: Python, PostgreSQL, Kafka, Docker\n\n--- fit-analysis.md ---\n| job requirement | fit | local evidence | CV action | interview risk |\n| Python services in production | Direct | routing-service repo | keep | low |\n| PostgreSQL query tuning | Direct | before/after query dashboards | keep, with the numbers | how the p95 was measured |\n| Kafka | Adjacent | wrote producers for parcel events; brokers run by the platform team | 'worked with Kafka-based event pipelines' | partitions, consumer groups, broker operations |\n| On-call for production services | Not evidenced | none | omit | direct question likely; no incident story yet |\n\n--- claims-ledger.md ---\n| claim area | allowed public wording | evidence source | status | boundary / prohibited overclaim |\n| Query tuning | cut p95 query time from 900 ms to 120 ms | before/after dashboards | verified | one service only |\n| Kafka | worked with Kafka-based event pipelines | repo history | verified | wrote producers only; never say operated brokers, designed topics, or built consumers |\n\n--- questions.md ---\n- Walk me through the PostgreSQL tuning and how the p95 was measured. Last drill: held up through two probes.",
+      "expected_output": "Does not ask which CV version was sent: the README says submission.md names the files that went out, and it names cv-v2, so the drill uses cv-v2 (it may say so in its one short line of setup). Then asks exactly one interview question and ends the turn. Because the user asked to start with what they are most likely to be caught on, the question targets the Kafka requirement (fit analysis: Adjacent; ledger boundary: wrote producers only, never operated brokers, designed topics, or built consumers) or the on-call requirement (fit analysis: Not evidenced). Forbidden: asking which version was sent; treating a cv-v3-only line ('Built Kafka consumers for parcel-status events', 'Mentored two new engineers') as part of the submitted CV; opening with the PostgreSQL tuning question that questions.md records as already held up; listing upcoming questions or reciting the fit analysis back; hints, coaching tips, or a model answer; more than one question; and stating any fact about the candidate that the workspace excerpt does not contain.",
+      "files": [],
+      "assertions": [
+        "Does not ask which CV version was submitted",
+        "Treats cv-v2 as the submitted CV: does not quote, probe, or refer to a cv-v3-only line ('Built Kafka consumers for parcel-status events', 'Mentored two new engineers') as something on the CV that was sent",
+        "Asks exactly one interview question, and nothing follows it",
+        "The question targets the Kafka requirement (the fit analysis's Adjacent row or the ledger's producers-only boundary) or the on-call requirement (the fit analysis's Not evidenced row)",
+        "Does not open with the PostgreSQL tuning question that questions.md records as already held up",
+        "Any setup before the question is at most one short line; it does not list upcoming questions or recite the fit analysis",
+        "Gives no hints, coaching tips, or model answer",
+        "States no fact about the candidate that is not in the workspace excerpt"
+      ]
+    }
+  ]
+}
