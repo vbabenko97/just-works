@@ -44,11 +44,10 @@ Installs agents, skills, commands, and settings globally to `~/.claude/` and `~/
 | Model / effort | Claude Code defaults | `best` model + `max` effort (main agent & subagents) |
 | Output style | `default` | `Compressed` (fewer tokens) |
 | Codex | model + basic status line | `workspace-write` sandbox, no approval prompts, MCP server (Playwright) |
-| Hooks (Claude) | none | Bash command rewriting + completion sounds |
+| Hooks (Claude) | none | completion sounds |
 
-**Two `--personal` hooks need extra setup to work:**
+**One `--personal` hook needs extra setup to work:**
 
-- **`rtk` Bash rewriting** (`.claude/hooks/rtk-rewrite.sh`) rewrites commands to save tokens, but needs [`rtk`](https://github.com/rtk-ai/rtk) ≥ 0.23.0 and `jq` installed. Without them it prints a warning on every Bash call and does nothing — install `rtk`, or delete the `PreToolUse` hook from `settings.json`.
 - **Completion sounds** use `afplay` + `/System/Library/Sounds/Glass.aiff`, which are **macOS-only**. On Linux/Windows the notification hooks fail silently (no sound) — swap `afplay` for your player (`paplay`/`aplay` on Linux), or remove the hook.
 
 ### Quick install (recommended)
@@ -142,7 +141,7 @@ Requires `npx` (Node.js) in your PATH.
   skills/           # Coding and prompting standards
   commands/         # Multi-step workflows (project-docs, git-sync)
   output-styles/    # Selectable output styles (compressed)
-  hooks/            # PreToolUse / notification hooks (--personal)
+  hooks/            # maintenance_auth.py (owner maintenance check)
   settings.json     # Permissions, hooks, env, MCP toggles
 .codex/
   agents/           # Codex custom agent definitions (TOML)

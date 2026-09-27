@@ -78,7 +78,7 @@ All 12 deleted paths, individually accounted for:
 | `.codex/skills/sprint-estimation/SKILL.md` | Story-point calibration | keep | no affirmative retirement decision |
 | `.claude/agents/flutter-code-writer.md` | Flutter writer agent | keep | modified locally; no verified replacement |
 | `.codex/agents/flutter-code-writer.toml` | Codex counterpart | keep | mirrors the `.claude` decision |
-| `.claude/hooks/rtk-rewrite.sh` | rtk command rewriting | keep — see below | migration, not a plain deletion |
+| `.claude/hooks/rtk-rewrite.sh` | rtk command rewriting | **removed 2026-09-27** — see below | rtk was never installed, so the hook never ran |
 
 **Caveat on provenance.** The "skills I still use" justification originated in a prompt drafted by
 the assistant, not in a statement by the maintainer. It has not been confirmed. Last *modification*
@@ -97,7 +97,19 @@ maintainer, not an inference from git history.
 Also intentionally absent and staying absent, though upstream still maintains them:
 `.claude/agents/ticket-creator.md`, `.codex/agents/ticket-creator.toml`.
 
-### rtk hook — preserve; migration is a separate change
+### rtk hook — removed 2026-09-27 (was: preserve; migration deferred)
+
+**Superseded 2026-09-27 by the maintainer: the hook is removed and the native migration is
+rejected.** `rtk` was never installed here (`command -v rtk` finds nothing), so the hook printed a
+warning on every Bash call and saved nothing. It also works against this repo's reliability
+model: it answers `permissionDecision: "allow"`, swaps in a rewritten command through
+`updatedInput` after the reliability gate has judged the original, and hands the agent filtered
+output instead of what the tool printed. Removed together: the `PreToolUse` entry in
+`.claude/settings.json`, `.claude/hooks/rtk-rewrite.sh`, and the README instructions.
+`~/.claude/hooks/rtk-rewrite.sh` stays until the project copies of `settings.json` that still call
+it are cleaned up. Bringing rtk back is a new decision that starts with measuring what it saves here.
+
+The 2026-09-22 reasoning, kept for the record:
 
 Upstream `2766626` and `9a4e396` replace the `rtk-rewrite.sh` shell hook with a native
 `rtk hook claude` invocation. This is a plausible upstream improvement, not proof that the local
@@ -224,6 +236,7 @@ auth configuration unchanged.
 | 2026-09-22 | `180677a` | statusline rewrite | **deferred** | Adopt only if it fixes an actual problem |
 | 2026-09-22 | `78521a7` | remove ClickUp MCP server | **deferred** | Separate decommissioning decision |
 | 2026-09-22 | `18d672d`, `6e81e71`, `523c880`, others | pruning, docs, skill removals | **deferred** | Reviewed, nothing required here |
+| 2026-09-27 | `2766626`, `9a4e396` | migrate rtk hook to native invocation | **rejected** | The rtk hook is removed here instead; see "rtk hook" |
 
 **Batch status: reviewed. Zero imported; one adapted (`3370412`), prepared but not yet applied.**
 
