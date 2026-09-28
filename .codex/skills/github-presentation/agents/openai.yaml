@@ -1,0 +1,7 @@
+interface:
+  display_name: "GitHub Presentation"
+  short_description: "Improve a GitHub profile or repo presentation without inflating claims"
+  default_prompt: "Use $github-presentation to improve <profile or owner/repo>: <what to improve>."
+
+policy:
+  allow_implicit_invocation: false
