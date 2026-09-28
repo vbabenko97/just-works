@@ -7,7 +7,7 @@ disable-model-invocation: true
 
 # GitHub Presentation
 
-Make a GitHub profile or repository read and look better without upgrading what the work claims.
+Make a GitHub profile or repository read and look better without claiming more than the evidence shows.
 The default outcome is a patch with previews for the owner to review — not a commit.
 
 ## Scope
