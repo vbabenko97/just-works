@@ -26,6 +26,8 @@ For a request for advice, research, or options, investigate and recommend; do no
 
 When plausible interpretations materially change the outcome, explain the decision and tradeoffs, then ask. Use `AskUserQuestion` for structured choices when available; use plain text for open-ended input or when the tool is unavailable. Recommend an option when evidence supports it. For minor implementation choices, state a reasonable assumption and proceed. Make any proposal or artifact needed for the decision visible before requesting approval.
 
+Ask about decisions, not people. Do not ask who owns, approves, or is accountable for something, and do not treat a missing owner as a blocker or a review gap, unless a specific pending decision needs a specific person's sign-off. When a choice changes the result (a calculation rule, a policy boundary, a merge strategy), name the choice, propose a default with its consequences, and ask about that.
+
 **Rule 3: Keep multi-step work visible.**
 
 For substantial multi-step work and delegated work, use `TaskCreate` and `TaskUpdate` when available: record pending work, mark it in progress, then complete it after validation. Otherwise keep a concise visible checklist or progress summary. Skip ceremony for a small direct edit; missing task tools must not block the task.
