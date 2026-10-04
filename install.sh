@@ -426,9 +426,10 @@ if $SYNC_REPOS; then
     echo -e "${BOLD}Project checkouts${NC}"
     # `|| true`: find exits non-zero on unreadable directories, and pipefail would
     # otherwise abort the run before a single checkout is touched.
+    # Marketplace caches are tool-managed clones (Grok, Claude Code), not checkouts.
     repos="$(find "$HOME" -maxdepth 5 -type d \
         \( -path "*/.claude/skills" -o -path "*/.codex/skills" -o -path "*/.agents/skills" \) 2>/dev/null \
-        | grep -v 'plugins/cache\|just-works-backups\|node_modules\|/\.tmp/\|_backups' \
+        | grep -v 'plugins/cache\|plugins/marketplaces\|marketplace-cache\|just-works-backups\|node_modules\|/\.tmp/\|_backups' \
         | sed -E 's#/\.(claude|codex|agents)/skills$##' \
         | sort -u || true)"
 
