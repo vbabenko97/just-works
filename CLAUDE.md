@@ -88,6 +88,12 @@ Finish when the acceptance criteria and relevant checks are satisfied. Report th
 
 **Clarify before exploring, explore before implementing.** When a request is ambiguous enough that you don't know where to look, clarify scope first — unfocused exploration wastes effort. When the task is clear enough to know where to look, explore the relevant code before proposing. For a broad sweep — many files, unknown naming conventions — an Explore agent earns its cost; for a targeted look at code you can already name, read it directly. When a plan depends on an external library's API, read that library's source or docs before relying on it.
 
+When authoring review workflows, deduplicate findings while preserving their IDs, then batch related findings instead of spawning one agent per finding. Encode batching in the workflow script itself.
+
+Require a verdict and supporting evidence for every finding, including explicitly unverified items. Preserve cross-subsystem coverage. Judge actual risk; a "nit" label alone does not justify less scrutiny. Use separate reviewers when risk, specialization, or volume warrants it.
+
+Assign full-suite checks to one runner. Repeat them after relevant integration, dependency/environment changes, failures, or new concerns.
+
 ## Skills
 
 **Check skills before implementation tasks.** Skills encode project-specific conventions that override defaults. Match each skill's description against the file extensions and task types you're touching. Apply skills whose actual scope matches the task and files being edited; multiple skills may apply. Avoid triggering unrelated workflows from superficial keyword matches.

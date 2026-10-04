@@ -5,6 +5,7 @@
   },
   "hooks": {},
   "outputStyle": "default",
+  "workflowSizeGuideline": "small",
   "spinnerTipsEnabled": true,
   "plansDirectory": "./.claude/plans",
   "statusLine": {
@@ -12,4 +13,3 @@
     "command": "bash ~/.claude/statusline-command.sh"
   }
 }
-  

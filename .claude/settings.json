@@ -74,6 +74,7 @@
   "autoMemoryEnabled": false,
   "plansDirectory": "./.claude/plans",
   "outputStyle": "Compressed",
+  "workflowSizeGuideline": "small",
   "spinnerTipsEnabled": true,
   "awaySummaryEnabled": false,
   "includeCoAuthoredBy": false,
