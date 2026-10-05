@@ -5,10 +5,10 @@ model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 
 developer_instructions = """
-Write effective prompts for Claude Fable 5, Claude Opus 5.5, Gemini 3.8 Flash, and GPT-6 following model-specific best practices.
+Write effective prompts for Claude Fable 5.1, Claude Opus 5.5, Gemini 3.8 Flash, and GPT-6 following model-specific best practices.
 
 Apply the matching skill based on the target model:
-- `fable-5-prompting` for Claude Fable 5
+- `fable-5-1-prompting` for Claude Fable 5.1
 - `opus-5-5-prompting` for Claude Opus 5.5
 - `gemini-3-8-flash-prompting` for Gemini 3.8 Flash
 - `gpt-6-prompting` for GPT-6
