@@ -240,6 +240,24 @@ auth configuration unchanged.
 **Batch status: reviewed. Zero imported; two change groups adapted (caps and settings-key rename),
 both applied in `d92d6fe`. The rtk migration was subsequently rejected on 2026-09-27.**
 
+Second batch: the nine upstream commits from `a31e42c` (exclusive) to `060e8a9`, reviewed on
+2026-10-05 against fork HEAD `aa92a5d`.
+
+| Date | Upstream SHA | Change | Disposition | Reason |
+|---|---|---|---|---|
+| 2026-10-05 | `9ca8f8e` | add `predictive-ux-evaluation` skill | **imported** | Taken verbatim into both skill trees; no overlap with existing skills |
+| 2026-10-05 | `eded03b` | add `human-writing` skill | **imported** | Taken verbatim into both skill trees; README line rewritten here because upstream's README differs |
+| 2026-10-05 | `9876699`, `060e8a9` | plain-wording rules against AI-writing tells | **adapted** | Three-way merged into `CLAUDE.md`, `AGENTS.md`, `CLAUDE-CHAT.md` and the Compressed output style. In `CLAUDE.md` the block sits before this fork's Action safety and Editing safety paragraphs; upstream's older Destructive action safety paragraph was not taken |
+| 2026-10-05 | `cb6dd87` | move ticket metadata to native tracker fields | **adapted** | Three-way merged onto this fork's `ticket-writing`, which keeps its ClickUp-derived rules (Fields vs body, Working in a tracker); `references/rewrite-examples.md` taken verbatim |
+| 2026-10-05 | `8a425b3`, `1b2d059` | retarget prompting skills; rename skill folders | **adapted** (Fable only) | `fable-5-1-prompting` replaces `fable-5-prompting`; its pointer to Opus checklists now names `opus-5-5-prompting`'s migrate mode, because this fork's package of that name has no checklists |
+| 2026-10-05 | `8a425b3` | upstream's `opus-5-5-prompting` | **rejected** | This fork has its own `opus-5-5-prompting` package (added 2026-10-03) |
+| 2026-10-05 | `8a425b3` | upstream's `gpt-6-prompting` | **deferred** | Differs from this fork's skill of the same name (307 vs 112 lines); needs a side-by-side comparison before either replaces the other |
+| 2026-10-05 | `8a425b3` | `gemini-3-prompting` retargeted to Gemini 3.x | **deferred** | This fork retired `gemini-3-prompting` on 2026-10-03 in favour of `gemini-3-8-flash-prompting`; revisit if prompts for other Gemini 3.x models are needed |
+| 2026-10-05 | `88ff88e`, `1b2d059`, `611c10c` | effort override, autocompact, subagent cap values | **rejected** | Upstream tuning of its own values. This fork never had the effort override and keeps autocompact 65 and concurrency 2 (see "Operational limits"); the `CLAUDE.md` paragraph these commits edit does not exist here |
+
+**Second batch status: reviewed. Two skills imported, three change groups adapted, the remaining
+changes rejected or deferred as listed.**
+
 ## Vendored third-party skills
 
 Copied verbatim into both `.claude/skills/` and `.codex/skills/`; no local edits. To refresh: clone
