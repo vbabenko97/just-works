@@ -21,8 +21,9 @@ child="$here/subagent_stop.py"
 
 FAIL_CLOSED='{"decision":"block","reason":"[reliability] Subagent completion verification failed to run."}'
 
-payload="$(mktemp -t reliability-stopgate)"
-out="$(mktemp -t reliability-stopgate-out)"
+# A full template with X's, because GNU mktemp rejects `-t name` without them.
+payload="$(mktemp "${TMPDIR:-/tmp}/reliability-stopgate.XXXXXX")"
+out="$(mktemp "${TMPDIR:-/tmp}/reliability-stopgate-out.XXXXXX")"
 trap 'rm -f "$payload" "$out"' EXIT
 
 cat > "$payload"

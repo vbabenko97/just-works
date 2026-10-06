@@ -26,8 +26,10 @@ deadline="${RELIABILITY_GATE_DEADLINE:-15}"
 here="$(cd "$(dirname "$0")" && pwd)"
 gate="$here/gate.py"
 
-payload="$(mktemp -t reliability-gate)"
-out="$(mktemp -t reliability-gate-out)"
+# A full template with X's, because GNU mktemp rejects `-t name` without them. On
+# Linux that left both paths empty, so every matched tool call was refused.
+payload="$(mktemp "${TMPDIR:-/tmp}/reliability-gate.XXXXXX")"
+out="$(mktemp "${TMPDIR:-/tmp}/reliability-gate-out.XXXXXX")"
 trap 'rm -f "$payload" "$out"' EXIT
 
 # Buffer stdin: the child may have to be killed, and the payload must have been
