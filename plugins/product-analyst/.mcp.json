@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "analyst-postgres": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--locked",
+        "--script",
+        "${CLAUDE_PLUGIN_ROOT}/server/gateway.py"
+      ],
+      "env": {
+        "ANALYST_PROJECT_DIR": "${CLAUDE_PROJECT_DIR}"
+      }
+    }
+  }
+}

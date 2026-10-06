@@ -1,0 +1,15 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadQuickSightMetadata",
+      "Effect": "Allow",
+      "Action": [
+        "quicksight:Describe*",
+        "quicksight:List*",
+        "quicksight:Search*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

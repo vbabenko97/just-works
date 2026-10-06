@@ -1,0 +1,41 @@
+{
+  "description": "Read-only product-analytics policy and evidence recording in projects with .analyst/config.toml. Source credentials remain the security boundary.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*([Pp]ost[Hh]og|POSTHOG).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/run_gate.sh\" policy.py || exit 2",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|mcp__.*([Pp]ost[Hh]og|POSTHOG).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash|mcp__.*([Pp]ost[Hh]og|POSTHOG).*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/record.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

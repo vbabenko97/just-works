@@ -1,0 +1,18 @@
+# Copy to .analyst/metrics.toml. This example describes a local PostgreSQL
+# metric. It deliberately includes no SQL: add the governed, single-statement
+# read query only after the metric owner approves it. PostHog's catalogue
+# remains authoritative for PostHog metrics.
+
+[metrics.activation_rate_v4]
+version = "4"
+display_name = "Activation rate"
+source = "postgres"
+description = "Example: share of new, non-internal workspaces that activate within seven days."
+numerator = "Example: workspaces with a completed activation event."
+denominator = "Example: eligible new workspaces."
+population = "Example: new non-internal workspaces."
+timezone = "Europe/Vienna"
+approved_dimensions = ["platform", "acquisition_source"]
+
+[mappings.posthog_to_postgres]
+activation_rate_v4 = "activation_rate_v4"

@@ -1,0 +1,29 @@
+# Copy to .analyst/config.toml and replace values marked "example".
+
+[analysis]
+timezone = "Europe/Vienna" # example timezone
+internal_user_exclusion = "workspace.is_internal = false" # example expression documented by your metric owner
+
+[postgres]
+service = "product_analytics_readonly" # example libpq service name in ~/.pg_service.conf
+schemas = ["analytics"] # example approved schema names
+statement_timeout_ms = 15000
+lock_timeout_ms = 1000
+row_cap = 1000
+# max_plan_cost = 500000 # optional example planner-cost ceiling
+
+# Optional RDS IAM authentication. Uncomment this complete table and replace
+# every example value together; an incomplete [postgres.iam] table is invalid.
+# [postgres.iam]
+# region = "eu-central-1" # example region
+# host = "analytics.example.internal" # example host
+# port = 5432
+# user = "analytics_reader"
+
+[budgets]
+postgres_queries = 30 # Includes primary analysis and independent verification queries.
+posthog_calls = 20
+
+[posthog]
+# Extra tools must be read-only tools approved by the project policy.
+extra_read_tools = []
