@@ -30,13 +30,25 @@ MUST_ALLOW cases copied case by case, including the three historical false posit
 the loop variable named `ln`, the word `patch` appearing as search data, and the
 unexpanded `$CLAUDE_PROJECT_DIR` in a script path that must *stay* refused.
 
-**Open, not yet in the corpus (observed 2026-09-26):** the same class as `patch`. The
-read-only `ls tests/install/*.py` is refused with "mutation with a target set this gate
-cannot bound: glob", because `\binstall\b` in `MUTATORS` (`plugins/reliability/hooks/rules.py:68`) matches
-the path segment and the glob then trips `UNBOUNDED`. Controls: `ls tests/goal/*.py` and
-`ls tests/install/` both pass. Any command naming a path containing `install` next to a
-glob — `install.sh` with `*.py` in one line, for instance — is refused the same way.
-Recorded only; the rule is unchanged.
+**Search data and file names in read-only commands (observed 2026-09-26 and
+2026-10-06, the same class as `patch`).** `DESTRUCTIVE`, `MUTATORS` and `UNBOUNDED`
+were matched against the raw command text. The read-only `ls tests/install/*.py` was
+refused because `\binstall\b` in `MUTATORS` matched the path segment and the glob
+tripped `UNBOUNDED`; a `grep` whose quoted pattern held `|sh -c` matched the
+pipe-to-shell pattern. `scrub_literal_reads` in `plugins/reliability/hooks/rules.py`
+now cuts each segment that only reads down to its command name before those lists are
+matched. A segment qualifies when its command is in `LITERAL_READ_HEADS` (`find` only
+without an action such as `-exec` or `-delete`) and it has no command or process
+substitution and no output redirect other than to `/dev/null`. Separators and every
+other segment are kept verbatim, so `| sh` and `| xargs rm` still match. Because the
+scrub deletes text that `split_segments` delimited, it is skipped for any command
+where that split can disagree with bash: an escaped quote or separator, a heredoc,
+command or process substitution, `${`, an unquoted `#`, an unquoted and unescaped
+parenthesis (a zsh glob qualifier such as `*(e:'...':)` runs code), or a quote left
+open.
+`grep -F 'x\' f ; sudo id` shows why: the split never closes the quote, so without
+that check the whole line read as one grep. The corpus holds the refused commands
+verbatim in MUST_ALLOW and their dangerous neighbours in MUST_DENY.
 
 **Also observed 2026-09-26, policy layer.** A session judges every command by its own
 project's policy: `guard_bash.py:49-50` takes the project from `CLAUDE_PROJECT_DIR`,

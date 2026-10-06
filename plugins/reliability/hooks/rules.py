@@ -105,6 +105,29 @@ SHELLS = {"sh", "bash", "zsh", "dash", "ksh", "ash"}
 SCRIPT_EXTS = (".sh", ".bash", ".zsh", ".py", ".rb", ".pl", ".js", ".mjs", ".cjs",
                ".ts", ".php", ".lua", ".command", ".osascript")
 
+# Commands that write no file and run nothing they are given, so their arguments are
+# data. `find` counts only without an action that executes or writes. Text producers
+# (`echo`, `printf`) and commands with an output-file option (`sort -o`, `tree -o`,
+# `xxd -r`, `rg --pre`) are left out on purpose.
+LITERAL_READ_HEADS = {
+    "ls", "cat", "head", "tail", "wc", "stat", "grep", "egrep", "fgrep", "diff",
+    "cmp", "cut", "comm", "du", "df", "pwd", "which", "basename", "dirname",
+    "realpath", "readlink", "shasum", "md5", "md5sum", "sha256sum", "find",
+}
+FIND_ACTIONS = {"-exec", "-execdir", "-ok", "-okdir", "-delete",
+                "-fprint", "-fprint0", "-fprintf", "-fls"}
+# Output sent here is discarded, so the redirect writes nothing a later command reads.
+DISCARDED_OUTPUT = re.compile(r"\d?>\s*/dev/null(?=\s|$)")
+# Where the quote-and-separator split above can disagree with bash, or where bash
+# reparses text: an escaped quote or separator, a heredoc, command or process
+# substitution, parameter expansion. A command containing any of them is never
+# scrubbed, because the scrub deletes text the split delimited.
+SCRUB_UNSAFE = re.compile(r"""\\['";|&\n]|<<|`|\$\(|\$\{|<\(|>\(""")
+# An unquoted parenthesis not escaped by an odd run of backslashes: a subshell,
+# `case` pattern or function in bash, and in zsh a glob qualifier, where
+# `*(e:'...':)` runs code for every match.
+UNESCAPED_PAREN = re.compile(r"(?<!\\)(?:\\\\)*[()]")
+
 # --------------------------------------------------------------------------- #
 # what the agent may never rewrite, anywhere
 # --------------------------------------------------------------------------- #
@@ -166,10 +189,9 @@ SELF_PROTECT = [
 # lexing
 # --------------------------------------------------------------------------- #
 
-def split_segments(cmd: str) -> list[str]:
-    """Split on shell separators, ignoring separators inside quotes, so
-    `chmod +x x && ./x` cannot hide its second half behind a benign first half."""
-    segments: list[str] = []
+def _split_keeping_separators(cmd: str) -> list[tuple[str, str]]:
+    """(segment, separator after it) pairs. Joining every pair gives back `cmd`."""
+    parts: list[tuple[str, str]] = []
     buf: list[str] = []
     quote: str | None = None
     i = 0
@@ -187,19 +209,41 @@ def split_segments(cmd: str) -> list[str]:
             i += 1
             continue
         if cmd[i:i + 2] in ("&&", "||"):
-            segments.append("".join(buf))
+            parts.append(("".join(buf), cmd[i:i + 2]))
             buf = []
             i += 2
             continue
         if ch in ";\n|&":
-            segments.append("".join(buf))
+            parts.append(("".join(buf), ch))
             buf = []
             i += 1
             continue
         buf.append(ch)
         i += 1
-    segments.append("".join(buf))
-    return [s.strip() for s in segments if s.strip()]
+    parts.append(("".join(buf), ""))
+    return parts
+
+
+def split_segments(cmd: str) -> list[str]:
+    """Split on shell separators, ignoring separators inside quotes, so
+    `chmod +x x && ./x` cannot hide its second half behind a benign first half."""
+    return [s.strip() for s, _ in _split_keeping_separators(cmd) if s.strip()]
+
+
+def _outside_quotes(text: str) -> tuple[str, bool]:
+    """The text with every quoted span removed, by the quote rule of the split, and
+    whether a quote is still open at the end."""
+    out: list[str] = []
+    quote: str | None = None
+    for i, ch in enumerate(text):
+        if quote:
+            if ch == quote and (i == 0 or text[i - 1] != "\\"):
+                quote = None
+        elif ch in "'\"":
+            quote = ch
+        else:
+            out.append(ch)
+    return "".join(out), quote is not None
 
 
 def tokens(segment: str) -> list[str]:
@@ -237,6 +281,53 @@ def flag_cluster(token: str, letter: str) -> bool:
 
 def looks_like_script(token: str) -> bool:
     return token.endswith(SCRIPT_EXTS) or token.startswith(("./", "../", "~/"))
+
+
+def is_literal_read(segment: str) -> bool:
+    """True when running the segment can neither change a file nor execute any text
+    it contains. The command must be named bare, so `env -S '...' grep` and a local
+    `./grep` do not qualify."""
+    if any(s in segment for s in ("$(", "`", "<(", ">(")):
+        return False
+    outside, _ = _outside_quotes(segment)
+    if ">" in DISCARDED_OUTPUT.sub("", outside):
+        return False
+    try:
+        toks = shlex.split(segment, posix=True)
+    except ValueError:
+        return False
+    if not toks or toks[0] not in LITERAL_READ_HEADS:
+        return False
+    return toks[0] != "find" or not FIND_ACTIONS.intersection(toks[1:])
+
+
+def scrub_literal_reads(command: str) -> str:
+    """The command with each literal-read segment cut down to its command name.
+
+    The corpus patterns match raw text, so a search term or file name could trip
+    them: `grep 'eval|sh -c' notes.md` matched the pipe-to-shell pattern, and
+    `grep x install.sh hooks/*.py` paired the `install` mutator with a glob. A
+    literal-read segment changes nothing, so its arguments carry no verdict. Every
+    other segment and every separator is kept verbatim, which keeps patterns that
+    span segments, such as `| sh` and `| xargs rm`, matching.
+
+    The command comes back unchanged whenever the split may not match bash's own
+    parse: `grep -F 'x\\' f ; sudo id` holds a quote the split never closes, so the
+    whole line would read as one grep and `; sudo id` would be scrubbed with it.
+    Besides `SCRUB_UNSAFE`, that covers a quote left open, an unquoted `#`, since
+    bash ignores a comment's quotes and the split does not, and `UNESCAPED_PAREN`."""
+    outside, quote_open = _outside_quotes(command)
+    if (SCRUB_UNSAFE.search(command) or quote_open or "#" in outside
+            or UNESCAPED_PAREN.search(outside)):
+        return command
+    out: list[str] = []
+    for segment, separator in _split_keeping_separators(command):
+        if is_literal_read(segment.strip()):
+            out.append(f" {shlex.split(segment)[0]} ")
+        else:
+            out.append(segment)
+        out.append(separator)
+    return "".join(out)
 
 
 # --------------------------------------------------------------------------- #
@@ -318,8 +409,9 @@ def universal_deny(command: str, project: str) -> str | None:
     guarantee: no repository file participates in a decision reached here."""
     cmd = command.strip()
 
+    scrubbed = scrub_literal_reads(cmd)
     for pattern, label in DESTRUCTIVE:
-        if re.search(pattern, cmd, re.IGNORECASE):
+        if re.search(pattern, scrubbed, re.IGNORECASE):
             return f"recognised destructive operation: {label}"
 
     for pattern, why in SELF_PROTECT:
@@ -414,7 +506,7 @@ def inline_verdict(segment: str, recurse):
 def unbounded_deny(command: str) -> str | None:
     """Mutation whose target set this classifier cannot bound. Universal: it needs
     no repository data, only the shape of the command."""
-    cmd = command.strip()
+    cmd = scrub_literal_reads(command.strip())
     if not [m for m in MUTATORS if re.search(m, cmd)]:
         return None
     unbounded = [label for pattern, label in UNBOUNDED if re.search(pattern, cmd)]

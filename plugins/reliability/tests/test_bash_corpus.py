@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""The 112-case Bash corpus, ported verbatim from tests/reliability/test_guard_bash.py.
+"""The Bash corpus: the 112 cases ported verbatim from
+tests/reliability/test_guard_bash.py, plus the literal-read cases at the end of each
+list.
 
 Every case is here individually, not summarised into classes. Class-level coverage in
 test_monotonic and test_optional_policy asserts that categories behave; it cannot
@@ -11,6 +13,10 @@ command regressed:
   - a grep whose *search term* was the word `patch` was refused the same way
   - a probe whose script path contained an unexpanded `$CLAUDE_PROJECT_DIR` was
     refused, correctly, and had to stay refused
+  - read-only `grep` and `find` commands were refused because a search pattern or a
+    file name held `install`, `find`, `sh -c` or a glob; the last four MUST_ALLOW
+    entries are those commands verbatim, and the literal-read MUST_DENY entries pin
+    the dangerous neighbours of the fix
 
 The fixture mirrors this repository's policy, because that is the configuration the
 original verdicts were recorded under: a valid manifest, and an allowlist pinning the
@@ -106,6 +112,30 @@ MUST_DENY = [
     ("nice -n 10 bash cleanup.sh", "unreviewed script behind nice -n"),
     ("cat payload > $TARGET", "redirect to a variable target"),
     ("echo x > *.conf", "redirect to a glob target"),
+    # literal-read segments: what reading must not excuse
+    ("grep -l TODO -r . | xargs rm", "xargs rm fed by a literal read"),
+    ("grep -l TODO -r . | xargs sed -i 's/a/b/'", "in-place sed fed by a literal read"),
+    ("cat 'notes.txt' | sh", "literal read piped into a shell"),
+    ('grep "$(rm -rf /tmp/x)" notes.txt', "substitution inside a read command"),
+    ("ls *.txt > *.bak", "read command redirected to a glob target"),
+    ("find . -name 'x*' -exec mv {} /tmp \\;", "find -exec with a mutator"),
+    ("env -S 'rm -rf /tmp/x' ls", "env -S running a command ahead of a read"),
+    ("cat notes.txt > /dev/null; rm -- *", "glob rm after a discarded read"),
+    ("grep x notes.txt > /dev/null*", "redirect to a glob that starts /dev/null"),
+    # where the split and bash disagree, nothing is scrubbed
+    (r"""grep -F 'x\' notes.txt ; sudo id""",
+     "backslash before a closing single quote"),
+    (r'''grep -F "x\\" notes.txt ; rm -rf /tmp/x''',
+     "escaped backslash before a closing double quote"),
+    (r"""grep \' notes.txt ; rm -rf /tmp/x '""", "escaped quote outside quotes"),
+    ("grep x notes.txt # it's\nrm -rf /tmp/x\n# '", "quote inside a comment"),
+    ("cat <<EOF\ngrep it's\nEOF\nrm -rf /tmp/x\n'", "quote inside a heredoc body"),
+    (r"""ssh host x\;grep 'q;rm -rf /tmp/x'""",
+     "escaped separator joining a remote command"),
+    ("case cat in\ncat ) rm -rf /tmp/x ;;\nesac", "case pattern named like a read"),
+    (r"""ls *(e:'rm -rf /tmp/x':)""", "zsh glob qualifier running code"),
+    (r"""ls *\\(e:'rm -rf /tmp/x':)""",
+     "zsh glob qualifier behind an escaped backslash"),
 ]
 
 MUST_ALLOW = [
@@ -166,6 +196,18 @@ MUST_ALLOW = [
     ("grep -n patch .claude/hooks/guard_destructive_bash.py",
      "the word patch as search data, not as a command"),
     ("git diff .claude/hooks/guard_destructive_bash.py", "diff the guard"),
+    # literal-read segments: search terms and file names are data
+    ("ls tests/install/*.py", "glob beside a path named install"),
+    ("grep -n 'DROP TABLE' migrations/*.sql", "destructive SQL as a search term"),
+    ("grep -rn 'rm -rf' docs/", "recursive rm as a search term"),
+    (r"""ls -la && echo "---" && git log --oneline | wc -l && echo "---" && find . -maxdepth 3 -not -path './.git*' \( -name 'AGENTS*.md' -o -name 'CLAUDE*.md' -o -name 'README*' -o -name 'install*' -o -name '*.toml' -o -name '*.json' \) | head -50""",
+     "find whose name patterns include install*"),
+    (r"""grep -n -E 'MUTATORS|UNBOUNDED|\\bfind\\b|"find"|install' plugins/reliability/hooks/rules.py | head -30""",
+     "grep whose pattern names install and find"),
+    (r"""grep -n -E -e '-delete|xargs|-exec|sh -c|eval|\$\(' plugins/reliability/tests/test_bash_corpus.py | head -30; echo "=== PREFIXES ==="; grep -n -A3 '^PREFIXES' plugins/reliability/hooks/rules.py""",
+     "grep whose pattern holds |sh -c"),
+    (r"""grep -n -E 'CLAUDE.md|AGENTS.md|CLAUDE-CHAT' install.sh install.bat bin/cli.mjs; echo "=== gate: protected names ==="; grep -rn -E 'CLAUDE\.md|AGENTS\.md|settings(\.local)?\.json' plugins/reliability/hooks/*.py | head -20""",
+     "grep over install.sh beside a glob"),
 ]
 
 # Scripts the fixture's allowlist pins, mirroring this repository's own.
