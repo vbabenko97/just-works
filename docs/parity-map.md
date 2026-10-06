@@ -39,7 +39,9 @@ pipe-to-shell pattern. `scrub_literal_reads` in `plugins/reliability/hooks/rules
 now cuts each segment that only reads down to its command name before those lists are
 matched. A segment qualifies when its command is in `LITERAL_READ_HEADS` (`find` only
 without an action such as `-exec` or `-delete`) and it has no command or process
-substitution and no output redirect other than to `/dev/null`. Separators and every
+substitution and no output redirect other than to `/dev/null`. Descriptor duplication
+such as `2>&1` is removed first, because it writes no file and the split would
+otherwise cut the command at its `&`. Separators and every
 other segment are kept verbatim, so `| sh` and `| xargs rm` still match. Because the
 scrub deletes text that `split_segments` delimited, it is skipped for any command
 where that split can disagree with bash: an escaped quote or separator, a heredoc,

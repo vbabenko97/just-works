@@ -122,6 +122,9 @@ MUST_DENY = [
     ("env -S 'rm -rf /tmp/x' ls", "env -S running a command ahead of a read"),
     ("cat notes.txt > /dev/null; rm -- *", "glob rm after a discarded read"),
     ("grep x notes.txt > /dev/null*", "redirect to a glob that starts /dev/null"),
+    ("ls *.txt 2>&1 > *.bak", "glob redirect beside a descriptor duplication"),
+    ("cat notes.txt 2>&1 | sh", "literal read with 2>&1 piped into a shell"),
+    ("grep x notes.txt 2>&1; rm -rf /tmp/x", "recursive rm after a read with 2>&1"),
     # where the split and bash disagree, nothing is scrubbed
     (r"""grep -F 'x\' notes.txt ; sudo id""",
      "backslash before a closing single quote"),
@@ -200,6 +203,8 @@ MUST_ALLOW = [
     ("ls tests/install/*.py", "glob beside a path named install"),
     ("grep -n 'DROP TABLE' migrations/*.sql", "destructive SQL as a search term"),
     ("grep -rn 'rm -rf' docs/", "recursive rm as a search term"),
+    ("ls tests/install/*.py 2>&1 | head", "literal read with 2>&1 and a glob"),
+    ("grep -rn 'rm -rf' docs/ 2>&1", "search term with stderr merged"),
     (r"""ls -la && echo "---" && git log --oneline | wc -l && echo "---" && find . -maxdepth 3 -not -path './.git*' \( -name 'AGENTS*.md' -o -name 'CLAUDE*.md' -o -name 'README*' -o -name 'install*' -o -name '*.toml' -o -name '*.json' \) | head -50""",
      "find whose name patterns include install*"),
     (r"""grep -n -E 'MUTATORS|UNBOUNDED|\\bfind\\b|"find"|install' plugins/reliability/hooks/rules.py | head -30""",

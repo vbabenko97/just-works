@@ -118,6 +118,10 @@ FIND_ACTIONS = {"-exec", "-execdir", "-ok", "-okdir", "-delete",
                 "-fprint", "-fprint0", "-fprintf", "-fls"}
 # Output sent here is discarded, so the redirect writes nothing a later command reads.
 DISCARDED_OUTPUT = re.compile(r"\d?>\s*/dev/null(?=\s|$)")
+# Duplicating a descriptor onto another, or closing one, writes no file: `2>&1`,
+# `>&2`, `3>&-`. Its `&` is not a separator, though the split treats it as one.
+# `>&word` with a file name does write, and does not match.
+FD_DUPLICATION = re.compile(r"\d*>&(?:\d+|-)(?=[\s;|&]|$)")
 # Where the quote-and-separator split above can disagree with bash, or where bash
 # reparses text: an escaped quote or separator, a heredoc, command or process
 # substitution, parameter expansion. A command containing any of them is never
@@ -320,6 +324,7 @@ def scrub_literal_reads(command: str) -> str:
     if (SCRUB_UNSAFE.search(command) or quote_open or "#" in outside
             or UNESCAPED_PAREN.search(outside)):
         return command
+    command = FD_DUPLICATION.sub(" ", command)
     out: list[str] = []
     for segment, separator in _split_keeping_separators(command):
         if is_literal_read(segment.strip()):
