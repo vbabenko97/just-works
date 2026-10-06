@@ -125,6 +125,10 @@ MUST_DENY = [
     ("ls *.txt 2>&1 > *.bak", "glob redirect beside a descriptor duplication"),
     ("cat notes.txt 2>&1 | sh", "literal read with 2>&1 piped into a shell"),
     ("grep x notes.txt 2>&1; rm -rf /tmp/x", "recursive rm after a read with 2>&1"),
+    (r"""ls x \>&1 rm -rf /tmp/x""", "escaped > leaves & a separator"),
+    (r"""ls x \>&- rm -rf /tmp/x""", "escaped > before &-, where zsh runs - as a command"),
+    (r"""function 1 { "$@"; }; ls x \>&1 rm -rf /tmp/x""",
+     "escaped > before &1 with a function named 1"),
     # where the split and bash disagree, nothing is scrubbed
     (r"""grep -F 'x\' notes.txt ; sudo id""",
      "backslash before a closing single quote"),

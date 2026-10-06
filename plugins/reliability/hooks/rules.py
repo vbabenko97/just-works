@@ -123,10 +123,12 @@ DISCARDED_OUTPUT = re.compile(r"\d?>\s*/dev/null(?=\s|$)")
 # `>&word` with a file name does write, and does not match.
 FD_DUPLICATION = re.compile(r"\d*>&(?:\d+|-)(?=[\s;|&]|$)")
 # Where the quote-and-separator split above can disagree with bash, or where bash
-# reparses text: an escaped quote or separator, a heredoc, command or process
-# substitution, parameter expansion. A command containing any of them is never
-# scrubbed, because the scrub deletes text the split delimited.
-SCRUB_UNSAFE = re.compile(r"""\\['";|&\n]|<<|`|\$\(|\$\{|<\(|>\(""")
+# reparses text: an escaped quote, separator or redirection character, a heredoc,
+# command or process substitution, parameter expansion. A command containing any of
+# them is never scrubbed, because the scrub deletes text the split delimited. An
+# escaped `>` matters because `\>&1` is not a redirection: its `&` runs what follows
+# as a separate command, which `FD_DUPLICATION` must not remove.
+SCRUB_UNSAFE = re.compile(r"""\\['";|&\n<>]|<<|`|\$\(|\$\{|<\(|>\(""")
 # An unquoted parenthesis not escaped by an odd run of backslashes: a subshell,
 # `case` pattern or function in bash, and in zsh a glob qualifier, where
 # `*(e:'...':)` runs code for every match.

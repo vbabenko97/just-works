@@ -44,7 +44,8 @@ such as `2>&1` is removed first, because it writes no file and the split would
 otherwise cut the command at its `&`. Separators and every
 other segment are kept verbatim, so `| sh` and `| xargs rm` still match. Because the
 scrub deletes text that `split_segments` delimited, it is skipped for any command
-where that split can disagree with bash: an escaped quote or separator, a heredoc,
+where that split can disagree with bash: an escaped quote, separator or redirection
+character (`\>&1` is not a redirection, so its `&` separates commands), a heredoc,
 command or process substitution, `${`, an unquoted `#`, an unquoted and unescaped
 parenthesis (a zsh glob qualifier such as `*(e:'...':)` runs code), or a quote left
 open.
