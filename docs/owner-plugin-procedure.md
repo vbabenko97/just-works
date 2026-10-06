@@ -45,9 +45,20 @@ working tree is not what executes.
 
 ## Reload
 
-Hooks load at session start. Existing sessions keep the previous code — which is why
-an update never disturbs work in progress, and why "it did not take effect" almost
-always means "start a new session".
+Sessions that are already running pick up the new revision on their next hook call;
+no restart is needed. Observed 2026-10-06: two sessions opened before the update, one
+of them before three successive updates, both executed the newly installed revision
+from `~/.claude/plugins/cache/` on their next Bash call. An update therefore reaches
+work in progress too.
+
+The session's start time does not tell you which revision it runs; the trace does.
+After any Bash call in that session:
+
+```
+tail -1 ~/.claude/reliability-trace.jsonl | python3 -m json.tool | grep -E 'session_id|revision|under_cache'
+```
+
+If `revision` still shows the old SHA, start a new session:
 
 ```
 # in any running session
