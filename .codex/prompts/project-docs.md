@@ -1,287 +1,79 @@
-# Project Documentation
+# Project documentation
 
-Generate or update project documentation in `docs/`. Produces three files:
+Update the documentation needed for the requested change. Treat `docs/`, the root README, architecture notes, and existing feature documentation as canonical locations when they already cover the subject. Preserve their structure and links. Do not create a second page for a subject an existing page or section can cover.
 
-- `docs/mission.md` — What the project is and who it's for
-- `docs/tech-stack.md` — Inventory of languages, frameworks, tools, infrastructure
-- `docs/architecture.md` — How the system is structured and how parts connect
+This workflow is for requested documentation work. Do not create routine session reports, status reports, or an automatic documentation set.
 
-## Phase 1: Detect State
+## 1. Establish scope and sources
 
-Classify each file independently:
+Read the request, existing relevant documentation, the affected implementation, configuration, runtime interfaces, relevant passing checks when applicable and available, and approved requirements or decisions that define the intended behavior. Check repository guidance and local conventions first.
 
-| File | Exists & non-empty | Status |
-|------|-------------------|--------|
-| `docs/mission.md` | yes | **update** |
-| `docs/mission.md` | no | **create** |
-| `docs/tech-stack.md` | yes | **update** |
-| `docs/tech-stack.md` | no | **create** |
-| `docs/architecture.md` | yes | **update** |
-| `docs/architecture.md` | no | **create** |
+Classify each statement before writing:
 
-A file with only whitespace or markdown headers with no content counts as **create**, not update.
+| Statement | Source of truth | Documentation treatment |
+|---|---|---|
+| Current behavior | Inspected implementation, configuration, and runtime or deployed interfaces; relevant passing checks corroborate when applicable and available | State it as current behavior. Do not infer implementation from test expectations alone. |
+| Agreed requirement or proposal | Approved requirement, decision, or explicit user instruction | Label it as intended, planned, or proposed when it is not implemented. |
+| Rationale or business rule | Approved product, design, policy, or user source | Cite or attribute the source. Do not infer it from implementation. |
 
-**Git context gathering.** If `.git` exists, run these two commands via shell and include the output as background context for all explorer agents in Phase 2:
+Code confirms implementation; it does not establish product intent. If code and an approved requirement disagree, report the contradiction with both sources. Do not rewrite the requirement to make a bug look intentional. Ask the user only when the contradiction or unknown scope changes the document's result. Routine edits within the requested documentation scope are authorized and need no per-file approval.
 
-```bash
-git log --oneline -30
-git shortlog -s -n --no-merges
-```
+If the request names a feature, behavior, business rule, interface, or document, use that as the scope. If it asks for an initial project overview and no more specific scope, use the existing overview locations. Where no overview exists, create only the useful baseline pages: mission or README purpose, technical stack, and architecture. Do not blindly create all three when existing documentation already supplies the information.
 
-If the repo has fewer than 5 commits, note this — it signals an early-stage project where exploration will find less and user questions become more important.
+Use the available question tool for a material unresolved decision when appropriate. Otherwise ask in plain text.
 
-Announce the per-file status table and commit count to the user before continuing.
+## 2. Gather evidence
 
-## Phase 2: Explore
+Explore only as broadly as the scope requires. Use targeted repository searches and read the relevant files. Use read-only `explorer` agents when independent investigations will improve coverage or speed; do not require a fixed number of agents or parallel work for a small request.
 
-Launch three parallel read-only `explorer` agents via `spawn_agent`. All three are independent — spawn them together, never sequentially. Instruct each to explore very thoroughly.
+Record repository evidence with source paths and line numbers. For approved non-file sources, record a precise source identifier, URL, or explicit user decision. Ignore generated dependencies and build outputs unless they are the documented interface.
 
-Every agent prompt must include:
-- The git context gathered in Phase 1 (last 30 commit subjects + contributor summary)
-- This instruction: **"For every finding, include the source file path and line number (e.g., `src/main.py:42`). Findings without a file reference will be discarded."**
-- This ignore directive: **"Skip these directories entirely: `node_modules/`, `.venv/`, `venv/`, `__pycache__/`, `dist/`, `build/`, `.git/`, `.next/`, `.nuxt/`, `target/`, `vendor/` (unless vendor is committed Go code)."**
+For a feature or behavior document, inspect enough to cover:
 
-### Agent 1: Architecture
+- purpose and intended behavior, if sourced;
+- entry points, inputs, outputs, and user-visible flow;
+- limits, exceptions, invariants, errors, and verification behavior;
+- configuration, dependencies, and operational constraints when relevant.
 
-> Explore the codebase very thoroughly for architectural information. For every finding, include the source file path and line number (e.g., `src/main.py:42`). Findings without a file reference will be discarded. Skip: node_modules/, .venv/, venv/, __pycache__/, dist/, build/, .git/, .next/, .nuxt/, target/, vendor/.
->
-> Look for:
-> - Top-level directory structure and what each directory contains
-> - Module/package boundaries and dependency direction between them
-> - Entry points: main scripts, CLI commands, API servers, workers, scheduled jobs
-> - Design patterns: MVC, hexagonal, event-driven, repository pattern, etc.
-> - Data flow: how a request or input travels from entry point to response
-> - Configuration management: env files, config modules, feature flags
-> - Test organization relative to source code
-> - Whether this is a monorepo (multiple package manifests, separate apps in subdirectories)
+Describe only items supported by the sources. Omit unknown details or mark them as open questions. Do not fill gaps with plausible explanations.
 
-### Agent 2: Tech Stack
+## 3. Reconcile requested coverage
 
-> Explore the codebase very thoroughly for technology inventory. For every finding, include the source file path and line number (e.g., `pyproject.toml:3`). Findings without a file reference will be discarded. Skip: node_modules/, .venv/, venv/, __pycache__/, dist/, build/, .git/, .next/, .nuxt/, target/, vendor/.
->
-> Look for:
-> - Programming languages and their versions (configs, CI, runtime files, shebangs)
-> - Package manifests: pyproject.toml, package.json, Cargo.toml, go.mod, Gemfile, etc.
-> - Frameworks: web, ORM, task queues, testing, CLI
-> - Databases and storage: connection strings, migrations, docker-compose services
-> - Infrastructure: Dockerfiles, terraform, k8s manifests, CI/CD pipelines, deployment configs
-> - Dev tools: linters, formatters, type checkers, test runners, pre-commit hooks
-> - External services: API client imports, SDK usage, webhook handlers, third-party integrations
+When the user asks for all-feature, complete, or equivalent coverage, first build a concrete capability list from the relevant interfaces, commands, routes, configuration, user-facing flows, and approved requirements. Reconcile each capability against its canonical document and section.
 
-### Agent 3: Mission & Purpose
+Use a coverage table in the working report:
 
-> Explore the codebase very thoroughly for project purpose and audience. For every finding, include the source file path and line number (e.g., `README.md:1`). Findings without a file reference will be discarded. Skip: node_modules/, .venv/, venv/, __pycache__/, dist/, build/, .git/, .next/, .nuxt/, target/, vendor/.
->
-> Look for:
-> - README.md and any ABOUT or CONTRIBUTING files
-> - Package/project descriptions in manifests (pyproject.toml description, package.json description)
-> - User-facing text: landing pages, onboarding flows, help text, CLI descriptions
-> - API descriptions, OpenAPI specs, GraphQL schema descriptions
-> - Comments or docstrings describing project purpose
-> - License and contribution guidelines
-> - Any marketing copy, about pages, or FAQ content
+| Capability | Evidence | Canonical document and section | Result |
+|---|---|---|---|
+| [capability] | [path:line or precise non-file source] | [document#section] | covered, update needed, or gap |
 
-## Phase 3: Synthesize & Confirm
+A valid link is not evidence that a capability is documented. A capability may share a section with related capabilities; completeness does not require a page per capability. Update the relevant canonical documentation and identify genuine gaps.
 
-After all three agents return, consolidate their findings into a structured summary organized by document. **Discard any finding that lacks a file path reference** — this enforces the "no invention" rule.
+## 4. Write
 
-### For files in **create** status
+Make the smallest coherent update in the existing location and style. Add a new document only when no canonical document can reasonably hold the content. Use clear status labels for current, intended, planned, and proposed content. Keep implementation facts and approved requirements distinguishable.
 
-Present the summary to the user. Then identify genuine gaps — things the code did not clearly answer.
+If existing documentation is accurate and complete for the requested scope, leave it unchanged and report no change.
 
-**Gap detection heuristics** — ask only when the trigger condition is met:
+For an initial overview, a useful baseline usually contains:
 
-Mission gaps:
-- **What problem does this solve?** → Trigger: no README exists, or README has no description beyond project name/install instructions
-- **Who is the target user?** → Trigger: no user-facing text found (no CLI help, no UI copy, no API descriptions)
-- **What differentiates this?** → Trigger: README does not mention alternatives or positioning
+- purpose and audience, where evidence exists;
+- technologies and their roles;
+- system structure, entry points, dependencies, and data flow.
 
-Tech-stack gaps:
-- **Ambiguous primary tool** → Trigger: multiple tools serving the same role found (e.g., two ORMs, two test frameworks)
-- **Deployment target** → Trigger: no Dockerfile, no CI/CD config, no infra files found
-- **External services** → Trigger: code references services (database URLs, API keys) but no config or docker-compose defines them
+Adapt these topics to existing document structure. They are not a mandatory three-file template. For scoped documentation, add the sections that explain the requested behavior, including constraints and failures when applicable.
 
-Architecture gaps:
-- **Intended vs actual boundaries** → Trigger: import cycles detected or modules with unclear ownership
-- **Missing components** → Trigger: code references modules/packages that don't exist yet
+Use Open Knowledge Format (OKF) only when it is already adopted by the project, consumed by a project tool, or explicitly requested. Follow its agreed version, profile, and directory scope. Do not impose a new schema, files, or process.
 
-Rules for questions:
-- Do NOT ask about things the code clearly answers. Every question must address a genuine gap where the trigger condition was met.
-- When exploration found relevant evidence, provide 2-4 concrete options derived from findings.
-- When exploration found nothing relevant (common for "target user" or "deployment target" in early projects), ask as a free-text question without forced options.
-- Present options inline as a numbered list and always include an explicit "other — describe" option (Codex has no structured question tool).
-- If no trigger conditions are met, skip questions entirely. It is acceptable to have zero questions.
+## 5. Verify and report
 
-After gaps are resolved, present the planned content for each **create** file and ask the user to approve before writing.
+Read the edited documents back. Check that each factual implementation claim traces to inspected code, configuration, or an interface; relevant passing checks corroborate it when applicable and available; each intent claim traces to an approved repository source or precise non-file source; status labels match the evidence; links and headings resolve; and the requested coverage table has no unreported gaps.
 
-### For files in **update** status
-
-Read the existing docs. Compare each against the exploration findings.
-
-Present a structured change summary:
-
-```
-Changes detected:
-
-architecture.md:
-  + New module `workers/` found (src/workers/__init__.py:1), not documented
-  ~ Description of `api/` outdated — now uses FastAPI (pyproject.toml:15) instead of Flask
-  - Module `legacy/` removed from codebase but still in docs
-
-tech-stack.md:
-  + Redis added (docker-compose.yml:23)
-  - Removed: celery no longer in dependencies
-
-mission.md:
-  No changes detected
-```
-
-Every `+` and `~` line must cite the source file. Changes without evidence are not presented.
-
-Ask the user to approve, modify, or reject changes per file. Only write files the user approves.
-
-If exploration reveals something contradicting existing docs and the correct answer is ambiguous, ask the user before deciding.
-
-### Monorepo handling
-
-If Agent 1 identified multiple separate applications (e.g., `frontend/`, `backend/`, `services/auth/`), restructure the output:
-
-- `tech-stack.md` — group items under subheadings per service/app instead of a flat list
-- `architecture.md` — add a "Services" section before "Module Boundaries" describing each top-level app and how they communicate
-- `mission.md` — no change (mission is project-wide)
-
-## Phase 4: Write
-
-Create `docs/` directory if it does not exist. Write each approved file using these structures.
-
-### docs/mission.md
-
-```markdown
-# Mission
-
-## What
-
-[1-2 sentences: what the project does, stated as fact]
-
-## Who
-
-[1-2 sentences: target users or audience]
-
-## Why
-
-[1-2 sentences: core problem being solved, value delivered]
-
----
-*Generated: YYYY-MM-DD | Commit: abc1234*
-```
-
-10-15 lines max (excluding footer). No aspirational language. No marketing fluff.
-
-### docs/tech-stack.md
-
-```markdown
-# Tech Stack
-
-## Languages
-
-- [Language] [version] — [source: pyproject.toml / Dockerfile / .python-version]
-
-## Frameworks
-
-- [Framework] — [one-line role, e.g. "web server", "ORM", "task queue"]
-
-## Storage
-
-- [Database/cache/queue] — [one-line role]
-
-## Infrastructure
-
-- [Tool] — [one-line role]
-
-## Dev Tools
-
-- [Tool] — [one-line role]
-
----
-*Generated: YYYY-MM-DD | Commit: abc1234*
-```
-
-Flat list. One line per item. No prose paragraphs. Only include sections that have at least one entry. Omit empty sections entirely.
-
-For monorepos, replace flat sections with grouped subheadings:
-```markdown
-## Frameworks
-
-### backend/
-- FastAPI — web server
-- SQLAlchemy — ORM
-
-### frontend/
-- Next.js — React framework
-```
-
-### docs/architecture.md
-
-```markdown
-# Architecture
-
-## Structure
-
-[Brief description of top-level project organization. Reference actual directory names.]
-
-## Module Boundaries
-
-[Which modules exist, what each owns, dependency direction between them.]
-
-## Data Flow
-
-[How a typical request/input travels through the system, from entry point to response/output.]
-
-## Key Patterns
-
-[Design patterns in use: name, where applied, one-line rationale.]
-
-## Entry Points
-
-- [Entry point] — [what it starts/serves]
-
----
-*Generated: YYYY-MM-DD | Commit: abc1234*
-```
-
-Reference tech-stack items by name. Do not duplicate their descriptions.
-
-### Footer values
-
-- **Date**: current date in YYYY-MM-DD format
-- **Commit**: short hash from `git rev-parse --short HEAD` (if `.git` exists). If no git repo, omit the commit portion and use only the date.
-
-## Phase 5: Verify
-
-After writing all files, perform a verification pass. For each generated document:
-
-1. Read the file back.
-2. For every factual claim (tool name, framework, directory name, pattern), confirm it traces to a specific file found during exploration.
-3. If a claim cannot be traced — remove it and note the removal to the user.
-
-Report verification results:
-
-```
-Verification:
-  mission.md — 3/3 claims verified ✓
-  tech-stack.md — 11/12 claims verified, removed: "GraphQL" (no schema or dependency found)
-  architecture.md — 8/8 claims verified ✓
-```
-
-If all claims verify, report clean and finish. If removals were made, show what was removed and why.
+Report changed documents, evidence-backed coverage or gaps, contradictions, and checks run. Do not generate a routine session report.
 
 ## Rules
 
-These apply to all phases:
-
-- **No invention.** Every statement must trace to a file path found by exploration or to user confirmation. Findings without source references are discarded.
-- **No aspiration.** Document what exists, not what is planned. No "we plan to", "future work", "upcoming".
-- **No padding.** If a section has nothing to say, omit it. Do not write filler content.
-- **Terse language.** These docs are reference material for engineers. Factual, direct, no marketing tone.
-- **Respect the templates.** Do not add sections beyond what the templates define unless the user explicitly requests them.
-- **Evidence required.** Explorer agents must cite file paths. The synthesis phase must cite file paths. The change summary must cite file paths. Uncited claims are removed during verification.
+- Do not invent behavior, rationale, users, or future plans.
+- Document related behavior changes in their canonical documentation when the requested change affects them.
+- Preserve existing documentation locations and structure unless they prevent a coherent update.
+- Use direct, factual prose. Do not add marketing language or filler.

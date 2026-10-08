@@ -19,9 +19,21 @@ Use the global installer for Codex setup. This repo's `.codex/config.toml` also 
 **Agents** — file-type-triggered writers (`python`, `typescript`, `swift`, `csharp`, `react`, `flutter`), plus `prompt-writer`, `diagrammer`, `reviewer`, `test-runner`, `docs-agent`, `refactor-agent`, `cv-claim-verifier`, and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`). 17 per provider, plus three Claude-only `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`).
 **Commands** — `project-docs` and `git-sync` (Claude & Codex), `plan-reviewer` (Codex).
 
-**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` information-preserving compression + `human-writing` for documents that readers outside the project can follow), predictive UX evaluation of web UIs (`predictive-ux-evaluation`), model-specific prompt engineering (Claude Opus 5.5 & Fable 5.1, GPT-6, Gemini 3.8 Flash, Grok 4.5), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), job applications (`career-application-builder` evidence-checked CVs and letters, `job-triage` vacancy screening, `interview-drill` mock interviews), GitHub profile and README presentation (`github-presentation`, invoke manually), and behavioral modes (`minimal-coding`). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
+**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), ML system design (`ml-system-design` authoring + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), document work (`doc-coauthoring` authoring + `lossless-doc-compress` compression with preservation checks + `human-writing` for documents that readers outside the project can follow), predictive UX evaluation of web UIs (`predictive-ux-evaluation`), model-specific prompt engineering (Claude Opus 5.5 & Fable 5.1, GPT-6, Gemini 3.8 Flash, Grok 4.5), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), job applications (`career-application-builder` evidence-checked CVs and letters, `job-triage` vacancy screening, `interview-drill` mock interviews), GitHub profile and README presentation (`github-presentation`, invoke manually), and behavioral modes (`minimal-coding`). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
 
 **Permission rules** — this repo's `.claude/settings.json` denies `Read` access to `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and database files. The global install template, `settings.json.default`, has an empty deny-list.
+
+## Documentation workflows
+
+The documentation rules in [AGENTS.md](AGENTS.md#documentation) and [CLAUDE.md](CLAUDE.md#documentation) require updates alongside the behavior they describe. They distinguish implemented behavior from agreed requirements and use existing documentation locations.
+
+| Task | Claude Code | Codex |
+|---|---|---|
+| Generate or update project and feature documentation; check requested capability coverage | [project-docs](.claude/commands/project-docs.md) | [project-docs](.codex/prompts/project-docs.md) |
+| Write documentation from implementation and requirement evidence | [docs-agent](.claude/agents/docs-agent.md) | [docs-agent](.codex/agents/docs-agent.toml) |
+| Shorten documents while checking preservation of their information | [lossless-doc-compress](.claude/skills/lossless-doc-compress/SKILL.md) | [lossless-doc-compress](.codex/skills/lossless-doc-compress/SKILL.md) |
+
+Compression reports the preservation checks performed and their limits; it cannot certify semantic equivalence. Open Knowledge Format (OKF) is optional and applies only within an adopted or requested scope.
 
 ## Installation
 

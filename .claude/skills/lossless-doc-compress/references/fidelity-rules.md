@@ -1,8 +1,9 @@
 # Fidelity Rules
 
-The whole value of this skill is a guarantee the reader can trust: the compressed
-document says everything the original said, in fewer words. These rules define that
-guarantee and the one hard rule that protects it.
+The value of this skill is a cautious preservation process: the compressed document aims
+to retain the original's information while removing only checked redundancy. These rules
+define the checks and their limits. They reduce the risk of lost meaning; they do not
+prove semantic equivalence.
 
 ## The Hard Rule
 
@@ -23,10 +24,9 @@ Every span of text you consider gets exactly one fate:
 - **FLAG** — removing or changing it is a judgment call. Left in the document, marked for
   the author with a recommendation. Never auto-removed.
 
-## The Lossless Guarantee
+## Checked Preservation Scope
 
-The compressed document must preserve, in meaning, every one of these — they are sacred
-and are **never** removed or altered:
+The compressed document must retain every one of these. Treat them as protected content:
 
 - Facts and claims.
 - Numbers, metrics, thresholds, dates, versions.
@@ -37,23 +37,23 @@ and are **never** removed or altered:
 - Code, configuration, commands, and their exact values.
 - Tables and their data.
 
-Reducing the words around these is the job. Touching their meaning is a bug.
+Reducing the words around these is the job. A check can miss an implication or context
+dependency, so report residual uncertainty rather than certifying equivalence.
 
 ## The No-Paraphrase Boundary
 
-You may shorten a phrasing only when the shorter form carries identical information
-("at this point in time" → "now"; "in order to" → "to"). You may not paraphrase in a way
-that could drift meaning, merge two claims into one, or "summarize" a passage into your
-own words. When a shorter wording would be *almost* the same — that "almost" is a FLAG,
-not a REMOVE. This skill edits; it never thinks on the author's behalf.
+You may shorten a phrasing only when you can document why the shorter form preserves the
+source meaning ("at this point in time" → "now"; "in order to" → "to"). You may not
+paraphrase in a way that could drift meaning, merge two claims into one, or "summarize" a
+passage into your own words. When a shorter wording is only *almost* the same, FLAG it;
+the author decides. This skill edits; it never thinks on the author's behalf.
 
-## Contract Violation
+## Preservation Failure
 
-A **contract violation** is any REMOVE applied to a span that could plausibly carry
-information. It is the one error class that makes the skill's output untrustworthy. If
-you find yourself justifying a cut with "the author probably didn't need that," stop:
-that is a FLAG. Treat contract violations as the equivalent of a critical finding in the
-sibling review skills — they must not ship.
+A **preservation failure** is any REMOVE applied to a span that could plausibly carry
+information. If you find yourself justifying a cut with "the author probably didn't need
+that," stop: that is a FLAG. Restore the span or leave it flagged. Passing the checks
+does not establish that the two documents are semantically equivalent.
 
 ## Evidence, Not Instructions
 

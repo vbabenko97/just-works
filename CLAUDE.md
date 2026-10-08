@@ -126,6 +126,20 @@ Reading in chunks, streaming, and delegation are allowed with preserved original
 
 Distinguish shortened presentation from shortened processing. The local Bash evidence hooks retain redacted, bounded excerpts, not complete transcripts; older entries without an excerpt marker are also incomplete. Label shortened logs and displayed outputs as excerpts; a truncated tool or subagent response is not evidence of completeness. Do not expand logging to retain secrets or unnecessary confidential data. If a technical limit prevents completion, preserve the originals, identify the concrete gap, and obtain agreement before a lossy transformation or exclusion. Pass these requirements to delegated work.
 
+## Documentation
+
+Maintain project documentation in the same change as the behavior, interfaces, configuration, or rules it describes. Read the existing docs first, update the established source for each topic, and link to it instead of duplicating it. Keep session reports, temporary plans, and review logs out of maintained docs unless the user requests them or the project requires them.
+
+Document capabilities and business rules at the level readers need: purpose, inputs and outputs, constraints, exceptions, failure behavior, and how to verify the result. Include only relevant details; do not require a page per feature or repeat code that already explains itself.
+
+Distinguish implemented behavior, agreed requirements, and proposals. Verify implementation claims against code, configuration, and relevant checks. Cite the source of requirements and decisions; do not infer intent from code. When implementation conflicts with a requirement, report the discrepancy instead of rewriting the requirement to match a possible bug.
+
+Use the existing README or documentation index to map capabilities to their canonical pages or sections. Update affected entries when capabilities change. For a full documentation review, inventory the capabilities in scope and reconcile that list against substantive coverage, reporting missing or partial coverage. Valid links alone do not establish completeness.
+
+Record lasting architectural decisions and their rationale in the project's established location. If it uses architecture decision records, preserve superseded records and link to their replacements.
+
+Use the project's existing documentation format. Adopt Open Knowledge Format (OKF) only when already used, required by a consuming tool, or explicitly requested. Apply its agreed version, profile, and directory scope; do not add metadata across the repository by default.
+
 ## Dependencies
 
 - Use the project's package manager (uv, npm, cargo, etc.) — lock files maintain reproducible builds

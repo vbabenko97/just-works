@@ -10,17 +10,19 @@ Removable only when the span carries no information (see `fidelity-rules.md`).
 
 - **filler** — words and empty transitions that add no meaning: "it is important to note
   that", "as mentioned above", "needless to say", "in order to", "the fact that".
-- **hedging** — qualifiers that qualify nothing: "basically", "essentially", "arguably",
-  "it seems that", "sort of", "quite". (A hedge that carries a real uncertainty — "we are
-  not yet confident this generalizes" — is a KEEP, not a hedge to cut.)
+- **hedging** — only a qualifier that is demonstrably empty in context. Terms such as
+  "basically", "essentially", "arguably", "it seems that", "sort of", and "quite" can
+  carry scope, uncertainty, or attribution, so KEEP or FLAG them unless the source
+  supports their removal.
 - **slop** — generic LLM scaffolding with no document-specific content: "In today's
   fast-paced world…", "It is worth mentioning that…", "In conclusion, …", ceremonial
   intros and outros that restate the obvious.
 - **restatement** — a sentence, clause, or paragraph that repeats information already
-  stated, adding nothing new. Keep the first, clearest statement; remove the echo.
-- **verbose-phrasing** — a long phrasing with an exact shorter equivalent: "at this point
-  in time" → "now", "a large number of" → "many", "in the event that" → "if". The
-  shorter form must carry identical information.
+  stated, adding nothing new in its placement. Before removal, document that it adds no
+  nearby context or safety reminder; retain repetition that qualifies a later action.
+- **verbose-phrasing** — a long phrasing may have a shorter form, but no example is
+  pre-approved. Document why the source context preserves scope, quantity, timing, and
+  certainty; otherwise KEEP or FLAG it.
 
 ## Never Remove (Sacred)
 
@@ -41,8 +43,8 @@ Restated from `fidelity-rules.md` because it is the list you check every time:
   "p95 latency is 200ms." The number survives untouched; only filler left.
 - FLAG (judgment): a three-paragraph vendor anecdote in a section on latency. It *might*
   be low value, but cutting it is the author's call. Leave it; flag it with a recommend.
-- FLAG (possible duplication): §4.2's metric list looks like §2.1's. Do not merge — flag
-  it and let the author confirm they are the same before either is touched.
+- FLAG (possible duplication): §4.2's metric list looks like §2.1's. Do not merge. Flag
+  it for the author to assess before either is touched.
 - Mixed span (slop wrapper around real content): "It is worth mentioning that the p95 latency is 200ms." → strip the wrapper as `filler`/`slop` and treat the inner content by its own fate — KEEP if it is information, FLAG if it might duplicate an earlier statement. Never let the wrapper's removability drag the inner fact out with it.
 
 ## Extra Care: ML Design Content
