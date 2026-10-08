@@ -20,7 +20,6 @@ SKIP_SKILLS_CLAUDE=false
 SKIP_SKILLS_CODEX=false
 DO_BACKUP=true
 PRUNE=false
-SYNC_REPOS=false
 REPLACE_CONFIG=false
 
 # Ownership manifest: records every entry this installer has placed into a
@@ -76,10 +75,10 @@ Options:
                   hooks.json (with backup). By default existing config files
                   are kept, since live configs accumulate machine-local state
                   (otel, plugin disables, agent defaults) the repo cannot know.
-  --repos         Also sync skills into project checkouts under \$HOME that
-                  already contain a skill root. Only updates roots that exist;
-                  never creates new ones. Combine with --dry-run first.
   -h, --help      Show this help message
+
+The former --repos option is rejected. Shared skills are installed globally;
+project skill directories are reserved for project-specific skills.
 
 What gets installed:
   ~/.claude/
@@ -118,7 +117,12 @@ while [[ $# -gt 0 ]]; do
         --skip-skills-codex)  SKIP_SKILLS_CODEX=true; shift ;;
         --no-backup)   DO_BACKUP=false; shift ;;
         --prune)       PRUNE=true; shift ;;
-        --repos)       SYNC_REPOS=true; shift ;;
+        --repos)
+            error "--repos is no longer supported: shared skills are installed globally."
+            error "Run without --repos. Project skill directories will be left unchanged."
+            error "Nothing was installed."
+            exit 1
+            ;;
         --replace-config) REPLACE_CONFIG=true; shift ;;
         -h|--help)     usage ;;
         *) error "Unknown option: $1"; usage ;;
@@ -416,40 +420,6 @@ if ! $CLAUDE_ONLY; then
     fi
 
     install_file "${SCRIPT_DIR}/AGENTS.md"        "${CODEX_HOME}/AGENTS.md" "AGENTS.md"
-    echo ""
-fi
-
-# --- Project checkouts ---
-# install.sh only ever wrote to ~/.claude and ~/.agents, so skill roots committed
-# into project checkouts drifted until someone reinstalled them by hand.
-if $SYNC_REPOS; then
-    echo -e "${BOLD}Project checkouts${NC}"
-    # `|| true`: find exits non-zero on unreadable directories, and pipefail would
-    # otherwise abort the run before a single checkout is touched.
-    # Marketplace caches are tool-managed clones (Grok, Claude Code), not checkouts.
-    repos="$(find "$HOME" -maxdepth 5 -type d \
-        \( -path "*/.claude/skills" -o -path "*/.codex/skills" -o -path "*/.agents/skills" \) 2>/dev/null \
-        | grep -v 'plugins/cache\|plugins/marketplaces\|marketplace-cache\|just-works-backups\|node_modules\|/\.tmp/\|_backups' \
-        | sed -E 's#/\.(claude|codex|agents)/skills$##' \
-        | sort -u || true)"
-
-    while IFS= read -r repo; do
-        [[ -n "$repo" ]]                || continue
-        [[ "$repo" != "$HOME" ]]        || continue   # the global install, handled above
-        [[ "$repo" != "$SCRIPT_DIR" ]]  || continue   # the source of truth
-        # Only refresh roots the checkout already has; never impose a new layout.
-        # Plain if-blocks, not `[[ ]] && cmd` — under `set -e` a false test as the
-        # last command in the loop body aborts the whole run.
-        if [[ -d "${repo}/.claude/skills" ]] && ! $SKIP_SKILLS_CLAUDE; then
-            install_dir "${SCRIPT_DIR}/.claude/skills" "${repo}/.claude/skills" "$(basename "$repo")/.claude/skills"
-        fi
-        if [[ -d "${repo}/.codex/skills" ]] && ! $SKIP_SKILLS_CODEX; then
-            install_dir "${SCRIPT_DIR}/.codex/skills"  "${repo}/.codex/skills"  "$(basename "$repo")/.codex/skills"
-        fi
-        if [[ -d "${repo}/.agents/skills" ]] && ! $SKIP_SKILLS_CODEX; then
-            install_dir "${SCRIPT_DIR}/.codex/skills"  "${repo}/.agents/skills" "$(basename "$repo")/.agents/skills"
-        fi
-    done <<< "$repos"
     echo ""
 fi
 

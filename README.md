@@ -4,7 +4,7 @@ Drop-in AI agent workflows, coding skills, and prompt standards for **Claude Cod
 
 Fork of [dynokostya/just-works](https://github.com/dynokostya/just-works), maintained independently; upstream changes are reviewed and recorded in [UPSTREAM.md](UPSTREAM.md).
 
-Copy `.claude/` into any project — or install globally — and get pre-configured agents, quality guardrails, and documentation pipelines out of the box.
+Install globally to use shared agents, coding skills, and documentation workflows across projects. Keep project skill directories for skills specific to that project.
 
 Use the global installer for Codex setup. This repo's `.codex/config.toml` also loads as a project layer when Codex trusts this checkout; see [Codex ownership](UPSTREAM.md#codex-ownership--installation-baseline-and-a-live-project-layer).
 
@@ -49,7 +49,11 @@ cd just-works
 
 To update: `git pull && ./install.sh` (existing config files are kept; add `--replace-config` to refresh them).
 
-The protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script without them: it has no `--prune`, `--replace-config`, `--repos`, or `--personal` refusal, it overwrites existing config files, and with backups off it deletes each destination directory before copying.
+`install.sh` leaves project skill directories unchanged. The former `--repos` option is rejected before installation, including with `--prune` or `--dry-run`. Remove it from saved commands and scripts. `--prune` removes obsolete installer-owned entries from global destinations; it does not clean up copies in projects.
+
+To clean up copies left by earlier installs, compare complete skill directories with the shared source, preserve local changes, and move confirmed copies to a backup outside the project's skill directories. Check that the corresponding global skill is installed before removing its project copy. Keep project-specific skills in place. This source repository retains both provider trees for distribution.
+
+The protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script without them: it has no `--prune`, `--replace-config`, or `--personal` refusal, it overwrites existing config files, and with backups off it deletes each destination directory before copying.
 
 `bootstrap.sh` (upstream's `curl | bash` one-liner) downloads `dynokostya/just-works` and runs that repository's own installer unless `JUST_WORKS_REPO` (set in `bash`'s environment) names another repository; the npm package `@dynokostya/just-works` is upstream's. By default both install upstream, not this fork — use the source checkout above.
 
@@ -82,7 +86,6 @@ Both profiles install the same `hooks.json`, a `Stop` hook that plays a sound wi
 --no-backup             # skip backup prompt, disable backups (for CI/scripts)
 --prune                 # delete entries a previous run installed that are gone from the source (tracked in ~/.just-works-manifest)
 --replace-config        # overwrite existing settings.json / config.toml / hooks.json (backed up when backups are on)
---repos                 # also sync skills into checkouts under $HOME that already have a skill root
 -h, --help              # show help
 ```
 
