@@ -258,6 +258,20 @@ Second batch: the nine upstream commits from `a31e42c` (exclusive) to `060e8a9`,
 **Second batch status: reviewed. Two skills imported, three change groups adapted, the remaining
 changes rejected or deferred as listed.**
 
+Third batch: the six upstream commits from `060e8a9` (exclusive) to `fc9318c`, reviewed on
+2026-10-10 against fork HEAD `b13024c`.
+
+| Date | Upstream SHA | Change | Disposition | Reason |
+|---|---|---|---|---|
+| 2026-10-10 | `c4423f8` | extend `human-writing` with scope decisions and document-specific rules | **imported** | Taken verbatim into both skill trees; this fork's copies were unchanged since the 2026-10-05 import |
+| 2026-10-10 | `af9c9f0` | add `staged-docs` skill | **imported** | Taken verbatim into both skill trees, including the Codex-only `agents/openai.yaml`. It runs only when invoked (`disable-model-invocation: true`), and its review page loads scripts from cdn.jsdelivr.net. README line rewritten here because upstream's README differs; skill counts in `docs/architecture.md` updated |
+| 2026-10-10 | `bf22dce` | reader and repetition rules from `human-writing` | **adapted** | Three-way merged without conflicts into `CLAUDE.md`, `AGENTS.md`, `CLAUDE-CHAT.md` and the Compressed output style; the rules sit in this fork's existing plain-wording and readers blocks |
+| 2026-10-10 | `ffbd918` | `"idleCompaction": false` | **adapted** | Set in this fork's `.claude/settings.json` by the maintainer, because the reliability guard blocks agent edits to that file. The key is in the settings schema of the Claude Code 2.1.294 binary ("Set to false to stop Claude Code from compacting a long conversation while the session is idle") and absent from 2.1.289. `settings.json.default` is unchanged, so global installs keep the default |
+| 2026-10-10 | `fc9318c` | replace `bmad-workflows.md` with the BMAD v7 guide | **imported** | Taken verbatim; this fork's copy was unchanged since the merge base. The guide describes Dynokostya/BMAD-METHOD, not this repository's skills |
+| 2026-10-10 | `12bd8b2` | rename `CLAUDE-CHAT.md` to `web-chat-prompt.md` | **rejected** | Nine files in this fork use the name, including the installer and a reliability test. The rename changes no behaviour and would leave an installed `~/.claude/CLAUDE-CHAT.md` orphaned |
+
+**Third batch status: reviewed. Three changes imported, two adapted, one rejected.**
+
 ## Vendored third-party skills
 
 Copied verbatim into both `.claude/skills/` and `.codex/skills/`; no local edits. To refresh: clone

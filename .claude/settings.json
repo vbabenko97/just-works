@@ -71,6 +71,7 @@
   },
   "enableAllProjectMcpServers": false,
   "cleanupPeriodDays": 180,
+  "idleCompaction": false,
   "autoMemoryEnabled": false,
   "plansDirectory": "./.claude/plans",
   "outputStyle": "Compressed",
