@@ -9,6 +9,7 @@ import os
 import tomllib
 from pathlib import Path
 
+import context
 import ledger
 from config import load_config
 
@@ -89,14 +90,38 @@ def build_server(root: Path):
         return metric_definition(root, name)
 
     @server.tool()
+    def get_analysis_context(metric_name: str | None = None) -> dict:
+        """Read agreed metric definitions and named statements, with source hashes."""
+        return context.describe(root, metric_name)
+
+    @server.tool()
     def get_investigation(investigation_id: str) -> dict:
-        """Read the contract, evidence events, and findings for independent verification."""
+        """Read the contract, context snapshot, evidence, candidates, verdicts and findings."""
         return ledger.get_investigation(root, investigation_id)
 
     @server.tool()
-    def check_claims(investigation_id: str, findings: dict | None = None) -> dict:
-        """Validate citations, stop reason, and uncertainty; persist valid findings."""
-        return ledger.check_claims(root, investigation_id, findings)
+    def prepare_findings(investigation_id: str, findings: dict) -> dict:
+        """Validate and store candidate findings; returns the hash the verifier must use."""
+        return ledger.prepare_findings(root, investigation_id, findings)
+
+    @server.tool()
+    def submit_verification(
+        investigation_id: str, candidate_sha256: str, verification: dict
+    ) -> dict:
+        """Record one verdict per claim of a prepared candidate. For the analysis verifier."""
+        return ledger.submit_verification(root, investigation_id, candidate_sha256, verification)
+
+    @server.tool()
+    def check_claims(
+        investigation_id: str, findings: dict | None = None, candidate_sha256: str | None = None
+    ) -> dict:
+        """Publish a verified candidate, named by hash or by its unchanged findings."""
+        return ledger.check_claims(root, investigation_id, findings, candidate_sha256)
+
+    @server.tool()
+    def check_report(investigation_id: str) -> dict:
+        """Flag numbers in report.md that the published findings do not contain."""
+        return ledger.check_report(root, investigation_id)
 
     return server
 

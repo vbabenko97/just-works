@@ -75,8 +75,12 @@ class McpRuntimeTests(unittest.TestCase):
                         "execute_read_query",
                         "describe_schema",
                         "get_metric_definition",
+                        "get_analysis_context",
                         "get_investigation",
+                        "prepare_findings",
+                        "submit_verification",
                         "check_claims",
+                        "check_report",
                     },
                 )
                 started = send(
@@ -95,21 +99,28 @@ class McpRuntimeTests(unittest.TestCase):
                     },
                 )
                 self.assertEqual(tool_result(found)["contract"], CONTRACT)
+                empty = {"claims": [], "stop_reason": "INCONCLUSIVE", "uncertainty": UNCERTAINTY}
+                prepared = send(
+                    "tools/call",
+                    {
+                        "name": "prepare_findings",
+                        "arguments": {"investigation_id": inv, "findings": empty},
+                    },
+                )
+                self.assertTrue(tool_result(prepared)["valid"])
                 checked = send(
                     "tools/call",
                     {
                         "name": "check_claims",
                         "arguments": {
                             "investigation_id": inv,
-                            "findings": {
-                                "claims": [],
-                                "stop_reason": "INCONCLUSIVE",
-                                "uncertainty": UNCERTAINTY,
-                            },
+                            "candidate_sha256": tool_result(prepared)["candidate_sha256"],
                         },
                     },
                 )
                 self.assertTrue(tool_result(checked)["valid"])
+                missing = send("tools/call", {"name": "get_analysis_context", "arguments": {}})
+                self.assertTrue(missing.get("isError"), missing)
                 self.assertTrue(
                     (project / ".analyst/investigations" / inv / "sources.json").is_file()
                 )

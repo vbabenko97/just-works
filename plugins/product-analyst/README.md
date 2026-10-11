@@ -2,11 +2,11 @@
 
 Product Analyst is a Claude Code plugin for bounded, evidence-backed product investigations. It combines a read-only PostgreSQL gateway with read-only PostHog and Amazon QuickSight research. It creates no dashboards, insights, cohorts, analyses, exports, or other persistent analytics artefacts.
 
-Use `/product-analyst:investigate` for a metric question or a suspected product change. The skill resolves an analytical contract before it queries, records evidence for each source call, sends material claims for independent verification, then checks reconciled claim citations.
+Use `/product-analyst:investigate` for a metric question or a suspected product change. The skill reads the project's agreed metric definitions, resolves an analytical contract before it queries, records evidence for each source call, and has an independent verifier record a verdict for every claim before the findings and the report are published.
 
 ## Install and configure
 
-Register this plugin from the repository marketplace, then add `.analyst/config.toml` and `.analyst/metrics.toml` to the analysed project from the files in `setup/`. Replace all example values. The plugin requires Claude Code 2.1.281 or later, Python 3.11 or later on `PATH` for hooks, and `uv` for its MCP server. Its MCP server uses `${CLAUDE_PROJECT_DIR}` to scope configuration and investigation records to the analysed project. QuickSight use needs the AWS CLI. Docker is optional and used only for the PostgreSQL integration test. The gateway adds its local `.analyst/investigations/` ignore rule when it starts an investigation.
+Register this plugin from the repository marketplace, then add `.analyst/config.toml` and `.analyst/metrics.toml` to the analysed project from the files in `setup/`. Replace all example values. Optionally add `.analyst/context.toml`, the analysis context described in `skills/investigate/references/setup.md`. The plugin requires Claude Code 2.1.281 or later, Python 3.11 or later on `PATH` for hooks, and `uv` for its MCP server. Its MCP server uses `${CLAUDE_PROJECT_DIR}` to scope configuration and investigation records to the analysed project. QuickSight use needs the AWS CLI. Docker is optional and used only for the PostgreSQL integration test. The gateway adds its local `.analyst/investigations/` ignore rule when it starts an investigation.
 
 The plugin's hooks act only in a project that has `.analyst/config.toml`. In any other project they give no opinion, so enabling the plugin does not change how PostHog or the AWS CLI behave there.
 
@@ -21,12 +21,17 @@ Attach a database role that can only select approved schemas, a PostHog key scop
 An investigation writes local evidence under `.analyst/investigations/<id>/`:
 
 - `contract.json`: resolved metric, population, time window, timezone, and comparison;
-- `sources.json`: fingerprints of the configuration and metric catalogue used by this investigation;
+- `sources.json`: fingerprints of the configuration, metric catalogue and analysis context used by this investigation, including every file the context references;
+- `context.json`: the analysis context as it was when the investigation started, or null;
 - `evidence.jsonl`: evidence records from gateway and allowed source calls;
-- `findings.json`: claims, citations, uncertainty, and stop reason;
+- `candidates/`: candidate findings stored by `prepare_findings`, named by their SHA-256;
+- `verifications.jsonl`: verifier verdicts, each bound to one candidate, the contract and the source fingerprints;
+- `findings.json`: the published claims with citations, verdicts, uncertainty, and stop reason;
 - `report.md`: the reader-facing result.
 
-Keep these records local unless your team's evidence-retention policy says otherwise. Changes to `.analyst/config.toml` or `.analyst/metrics.toml` require a new investigation; the gateway rejects queries and final claim checks when their recorded fingerprints drift. It does not read or fingerprint libpq service and password files.
+Keep these records local unless your team's evidence-retention policy says otherwise. Changes to `.analyst/config.toml`, `.analyst/metrics.toml`, `.analyst/context.toml` or a file the context references require a new investigation; the gateway rejects queries, verdicts and final claim checks when their recorded fingerprints drift. It does not read or fingerprint libpq service and password files.
+
+`check_claims` publishes a prepared candidate only when, if it contains claims, its one verification covers every claim under the unchanged contract and sources. A verdict of `supported` on a data claim must cite evidence recorded after the first candidate was prepared that no claim cites, and `SUPPORTED` or `REFUTED` needs a supported data claim and no refuted claim. The gateway checks that the verification is current and complete; it does not check who wrote it, and it cannot tell whether a number is right; numerical correctness rests on the verifier. A context claim's text must be the fixed text of the analysis-context statements it cites. `check_report` then flags any number in `report.md` that the published findings and contract do not contain. It is a lexical check of numbers: a report that passes can still say something no claim supports, so a person reads the report.
 
 Keep the PostgreSQL service target and PostHog project connection stable during an investigation. Start a new investigation if either source connection changes because those external identities are outside the local source fingerprints.
 

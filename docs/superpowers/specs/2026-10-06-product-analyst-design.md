@@ -4,13 +4,13 @@ Product Analyst is a Claude Code plugin for read-only product investigations. It
 
 ## User flow
 
-`/product-analyst:investigate` resolves a contract before it queries. The contract contains a metric and version, population, current window, timezone, and comparison. The Postgres MCP gateway records that contract and returns an investigation ID. Calls may use a session-scoped active pointer, but an explicit investigation ID scopes every durable operation.
+`/product-analyst:investigate` first reads the project's analysis context when one exists, then resolves a contract before it queries. The contract contains a metric and version, population, current window, timezone, and comparison. The Postgres MCP gateway records that contract and returns an investigation ID. Calls may use a session-scoped active pointer, but an explicit investigation ID scopes every durable operation.
 
 When a PostHog metric version is unknown, the workflow starts a bounded metadata preflight because, in a project with `.analyst/config.toml`, the hook requires an active investigation for every PostHog read. That preflight uses `unresolved (discovery only)` as the version and explicit assumptions only for catalogue, schema, and `learn` discovery. The workflow then starts a resolved investigation before analytical queries and repeats the material metric-definition lookup as evidence. It does not restart an investigation to evade a budget, policy refusal, or evidence requirement.
 
 The investigator establishes a baseline, checks data quality and the numerator and denominator, tests competing explanations, and records each result as evidence. It stops as `SUPPORTED`, `REFUTED`, `INCONCLUSIVE`, `BUDGET_EXHAUSTED`, or `POLICY_BLOCKED`. A report contains the answer, contract, evidence IDs, four dimensions of uncertainty, and the stop reason.
 
-The investigator prepares candidate findings, then the verifier reads the completed investigation and returns a separate verdict for each material claim: `supported`, `refuted`, or `unverified`. It uses independent query shapes or PostHog reads where the available sources allow it. The investigator reconciles those verdicts before it calls `check_claims` for final structural validation. A verifier result does not replace the original finding. Verifier calls count against the investigation's PostgreSQL-query and PostHog-call budgets.
+The investigator stores candidate findings with `prepare_findings`, which returns their SHA-256. The verifier reads the investigation, re-derives each material claim, and records a verdict for every claim of that candidate with `submit_verification`, once per candidate: `supported`, `refuted`, or `unverified`. It uses its own queries or PostHog reads where the available sources allow it, and a `supported` data claim must cite evidence recorded after the first candidate was prepared that no claim cites. The investigator reconciles the verdicts; a revised candidate needs a new verification. `check_claims` then publishes the verified candidate, named by its hash, with each claim's verdict, and `check_report` compares the numbers in the report with the published findings. A verifier result does not replace the original finding. Verifier calls count against the investigation's PostgreSQL-query and PostHog-call budgets.
 
 ## Plugin layout
 
@@ -23,11 +23,11 @@ plugins/product-analyst/
   skills/investigate/       investigation workflow and references
 ```
 
-An analysed project holds configuration in `.analyst/config.toml` and metric definitions in `.analyst/metrics.toml`. Local investigation records live under `.analyst/investigations/<id>/` and should be ignored by Git. The plugin requires Claude Code 2.1.281 or later: its MCP configuration expands `${CLAUDE_PROJECT_DIR}` into `ANALYST_PROJECT_DIR`, keeping records and configuration scoped to that project.
+An analysed project holds configuration in `.analyst/config.toml`, PostgreSQL metric definitions in `.analyst/metrics.toml`, and optionally the analysis context in `.analyst/context.toml`: agreed metric definitions and named statements about its data, each with references to the project files that document them. Local investigation records live under `.analyst/investigations/<id>/` and should be ignored by Git. The plugin requires Claude Code 2.1.281 or later: its MCP configuration expands `${CLAUDE_PROJECT_DIR}` into `ANALYST_PROJECT_DIR`, keeping records and configuration scoped to that project.
 
 ## PostgreSQL gateway
 
-The gateway exposes `start_investigation`, `execute_read_query`, `describe_schema`, `get_metric_definition`, `check_claims`, and `get_investigation`. `start_investigation` requires `contract` and `session_id`; all query calls take an explicit investigation ID.
+The gateway exposes `start_investigation`, `execute_read_query`, `describe_schema`, `get_metric_definition`, `get_analysis_context`, `get_investigation`, `prepare_findings`, `submit_verification`, `check_claims`, and `check_report`. `start_investigation` requires `contract` and `session_id`; all query calls take an explicit investigation ID.
 
 The gateway obtains connection details through a libpq service name. The service file normally lives at `~/.pg_service.conf`, so the repository does not carry a database connection string. [PostgreSQL documents service names and the service file format.](https://www.postgresql.org/docs/current/libpq-pgservice.html)
 
@@ -51,7 +51,7 @@ The pre-tool supervisor returns a denial for malformed input, a child-policy cra
 
 ## Evidence and validation
 
-Evidence records have stable IDs and include source, request metadata, time, result hash, and a bounded safe excerpt. `sources.json` records hashes of the project configuration and metric catalogue used at investigation start. Queries and `check_claims` reject drift in either file, requiring a new investigation; connection-service and password files are neither read nor hashed. The PostgreSQL service target and PostHog project connection must remain stable during an investigation because those external identities are outside the local source fingerprints. `check_claims` verifies that every claim cites completed successful evidence for the unchanged contract and sources, has a unique nonempty ID and text, and carries all four nonempty uncertainty fields. Findings also require all four global uncertainty fields and a valid stop reason. The structural check does not prove numerical or causal correctness.
+Evidence records have stable IDs and include source, request metadata, time, result hash, and a bounded safe excerpt. `sources.json` records hashes of the project configuration, the metric catalogue and the analysis context with every file it references, at investigation start, and `context.json` keeps the context itself, so the investigator and the verifier read one version. Loading the context fails when a referenced file or anchor is missing. Queries, verdicts and `check_claims` reject drift in any of these, requiring a new investigation; connection-service and password files are neither read nor hashed. The PostgreSQL service target and PostHog project connection must remain stable during an investigation because those external identities are outside the local source fingerprints. `prepare_findings` and `check_claims` verify that every data claim cites completed successful evidence for the unchanged contract and sources, that every context claim cites statements in the investigation's context and has their fixed text as its own, and that each claim has a unique nonempty ID and text and all four nonempty uncertainty fields. Findings also require all four global uncertainty fields and a valid stop reason. `check_claims` additionally requires that a verification of the candidate, bound to the current contract and sources, covers every claim; `SUPPORTED` and `REFUTED` need a supported data claim and no refuted claim. These checks establish that a verification is current and complete; they do not prove numerical or causal correctness, which rests on the verifier.
 
 The investigation skill invokes the `human-writing` skill before writing any text a person will read: the report, claims, titles, descriptions, and proposed analytics or dashboard wording. The plugin does not carry a copy, so the guidance cannot drift from the skill. When the skill is unavailable, the report says so and follows the reporting reference alone, which adds the investigation report structure.
 
@@ -61,7 +61,7 @@ Version one does not publish PostHog or QuickSight artefacts, provide a web user
 
 ## Acceptance checks
 
-- Unit tests cover SQL validation, PostHog and QuickSight classification, ledger operations, and `check_claims`.
+- Unit tests cover SQL validation, PostHog and QuickSight classification, ledger operations, the analysis-context loader, candidate and verification binding, `check_claims`, and `check_report`.
 - PostgreSQL 16 integration tests reject mutation and parser-bypass attempts, unsafe roles, over-cost plans, timeouts, and row-cap violations.
 - Hook tests deny malformed payloads and hook failures.
 - `claude plugin validate` accepts the plugin manifest.

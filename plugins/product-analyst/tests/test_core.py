@@ -122,18 +122,20 @@ class CoreTests(unittest.TestCase):
             "stop_reason": "SUPPORTED",
             "uncertainty": UNCERTAINTY,
         }
-        self.assertFalse(ledger.check_claims(self.root, inv, findings)["valid"])
+        self.assertFalse(ledger.prepare_findings(self.root, inv, findings)["valid"])
         ledger.complete(self.root, inv, eid, {"rows": [[1]]})
-        self.assertTrue(ledger.check_claims(self.root, inv, findings)["valid"])
+        self.assertTrue(ledger.prepare_findings(self.root, inv, findings)["valid"])
         findings["claims"][0]["evidence_ids"] = ["ev_missing"]
-        self.assertFalse(ledger.check_claims(self.root, inv, findings)["valid"])
+        self.assertFalse(ledger.prepare_findings(self.root, inv, findings)["valid"])
 
     def test_invalid_findings_do_not_replace_valid_file(self):
         inv = self.start()
         findings = {"claims": [], "stop_reason": "BUDGET_EXHAUSTED", "uncertainty": UNCERTAINTY}
-        self.assertTrue(ledger.check_claims(self.root, inv, findings)["valid"])
+        candidate = ledger.prepare_findings(self.root, inv, findings)["candidate_sha256"]
+        self.assertTrue(ledger.check_claims(self.root, inv, candidate_sha256=candidate)["valid"])
         findings["stop_reason"] = "DONE"
-        self.assertFalse(ledger.check_claims(self.root, inv, findings)["valid"])
+        self.assertFalse(ledger.prepare_findings(self.root, inv, findings)["valid"])
+        self.assertFalse(ledger.check_claims(self.root, inv, candidate_sha256="0" * 64)["valid"])
         saved = json.loads(
             (self.root / ".analyst/investigations" / inv / "findings.json").read_text()
         )
@@ -142,7 +144,7 @@ class CoreTests(unittest.TestCase):
     def test_supported_requires_claims_and_uncertainty(self):
         inv = self.start()
         self.assertFalse(
-            ledger.check_claims(
+            ledger.prepare_findings(
                 self.root,
                 inv,
                 {"claims": [], "stop_reason": "SUPPORTED", "uncertainty": UNCERTAINTY},
@@ -173,7 +175,8 @@ class CoreTests(unittest.TestCase):
         eid = ledger.reserve(self.root, inv, "postgres", {"sql": "SELECT 1"}, 2)
         ledger.complete(self.root, inv, eid, {"rows": [[1]]})
         findings = {"claims": [], "stop_reason": "INCONCLUSIVE", "uncertainty": UNCERTAINTY}
-        self.assertTrue(ledger.check_claims(self.root, inv, findings)["valid"])
+        candidate = ledger.prepare_findings(self.root, inv, findings)["candidate_sha256"]
+        self.assertTrue(ledger.check_claims(self.root, inv, candidate_sha256=candidate)["valid"])
         for filename, content in (
             ("metrics.toml", "[metrics.activation]\nversion=2\n"),
             ("config.toml", "\n# Changed connection configuration\n"),
@@ -184,7 +187,9 @@ class CoreTests(unittest.TestCase):
             with self.subTest(filename=filename):
                 with self.assertRaisesRegex(ValueError, "changed"):
                     ledger.reserve(self.root, inv, "postgres", {"sql": "SELECT 2"}, 2)
-                self.assertFalse(ledger.check_claims(self.root, inv, findings)["valid"])
+                self.assertFalse(
+                    ledger.check_claims(self.root, inv, candidate_sha256=candidate)["valid"]
+                )
             if original is None:
                 path.unlink()
             else:
@@ -194,7 +199,7 @@ class CoreTests(unittest.TestCase):
         inv = self.start()
         for invalid in ([], {}, None):
             self.assertFalse(
-                ledger.check_claims(
+                ledger.prepare_findings(
                     self.root,
                     inv,
                     {
