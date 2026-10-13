@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "scikit-learn",
+  "description": "Runner-neutral behavioral cases. All data, schemas and numbers are invented. Static validation checks structure only; behavior requires running each prompt and inspecting the output.",
+  "evaluation_protocol": {
+    "positive_cases": "Run each prompt in two fresh, isolated workspaces: a baseline without the four ML workflow skills and the root ML section, and a skill-enabled workspace with them. Keep the actual output and score every expectation pass or fail with a quoted excerpt as evidence.",
+    "negative_cases": "Run in the skill-enabled workspace with the neighboring skills installed. Record which skills the agent loaded.",
+    "pass_rule": "A case passes only when every expectation holds. Report baseline and skill-enabled results separately.",
+    "authorization": "Model calls cost money. Run them only with the user's approval and a budget."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "scaler-and-selector-before-split",
+      "covers": ["full-data-preprocessing"],
+      "should_trigger": true,
+      "prompt": "This gives 0.91 AUC. Can you add a random forest and tell me which model is better?\n\n```python\nimport pandas as pd\nfrom sklearn.feature_selection import SelectKBest, f_classif\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.metrics import roc_auc_score\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.preprocessing import StandardScaler\n\ndf = pd.read_csv(\"loans.csv\")\nX = pd.get_dummies(df.drop(columns=[\"default\"]), columns=[\"region\", \"product\"])\ny = df[\"default\"]\nX = X.fillna(X.mean())\nX[X.columns] = StandardScaler().fit_transform(X)\nselector = SelectKBest(f_classif, k=30).fit(X, y)\nX = X.loc[:, selector.get_support()]\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)\nmodel = LogisticRegression(max_iter=1000).fit(X_train, y_train)\nprint(roc_auc_score(y_test, model.predict_proba(X_test)[:, 1]))\n```",
+      "expected_output": "Identifies fitting on the full dataset before the split, rebuilds the code as a pipeline fitted inside training folds, compares both models and a dummy baseline under identical folds, and stops treating 0.91 as a reference.",
+      "expectations": [
+        "Identifies that imputation, scaling, and SelectKBest were fitted on the full dataset before the split, so the 0.91 AUC is optimistically biased.",
+        "Rewrites the code with a Pipeline (and a ColumnTransformer or equivalent) so that imputation, encoding, scaling, and feature selection are fitted only on training folds.",
+        "Compares logistic regression and random forest on identical cross-validation folds or splits with the same metric, and includes a dummy baseline.",
+        "Treats the earlier 0.91 as not comparable with the corrected results."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "keep-accepted-grouped-protocol",
+      "covers": ["accepted-protocol-preserved"],
+      "should_trigger": true,
+      "prompt": "Our audit fixed the evaluation protocol in docs/ml/split.json: StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=7) on customer_id over the development rows, with the final-test customers listed in data/final_test_ids.csv and kept out of development. Primary metric: average precision. Write the scikit-learn code to tune a HistGradientBoostingClassifier on features.parquet (columns: customer_id, label, plus numeric and categorical features). Keep it simple; a plain train_test_split is fine for tuning. (The files are not in this workspace; write the code against these paths.)",
+      "expected_output": "Keeps the accepted grouped folds instead of the suggested train_test_split, excludes final-test customers from tuning, uses average precision, and includes a dummy baseline under the same folds.",
+      "expectations": [
+        "Uses the accepted StratifiedGroupKFold folds on customer_id for tuning instead of a plain train_test_split, and explains why.",
+        "Excludes the final-test customers from all tuning and fitting, and evaluates them at most once on the frozen model.",
+        "Passes groups to the search, or uses precomputed folds, so that no customer appears in both training and validation folds.",
+        "Uses average precision as the scoring metric and compares against a dummy baseline under the same folds."
+      ],
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "ml-provenance-and-handoff",
+  "description": "Runner-neutral behavioral cases. All data, schemas and numbers are invented. Static validation checks structure only; behavior requires running each prompt and inspecting the output.",
+  "evaluation_protocol": {
+    "positive_cases": "Run each prompt in two fresh, isolated workspaces: a baseline without the four ML workflow skills and the root ML section, and a skill-enabled workspace with them. Keep the actual output and score every expectation pass or fail with a quoted excerpt as evidence.",
+    "negative_cases": "Run in the skill-enabled workspace with the neighboring skills installed. Record which skills the agent loaded.",
+    "pass_rule": "A case passes only when every expectation holds. Report baseline and skill-enabled results separately.",
+    "authorization": "Model calls cost money. Run them only with the user's approval and a budget."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "uncommitted-notebook-result",
+      "covers": ["missing-provenance"],
+      "should_trigger": true,
+      "prompt": "Here's our best result for the report: notebooks/final_v3.ipynb gave validation RMSE 12.4 against a baseline of 15.1. I ran it last week; since then I've changed the feature code a bit, and the training data was refreshed from the warehouse yesterday. The notebook run was never committed. Please write the results section of the handoff doc for the platform team that will productionize the model. (The notebook isn't in this workspace.)",
+      "expected_output": "States that the result cannot be traced to exact code, data and configuration, invents no provenance values, and requires a recorded re-run of candidate and baseline before handoff. Any draft labels the result's status and lists what is missing.",
+      "expectations": [
+        "States that the RMSE 12.4 cannot be traced to exact data, code, and configuration, so it is not reproducible or handoff-ready as it stands.",
+        "Does not invent a commit SHA, data hash, package versions, or other provenance values.",
+        "Proposes re-running from a committed revision with recorded data identity, split, environment, configuration, and seeds, and re-running the baseline under the same conditions, before the result is handed off.",
+        "Any results text it drafts labels the result's status (exploratory or unverified) and lists the missing provenance."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "exploratory-ticket-escalation",
+      "covers": ["unneeded-production-infrastructure"],
+      "should_trigger": true,
+      "prompt": "Quick exploratory question: can we predict from the first message which support tickets will escalate? I have a CSV of 9k tickets (ticket_id, customer_id, created_at, first_message, escalated). I only need to know within a day or two whether there's enough signal to pursue. Set up the experiment tracking and project structure for this.",
+      "expected_output": "Keeps the setup proportionate: plain local run records and a small project layout, minimal provenance per run, and a naive baseline plus a simple text model. No tracking servers, registries, feature stores, containers, or monitoring.",
+      "expectations": [
+        "Proposes lightweight local tracking (for example JSON run records or a CSV log in the repository) and does not introduce MLflow servers, DVC, model registries, feature stores, containers, orchestration, or monitoring.",
+        "Still records minimal provenance for each run: data identity, code revision, split, seed, configuration, and metrics.",
+        "Plans a naive baseline (such as the majority class or the escalation base rate) and a simple text model as the signal check."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "bert-single-seed-claim",
+      "covers": ["deep-learning-reproducibility"],
+      "should_trigger": true,
+      "prompt": "We fine-tuned bert-base-uncased for intent classification. Run A reached macro-F1 0.884 on validation; run B, after switching the scheduler from linear to cosine, reached 0.891. Both used seed 42, so they're deterministic and the +0.007 is real. Training was on one A100 with bf16 and transformers 4.x; we saved a checkpoint every 500 steps and kept the one with the best validation F1. Please record run B as the new best and write the handoff note.",
+      "expected_output": "Rejects the single-seed claim, avoids promising exact reproducibility, records the deep-learning provenance fields, and notes that checkpoint selection on validation F1 biases the validation score.",
+      "expectations": [
+        "Does not accept one seed per configuration as evidence that the +0.007 difference is real; asks for repeated runs across seeds or another variability estimate before claiming an improvement.",
+        "Does not claim bitwise or exact reproducibility, noting that GPU and mixed-precision training can be nondeterministic even with a fixed seed.",
+        "Records or requests the base checkpoint revision, tokenizer revision, exact framework and CUDA versions, hardware, precision, optimizer and scheduler configuration, checkpoint-selection rule and step, and seeds.",
+        "Notes that selecting the checkpoint by validation F1 makes the validation score optimistic and that a separate evaluation set is needed for an unbiased estimate."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "route-fraud-system-design",
+      "covers": ["route-architecture"],
+      "should_trigger": false,
+      "prompt": "Write an ML system design document for real-time card-fraud detection: requirements, data sources, feature pipeline, model choice, serving at 50 ms p99, monitoring, and rollout plan.",
+      "expected_output": "Uses the ML system design workflow. None of the ML workflow skills load.",
+      "expectations": [
+        "Does not load ml-problem-and-data-audit, ml-experiment-protocol, ml-provenance-and-handoff, or scikit-learn.",
+        "Produces or starts an ML system design document, or asks design-scoping questions, rather than an audit, experiment, or run-record workflow."
+      ],
+      "files": []
+    }
+  ]
+}

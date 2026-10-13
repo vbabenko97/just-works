@@ -1,0 +1,86 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "ml-experiment-protocol",
+  "description": "Runner-neutral behavioral cases. All data, schemas and numbers are invented. Static validation checks structure only; behavior requires running each prompt and inspecting the output.",
+  "evaluation_protocol": {
+    "positive_cases": "Run each prompt in two fresh, isolated workspaces: a baseline without the four ML workflow skills and the root ML section, and a skill-enabled workspace with them. Keep the actual output and score every expectation pass or fail with a quoted excerpt as evidence.",
+    "negative_cases": "Run in the skill-enabled workspace with the neighboring skills installed. Record which skills the agent loaded.",
+    "pass_rule": "A case passes only when every expectation holds. Report baseline and skill-enabled results separately.",
+    "authorization": "Model calls cost money. Run them only with the user's approval and a budget."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "xgboost-gain-within-fold-noise",
+      "covers": ["gain-within-variability"],
+      "should_trigger": true,
+      "prompt": "5-fold CV results on our churn data (same folds for both models):\nlogistic regression AUC by fold: 0.842, 0.851, 0.829, 0.858, 0.846\nXGBoost (tuned with 200 Optuna trials) AUC by fold: 0.861, 0.838, 0.835, 0.869, 0.847\nThe logistic regression used default settings. XGBoost averages 0.850 against 0.845, but inference is 30x slower and would need a new service. Write the recommendation to switch production to XGBoost.",
+      "expected_output": "Declines to recommend the switch on this evidence. The paired fold differences (+0.019, -0.013, +0.006, +0.011, +0.001; mean about +0.005, standard deviation about 0.012) show a gain inside fold-to-fold variation, the tuning budgets differ, and the cost is large. It recommends keeping the simpler model or names the evidence that would justify switching.",
+      "expectations": [
+        "Does not recommend switching to XGBoost on this evidence.",
+        "Quantifies variability using the paired per-fold differences (about -0.013 to +0.019 around a mean of about +0.005) or an equivalent method, and concludes that the gain is small relative to that variability.",
+        "Notes the unequal tuning budget (200 trials against default settings) as a flaw in the comparison.",
+        "Weighs the 30x inference cost and new service against the gain, or states what evidence would justify the switch."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "tune-until-test-hits-target",
+      "covers": ["final-test-tuning"],
+      "should_trigger": true,
+      "prompt": "Our held-out test accuracy is 86.2% and the demo target is 90%. Keep tuning hyperparameters and features, re-checking test accuracy after each change, until we reach 90%. If the test set gets overused, we can reshuffle everything into a fresh split later. The train, validation, and test split files are in data/splits/ (not in this workspace; describe what you will do).",
+      "expected_output": "Refuses the test-set feedback loop, moves tuning to validation or inner cross-validation, evaluates the frozen candidate once, and explains that reshuffling the same data cannot restore an untouched test.",
+      "expectations": [
+        "Refuses to use the test set as the feedback signal for tuning and explains that doing so makes the test estimate optimistically biased.",
+        "Proposes tuning against validation data or cross-validation inside the training data and evaluating the frozen candidate on the test set once.",
+        "Explains that reshuffling or relabeling the same data does not produce an untouched test set; a reliable final estimate needs data that did not inform development."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "fraud-threshold-and-calibration-on-test",
+      "covers": ["threshold-or-calibration-leakage"],
+      "should_trigger": true,
+      "prompt": "Fraud model is done. I chose the decision threshold that maximizes F1 on the test set (threshold 0.37, F1 0.71), then fit isotonic calibration on the same test set so the scores read as probabilities; the calibrated Brier score on test is 0.041. Write the final evaluation summary for the risk team. Investigators can review 200 alerts a day; a missed fraud costs about EUR 900 and a false alert about EUR 15 of analyst time.",
+      "expected_output": "Flags both choices as test-set contamination, labels the reported numbers exploratory, moves threshold selection and calibration to training or validation data, and ties the threshold to costs or alert capacity.",
+      "expectations": [
+        "Identifies that choosing the threshold and fitting calibration on the test set contaminates it, so F1 0.71 and Brier 0.041 are optimistic and not final results.",
+        "Proposes choosing the threshold and fitting calibration on training or validation data (for example with cross-validation) and evaluating once on untouched data.",
+        "Bases the threshold on the stated costs or the 200-alerts-per-day capacity rather than F1.",
+        "Does not present F1 0.71 or Brier 0.041 as validated final results in the summary."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "wine-quality-valid-iid",
+      "covers": ["valid-iid-workflow"],
+      "should_trigger": true,
+      "prompt": "Our quality lab measures 11 physicochemical properties for each wine batch, and a tasting panel assigns a quality grade from 0 to 10. wine_samples.csv has 5,214 rows, one per independently produced batch; there are no repeated batches and no time ordering that matters, and all measurements are taken before grading. The lab wants to predict the grade for future batches measured on the same instruments. They judge success by mean absolute error, and a 0.1-point MAE improvement over their current rule (always predict the median grade) is worth having. Set up the evaluation and a first model in scikit-learn.",
+      "expected_output": "Proceeds without inventing blockers: a random or stratified split or K-fold justified by independence, the median baseline, MAE against the 0.1-point minimum lift, any learned preprocessing fitted inside the training folds, and no production infrastructure.",
+      "expectations": [
+        "Proceeds to set up the evaluation without inventing blocking questions; checks such as duplicates or missing values may be planned but do not stop the work.",
+        "Uses random or stratified splitting or K-fold cross-validation and justifies it by the independence of batches, without imposing group or time splits.",
+        "Includes the median-prediction baseline (for example DummyRegressor(strategy=\"median\")) and compares models on MAE against the 0.1-point minimum useful lift.",
+        "Fits any learned preprocessing (imputation statistics, scaling, encoder categories, feature selection, or other parameters estimated from data) inside a Pipeline evaluated within the training folds. A model with no learned preprocessing, such as a tree model on raw features, fitted inside the folds also satisfies this; a missing Pipeline alone is not a failure.",
+        "Does not add production infrastructure such as serving, model registries, or monitoring."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "route-recommender-design-review",
+      "covers": ["route-design-review"],
+      "should_trigger": false,
+      "prompt": "Please review this design doc for our product recommendation system and grade it.\n\n# Home feed recommendations v2\nGoal: increase add-to-cart rate from the home feed.\nData: clickstream (90 days), product catalog, orders.\nApproach: two-tower retrieval (user tower on the last 50 events, item tower on catalog features) plus a LightGBM ranker on 120 features.\nOffline metrics: recall@50 for retrieval and NDCG@10 for ranking, on a random 10% of sessions.\nServing: retrieval through FAISS, p99 latency budget 80 ms.\nRollout: A/B test on 10% of traffic for two weeks; primary metric add-to-cart rate.\nMonitoring: daily feature drift dashboard.\nOpen questions: cold-start items; out-of-stock products.",
+      "expected_output": "Reviews the design document. None of the ML workflow skills load.",
+      "expectations": [
+        "Does not load ml-problem-and-data-audit, ml-experiment-protocol, ml-provenance-and-handoff, or scikit-learn.",
+        "Produces a review of the document (strengths, gaps, and a grade or verdict) rather than running an experiment protocol."
+      ],
+      "files": []
+    }
+  ]
+}

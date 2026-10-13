@@ -162,6 +162,18 @@ Use the project's existing documentation format. Adopt Open Knowledge Format (OK
 
 **Long-running processes.** Run dev servers, file watchers, and similar persistent processes in the background so the session remains unblocked.
 
+## Machine learning
+
+Applies when a task trains, tunes, evaluates, or reports a predictive model. The `ml-problem-and-data-audit`, `ml-experiment-protocol`, `ml-provenance-and-handoff`, and `scikit-learn` skills hold the procedures.
+
+- Before training, establish the target, prediction unit, decision time, information available at that time, metric, and a split that reflects how the model will be used. Ask when one of these is unknown and changes validity; do not invent it.
+- Unresolved leakage stops modeling, even when the work is labeled exploratory: post-outcome or future information, entity overlap the evaluation forbids, duplicates of the same item across splits, or preprocessing fitted on evaluation data.
+- Fit learned preprocessing on training folds only.
+- Keep the final test out of feature, model, parameter, threshold, and stopping decisions. Once it has influenced any of them, results on it are exploratory.
+- Run a naive baseline and a simple model before complex ones. Adopt added complexity only when its gain exceeds the observed variability and justifies its cost.
+- Record data identity, split, code revision, environment, configuration, seeds, and metrics for every run that can inform a decision, including failed runs. Report a result without that provenance as not reproducible.
+- Add production infrastructure only when production is an explicit requirement.
+
 ## Colleague messages
 
 Scope: colleague chat/email drafting and assessment. Code reviews, documentation, and implementation keep their existing workflows.

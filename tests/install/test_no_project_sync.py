@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Regression test: the global installer must never write into project skill roots."""
+"""Regression test: the global installer must never write into project skill roots.
+
+It also checks that the installed ML workflow skill packages match their source trees.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +15,12 @@ import tempfile
 
 REPO = Path(__file__).resolve().parents[2]
 ROOT_NAMES = (".claude", ".codex", ".agents")
+ML_SKILLS = (
+    "ml-problem-and-data-audit",
+    "ml-experiment-protocol",
+    "ml-provenance-and-handoff",
+    "scikit-learn",
+)
 CHECKS: list[tuple[bool, str, str]] = []
 
 
@@ -153,6 +162,28 @@ def main() -> int:
         check(
             (control_home / ".agents" / "skills" / "lossless-doc-compress").is_dir(),
             "global Codex skills install",
+        )
+        for name in ML_SKILLS:
+            for source, installed in (
+                (
+                    REPO / ".claude" / "skills" / name,
+                    control_home / ".claude" / "skills" / name,
+                ),
+                (
+                    REPO / ".codex" / "skills" / name,
+                    control_home / ".agents" / "skills" / name,
+                ),
+            ):
+                check(
+                    installed.is_dir() and snapshot(installed) == snapshot(source),
+                    f"installed {installed.relative_to(control_home)} matches {source.relative_to(REPO)}",
+                )
+        changed = control_home / ".claude" / "skills" / ML_SKILLS[0] / "SKILL.md"
+        changed.write_bytes(changed.read_bytes() + b"\n")
+        check(
+            snapshot(changed.parent)
+            != snapshot(REPO / ".claude" / "skills" / ML_SKILLS[0]),
+            "installed-tree comparison detects a changed file",
         )
     finally:
         shutil.rmtree(temporary_root, ignore_errors=True)

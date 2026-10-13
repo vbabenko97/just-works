@@ -1,0 +1,42 @@
+{
+  "schema_version": "1",
+  "run_id": "<unique ID, also the directory name>",
+  "status": "<planned | running | completed | failed | aborted>",
+  "started_at": "<ISO 8601 timestamp with time zone>",
+  "finished_at": "<ISO 8601 timestamp, or null>",
+  "runtime_seconds": null,
+  "hypothesis": "<what this run tests, or the declared search it belongs to>",
+  "command": "<exact command that started the run, with credentials replaced by variable names>",
+  "data": {
+    "description": "<dataset name and location>",
+    "identity_method": "<sha256 | snapshot ID | query plus as-of time | DVC or lakeFS reference>",
+    "identity": "<value produced by the method>",
+    "rows": null
+  },
+  "split": {
+    "name": "<split name>",
+    "config_path": "<path to the split configuration>",
+    "assignments_sha256": "<hash of the assignments file>",
+    "evaluation_set": "<validation | cross-validation | backtest | final test>"
+  },
+  "code": {
+    "repository": "<remote URL or local path>",
+    "revision": "<full commit SHA>",
+    "dirty": null,
+    "dirty_evidence": "<path to saved git diff HEAD, or clean>",
+    "source_snapshot": "<path to copies of the untracked or uncommitted source files the run uses, with their sha256, or null>",
+    "entry_point": "<script or module>"
+  },
+  "environment": {
+    "language_version": "<for example Python 3.12.7>",
+    "dependency_lock": "<lock file path and hash, or path to a frozen package list>",
+    "platform": "<OS and architecture>",
+    "hardware": "<CPU, GPU model and count, driver>"
+  },
+  "config": {},
+  "seeds": {},
+  "metrics": {},
+  "artifacts": {},
+  "failure": null,
+  "notes": ""
+}

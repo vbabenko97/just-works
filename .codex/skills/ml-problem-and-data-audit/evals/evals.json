@@ -1,0 +1,100 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "ml-problem-and-data-audit",
+  "description": "Runner-neutral behavioral cases. All data, schemas and numbers are invented. Static validation checks structure only; behavior requires running each prompt and inspecting the output.",
+  "evaluation_protocol": {
+    "positive_cases": "Run each prompt in two fresh, isolated workspaces: a baseline without the four ML workflow skills and the root ML section, and a skill-enabled workspace with them. Keep the actual output and score every expectation pass or fail with a quoted excerpt as evidence.",
+    "negative_cases": "Run in the skill-enabled workspace with the neighboring skills installed. Record which skills the agent loaded.",
+    "pass_rule": "A case passes only when every expectation holds. Report baseline and skill-enabled results separately.",
+    "authorization": "Model calls cost money. Run them only with the user's approval and a budget."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "post-outcome-churn-features",
+      "covers": ["post-outcome-leakage"],
+      "should_trigger": true,
+      "prompt": "I need a churn model for our subscription app. We score each customer on day 30 after signup and want to know whether they will cancel by day 90. The table is customers.parquet (48k rows, one per customer; it is not in this workspace). Columns: customer_id, signup_date, plan_tier, country, sessions_first_30d, support_tickets_first_30d, payment_failures_total, cancelled_at (nullable timestamp), last_login_at, nps_score_latest, churned_90d (target). Write the training script for a gradient boosting model and tell me what AUC to expect. Our previous attempt reached 0.97 AUC, so this should be easy.",
+      "expected_output": "Treats modeling as blocked until leakage is resolved. Names cancelled_at as a post-outcome field that encodes the target and questions whether the total, last and latest columns were recorded after day 30. Treats the earlier 0.97 AUC as a reason to audit, not a target, and gives no expected AUC.",
+      "expectations": [
+        "Identifies cancelled_at as post-outcome or target leakage and excludes it from the features.",
+        "Flags at least one of payment_failures_total, last_login_at, or nps_score_latest as possibly recorded after day 30 and requires an as-of-day-30 version or exclusion.",
+        "Treats the previous 0.97 AUC as a warning sign of leakage rather than an achievable target.",
+        "Does not state an expected AUC for a model that still includes unresolved leaking features."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "repeated-patients-row-split",
+      "covers": ["repeated-entity-row-split"],
+      "should_trigger": true,
+      "prompt": "Write a training script for 30-day readmission prediction from encounters.csv (52,310 rows; about 18k unique patients, some with 20+ encounters). Columns: encounter_id, patient_id, admit_date, discharge_date, age, diagnosis_codes, length_of_stay, prior_admissions_12m, discharge_disposition, readmitted_30d. Use a stratified 80/20 train_test_split with random_state=42, then 5-fold StratifiedKFold on the training part for tuning.",
+      "expected_output": "Explains that row-level splitting puts the same patient in training and test. Replaces both the holdout and the tuning folds with patient-grouped splitting, or a justified time-based split, and checks that no patient crosses splits.",
+      "expectations": [
+        "Explains that a row-level random split puts encounters of the same patient in both training and test, which inflates the evaluation.",
+        "Uses patient-level grouping (for example GroupShuffleSplit, GroupKFold, or StratifiedGroupKFold on patient_id) for the holdout and for the tuning folds, or a time-based split justified by how the model will be used.",
+        "Includes or requires a check that no patient_id appears in more than one of train, validation, and test.",
+        "Does not keep the requested stratified row-level split as the evaluation of record."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "store-demand-without-horizon",
+      "covers": ["missing-forecast-horizon"],
+      "should_trigger": true,
+      "prompt": "Ops wants daily demand forecasts for our 340 stores so they can plan. Data: sales_daily.csv with store_id, date, units_sold, promo_flag, price, weather_temp, holiday_flag, from 2021-01-01 to 2026-09-30. Set up the train/validation split and a first model. Just pick sensible defaults.",
+      "expected_output": "Does not invent the forecast horizon or the time at which forecasts are made. Asks for them, possibly with concrete options, and treats them as blocking for the split and evaluation design. Any evaluation it sketches is chronological, and it checks which inputs are known at forecast time.",
+      "expectations": [
+        "Identifies the forecast horizon and forecast origin (when forecasts are made and how far ahead) as unknown and required for the split design.",
+        "Does not finalize a split or train a model on a silently chosen horizon; any horizon it uses is labeled as an assumption awaiting confirmation.",
+        "Rejects random or shuffled K-fold splitting; any proposed evaluation is chronological, such as backtesting over forecast origins.",
+        "Questions whether weather_temp, promo_flag, or price values would be known at the forecast origin."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "merchant-loans-group-and-time",
+      "covers": ["group-and-time-split"],
+      "should_trigger": true,
+      "prompt": "We want to predict whether a merchant defaults on a working-capital loan within 6 months of disbursement. loans.csv: 41k loans from 9.5k merchants, 2019 to 2026-09; columns loan_id, merchant_id, disbursed_at, amount, merchant_age_months, revenue_last_3m, prior_loans_count, prior_default_flag, defaulted_6m. The model will score new applications next quarter, from both new and repeat merchants. Propose the evaluation split and explain it.",
+      "expected_output": "Splits chronologically by disbursement date, respects the 6-month label maturation, chooses how to treat repeat merchants from the deployment population, and requires merchant history features to be computed as of disbursement.",
+      "expectations": [
+        "Proposes a chronological split by disbursement date rather than a random split.",
+        "Accounts for the 6-month outcome window: loans whose outcome could not be observed by the training cutoff are excluded from training or separated by a gap.",
+        "Handles repeated merchants explicitly and justifies the choice by the deployment population, for example by reporting new and repeat merchants as separate slices or using merchant-disjoint evaluation for the new-merchant case.",
+        "Requires prior_default_flag, prior_loans_count, and revenue_last_3m to be computed as of the disbursement date."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "dermoscopy-duplicates",
+      "covers": ["vision-or-document-duplicates"],
+      "should_trigger": true,
+      "prompt": "I have 18,400 dermoscopy images plus labels.csv (image_id, lesion_id, patient_id, diagnosis, capture_device, clinic). Many lesions have several images at different zoom levels, and the dataset was merged from two public sources that partly overlap. I want to fine-tune a ResNet-50 classifier. Set up the train/validation/test split.",
+      "expected_output": "Splits by patient rather than image, plans duplicate detection across the overlapping sources and across splits, and persists the split assignments.",
+      "expectations": [
+        "Splits by patient (or at least by lesion, with the patient-level risk stated), not by image.",
+        "Plans exact and near-duplicate detection across the two sources and across splits before evaluation, for example with perceptual hashes or embedding similarity.",
+        "Persists the split assignments (a file of IDs or a deterministic configuration) so later runs reuse the same split."
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "route-descriptive-sales-analysis",
+      "covers": ["route-descriptive-analysis"],
+      "should_trigger": false,
+      "prompt": "Q3 against Q2 by region and channel (EUR thousands):\n\nregion,channel,q2_revenue,q3_revenue,q2_return_rate,q3_return_rate\nEU,marketplace,4120,3310,0.08,0.14\nEU,direct,2890,2830,0.05,0.05\nUS,marketplace,5010,5150,0.07,0.07\nUS,direct,3320,3410,0.04,0.04\n\nGermany is 61% of EU marketplace revenue. Why did EU revenue drop? I need an executive summary with the likely drivers for Monday's leadership meeting.",
+      "expected_output": "Handles the request as descriptive analysis of the supplied figures. None of the ML workflow skills load, and no predictive model is proposed.",
+      "expectations": [
+        "Does not load ml-problem-and-data-audit, ml-experiment-protocol, ml-provenance-and-handoff, or scikit-learn.",
+        "Answers as descriptive analysis (drivers and an executive summary) without proposing to train a predictive model."
+      ],
+      "files": []
+    }
+  ]
+}

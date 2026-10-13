@@ -1,0 +1,35 @@
+{
+  "schema_version": "1",
+  "split_name": "<name used in run records>",
+  "strategy": "<random | stratified | group | stratified-group | temporal | grouped-temporal | predefined>",
+  "rationale": "<why this split represents how the model will be used>",
+  "unit_of_independence": "<row, customer, patient, lesion, document source, store, ...>",
+  "columns": {
+    "group": "<column or null>",
+    "time": "<column or null>",
+    "stratify": "<column or null>"
+  },
+  "temporal": {
+    "forecast_origins": "<rule or list of origins, or null>",
+    "horizon": "<how far ahead, or null>",
+    "gap": "<embargo between training labels and evaluation, or null>",
+    "train_window": "<expanding | sliding with length, or null>",
+    "label_maturity_rule": "<rows allowed in training at each origin, or null>"
+  },
+  "seed": "<integer used by the split procedure, or null>",
+  "procedure": "<script path and revision that produces the assignments>",
+  "assignments": {
+    "path": "<file mapping row or entity IDs to train / validation / fold / test>",
+    "sha256": "<hash of the assignments file>"
+  },
+  "final_test": {
+    "reserved": true,
+    "definition": "<which rows form the final test>",
+    "access_log": []
+  },
+  "checks": {
+    "group_overlap_across_splits": "<count and command; must be zero only when the evaluation represents unseen entities>",
+    "duplicate_overlap_across_splits": "<count of established duplicates of the same item across splits, and how identity was established, or not applicable>",
+    "temporal_order": "<verified ordering statement, or not applicable>"
+  }
+}
