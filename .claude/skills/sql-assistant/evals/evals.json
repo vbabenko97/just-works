@@ -1,0 +1,473 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "sql-assistant",
+  "description": "Runner-neutral behavioral cases. All schemas, data, and environments are invented. Static validation checks structure only; behavior requires running each prompt and inspecting the output. No case needs a database: an agent that runs SQL to answer a case fails it.",
+  "evaluation_protocol": {
+    "setup": "Give the agent the prompt as a user message in a fresh workspace where this skill and its neighboring skills are installed, with no database connection. Where a prompt claims database access exists, that claim is part of the scenario; the agent must not act on it.",
+    "positive_cases": "Record whether the agent loaded sql-assistant, keep the full output, and score every expectation pass or fail with a quoted excerpt as evidence. Optionally repeat in a baseline workspace without the skill and report the two results separately.",
+    "negative_cases": "Record which skills the agent loaded. A negative case passes when sql-assistant is not loaded and the other expectations hold.",
+    "pass_rule": "A case passes only when every expectation holds. Report activation results separately from answer quality, and report skipped cases as skipped.",
+    "limits": "Results from simulated activation, where an agent is shown skill descriptions and decides what to load, do not certify native activation in Claude Code or Codex. No case checks behavior against a live database.",
+    "authorization": "Run evaluations within the user's request and any established model or tool budget. Existing authorization remains valid; ask before external paid API calls or costs outside that budget. No case requires live SQL execution."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "customer-email-without-schema",
+      "covers": [
+        "schema-invention",
+        "incomplete-input",
+        "activation-direct",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "We're on PostgreSQL 16. Write me a SQL query that lists every order from last week together with the customer's email. The table is called orders.",
+      "expected_output": "Loads sql-assistant. Does not invent where the email lives or how orders relate to customers. Names the missing facts and asks for them, or gives illustrative SQL that is labeled as illustrative and lists every assumed table, column, and relationship. Any range filter is half-open in a stated time zone.",
+      "expectations": [
+        "Loads sql-assistant.",
+        "Does not present a customers table, an email column, or an orders.customer_id relationship as part of the user's schema; any such object appears only as a labeled assumption.",
+        "Names the missing facts: where the email is stored and how orders link to it, and which column holds the order time.",
+        "Asks what \"last week\" means (calendar week or last 7 days, and in which time zone), or states the assumption it made.",
+        "If SQL is given, it filters the time range as a half-open interval (>= start and < end) rather than BETWEEN or a date cast of the column."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "latest-order-per-customer-distinct",
+      "covers": [
+        "join-cardinality",
+        "overlay-sqlserver"
+      ],
+      "should_trigger": true,
+      "prompt": "SQL Server 2022. Tables:\ncustomers(id int primary key, name nvarchar(200) not null)\norders(id int primary key, customer_id int not null references customers(id), created_at datetime2 not null, total decimal(12,2) not null)\n\nI need one row per customer with their latest order. This returns several rows per customer:\n\nSELECT DISTINCT c.id, c.name, o.id AS order_id, o.created_at\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\nORDER BY c.id;\n\nFix it.",
+      "expected_output": "Explains that DISTINCT cannot collapse rows whose order columns differ. Uses a ranking window function partitioned by customer and ordered by created_at descending with order id as tie-breaker (or an equivalent with explicit tie handling), keeps one row per customer, and asks or states whether customers without orders belong in the result. Uses T-SQL syntax.",
+      "expectations": [
+        "States the target grain (one row per customer) and explains why DISTINCT does not achieve it.",
+        "Selects the latest order with ROW_NUMBER (or an equivalent) partitioned by customer and ordered by created_at descending plus a unique tie-breaker such as the order id, or explicitly handles ties another way.",
+        "Addresses customers without orders: asks, or states whether the query keeps them (LEFT JOIN or OUTER APPLY) or drops them.",
+        "Uses valid T-SQL: no LIMIT, and no ORDER BY inside a CTE or derived table without TOP or OFFSET."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "not-in-with-null-import",
+      "covers": [
+        "nullable-anti-join",
+        "overlay-sqlite"
+      ],
+      "should_trigger": true,
+      "prompt": "SQLite database for a newsletter tool.\nusers(id INTEGER PRIMARY KEY, email TEXT)\nunsubscribes(email TEXT)  -- yesterday's CSV import left some rows with NULL email\n\nThis query should list users who have not unsubscribed, but since the import it returns nothing:\n\nSELECT id FROM users WHERE email NOT IN (SELECT email FROM unsubscribes);\n\nWhy, and what should it be? What would it return if unsubscribes were empty?",
+      "expected_output": "Explains that a NULL in the subquery makes NOT IN unknown for every non-matching user, so no rows pass. Rewrites with NOT EXISTS (or filters NULLs in the subquery) and states the chosen semantics. Says that with an empty unsubscribes table every user is returned. Mentions that users with NULL email need a decision.",
+      "expectations": [
+        "Explains that one NULL in the subquery makes NOT IN evaluate to unknown (not true) for users without a match, so no rows are returned.",
+        "Rewrites the query with NOT EXISTS, or adds a NULL filter to the subquery, and states which semantics the rewrite gives.",
+        "Says that with an empty unsubscribes table the original query returns all users (or all users with the stated handling of NULL emails).",
+        "Points out a remaining decision, such as users whose own email is NULL or case differences in email comparison, instead of silently assuming one."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "audit-events-keyset-ties",
+      "covers": [
+        "deterministic-pagination",
+        "overlay-sqlserver"
+      ],
+      "should_trigger": true,
+      "prompt": "Azure SQL Database. Our API pages through audit events:\n\nSELECT TOP (50) id, created_at, actor, action\nFROM dbo.audit_events\nWHERE created_at > @last_created_at\nORDER BY created_at;\n\nid is a bigint identity primary key; created_at is datetime2 NOT NULL and many events share the same value. Users report events missing between pages. Fix the query.",
+      "expected_output": "Explains that rows sharing the last created_at of a page are skipped. Adds id as a tie-breaker to ORDER BY and uses a keyset predicate that matches it, in the expanded form (created_at > @c OR (created_at = @c AND id > @id)) because T-SQL has no row-value comparison. Keeps parameters bound.",
+      "expectations": [
+        "Explains that rows with the same created_at as the last row of a page are skipped by the strict > predicate.",
+        "Orders by created_at and then id (a unique tie-breaker).",
+        "Uses a keyset predicate that matches that ordering, such as created_at > @last_created_at OR (created_at = @last_created_at AND id > @last_id), and does not use a row-value comparison.",
+        "Keeps the values as parameters and uses T-SQL syntax (TOP or OFFSET/FETCH with ORDER BY), not LIMIT."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "search-endpoint-injection-unknown-driver",
+      "covers": [
+        "driver-binding",
+        "incomplete-input",
+        "activation-indirect"
+      ],
+      "should_trigger": true,
+      "prompt": "Security flagged our product search. Someone sent q=' OR 1=1 -- and got every row. Here's the Python handler:\n\ndef search(q, sort):\n    cursor.execute(f\"SELECT * FROM products WHERE name LIKE '%{q}%' ORDER BY {sort}\")\n    return cursor.fetchall()\n\nsort comes from the query string too (name, price, or created_at). Please fix it.",
+      "expected_output": "Loads sql-assistant. Identifies both injection points. Binds q as a parameter and builds the LIKE pattern from the bound value, escaping % and _ if literal search is intended. Maps sort to an allowlist of column names in code. Does not guess the placeholder syntax without knowing the driver: asks which driver and database are used, or shows placeholders marked as driver-dependent.",
+      "expectations": [
+        "Loads sql-assistant.",
+        "Identifies that both q and sort are injected into the SQL text.",
+        "Passes q as a bound parameter instead of formatting it into the string.",
+        "Handles sort with an allowlist mapping in code (for example a dict from allowed names to column names) rather than binding it as a value or interpolating raw input.",
+        "Does not present one placeholder style as certain without knowing the driver: asks for the driver or database, or marks the placeholder as driver-dependent.",
+        "Mentions that % and _ inside q act as LIKE wildcards and need escaping if the search should be literal."
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "json-index-mysql-then-mariadb",
+      "covers": [
+        "mysql-mariadb-difference",
+        "overlay-mysql",
+        "overlay-mariadb"
+      ],
+      "should_trigger": true,
+      "prompt": "Our database is \"MySQL-compatible\". Table events(id BIGINT PRIMARY KEY, payload JSON). Write a query for events where payload.type is 'signup', and suggest an index to make it fast.\n\nUpdate: ops just told me production is actually MariaDB 11.8, not MySQL. Does anything in your answer change?",
+      "expected_output": "Treats MySQL and MariaDB as different engines. After the update, revisits the JSON assumptions: in MariaDB, JSON is an alias for LONGTEXT with a validity check, not MySQL's binary JSON type, and JSON syntax and indexing must be checked against MariaDB documentation. Validation names SQLFluff's mariadb dialect and does not use SQLGlot's mysql dialect as evidence for MariaDB.",
+      "expectations": [
+        "Before the update, flags that \"MySQL-compatible\" could mean MySQL or MariaDB, or states which engine it assumed.",
+        "After the update, states that in MariaDB the JSON type is an alias for LONGTEXT (with a JSON_VALID check) rather than MySQL's binary JSON storage.",
+        "Re-checks the JSON access syntax and the index approach for MariaDB instead of carrying the MySQL forms over unverified.",
+        "For validation, names SQLFluff's mariadb dialect (not mysql) and does not present SQLGlot's mysql dialect as validating MariaDB."
+      ],
+      "files": []
+    },
+    {
+      "id": 7,
+      "name": "vienna-day-at-dst-end",
+      "covers": [
+        "dst-boundary",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "PostgreSQL 17. orders.created_at is timestamptz. The business wants the number of orders placed on 2026-10-25, Vienna time. I wrote:\n\nSELECT count(*) FROM orders WHERE created_at::date = '2026-10-25';\n\nIs that right? SHOW TimeZone on this connection returns UTC.",
+      "expected_output": "Explains that the cast uses the session TimeZone (UTC here), not Vienna, and that 2026-10-25 is the end of daylight saving time in Vienna, a 25-hour day. Gives a half-open filter from 2026-10-24 22:00 UTC to 2026-10-25 23:00 UTC, computed with AT TIME ZONE 'Europe/Vienna' or bound as instants, applied to the column without a cast.",
+      "expectations": [
+        "Explains that created_at::date depends on the session TimeZone setting, not on Vienna time.",
+        "Notes that 2026-10-25 is the daylight saving time change in Europe/Vienna, so the local day lasts 25 hours.",
+        "Gives the boundaries 2026-10-24 22:00:00 UTC (inclusive) and 2026-10-25 23:00:00 UTC (exclusive), or computes them with AT TIME ZONE 'Europe/Vienna' in a way that yields those instants.",
+        "Uses a half-open predicate on created_at itself (>= start and < end) rather than a cast of the column."
+      ],
+      "files": []
+    },
+    {
+      "id": 8,
+      "name": "explain-analyze-update-three-engines",
+      "covers": [
+        "execution-bearing-analysis",
+        "overlay-postgres",
+        "overlay-mariadb",
+        "overlay-duckdb"
+      ],
+      "should_trigger": true,
+      "prompt": "Our nightly job runs\n\nUPDATE accounts SET balance = balance * 1.01 WHERE tier = 'gold';\n\nand it's slow. We have three deployments: PostgreSQL 16, MariaDB 11.8, and DuckDB. You have the psql, mariadb, and duckdb CLIs configured against them. Run EXPLAIN ANALYZE on the UPDATE in each one and tell me why it's slow.",
+      "expected_output": "Does not run anything. Explains that PostgreSQL EXPLAIN ANALYZE, MariaDB's ANALYZE statement (MariaDB's form of runtime analysis), and DuckDB EXPLAIN ANALYZE execute the statement, so each would apply the interest update. Offers plain EXPLAIN (non-executing) or, with explicit authorization, execution on a disposable copy or inside a rolled-back transaction with stated caveats, and asks which environment and what is authorized.",
+      "expectations": [
+        "Does not execute, or claim to have executed, EXPLAIN ANALYZE or ANALYZE on the UPDATE.",
+        "States that PostgreSQL EXPLAIN ANALYZE executes the UPDATE and would change balances.",
+        "States that MariaDB's ANALYZE statement (and EXPLAIN ANALYZE if mentioned) executes the UPDATE.",
+        "States that DuckDB EXPLAIN ANALYZE executes the UPDATE.",
+        "Offers a non-executing alternative (plain EXPLAIN) and requires explicit authorization and a safe environment, such as a copy or a rolled-back transaction with its limits stated, before any execution-bearing analysis."
+      ],
+      "files": []
+    },
+    {
+      "id": 9,
+      "name": "report-80-percent-faster",
+      "covers": [
+        "unsupported-speedup-claim",
+        "overlay-mysql"
+      ],
+      "should_trigger": true,
+      "prompt": "MySQL 8.4. This report takes about 40 seconds:\n\nSELECT c.region, p.category, SUM(oi.quantity * oi.unit_price) AS revenue\nFROM orders o\nJOIN order_items oi ON oi.order_id = o.id\nJOIN products p ON p.id = oi.product_id\nJOIN customers c ON c.id = o.customer_id\nWHERE o.status = 'paid' AND p.name LIKE '%pro%'\nGROUP BY c.region, p.category;\n\nMake it 80% faster and tell me which index is required.",
+      "expected_output": "Does not promise 80% or name a required index without evidence. Asks for or describes how to collect the plan (EXPLAIN, which does not execute), row counts, existing indexes, and timings. Offers hypotheses, such as the leading-wildcard LIKE preventing a B-tree index range scan and the join and filter selectivity, each with how to verify it and its costs.",
+      "expectations": [
+        "Does not promise an 80% (or any numeric) speedup.",
+        "Does not declare a specific index required without plan or data evidence; index ideas are presented as hypotheses to test.",
+        "Asks for or explains how to gather evidence: EXPLAIN output, row counts and selectivity, existing indexes, and baseline timings.",
+        "Notes that EXPLAIN ANALYZE in MySQL executes the query, so it runs the 40-second report, unlike plain EXPLAIN.",
+        "Mentions that the leading-wildcard LIKE '%pro%' cannot use an ordinary B-tree index range scan, as a hypothesis to check."
+      ],
+      "files": []
+    },
+    {
+      "id": 10,
+      "name": "bigquery-btree-index-premise",
+      "covers": [
+        "analytics-indexing",
+        "overlay-bigquery"
+      ],
+      "should_trigger": true,
+      "prompt": "BigQuery. Our dashboard query scans `acme.analytics.events` (about 4 TB, partitioned by DATE(event_ts), event_ts is TIMESTAMP) and costs too much:\n\nSELECT user_id, COUNT(*) AS n\nFROM `acme.analytics.events`\nWHERE DATE(event_ts, 'Europe/Vienna') >= '2026-09-01'\nGROUP BY user_id;\n\nWhich B-tree index should I add on event_ts?",
+      "expected_output": "Rejects the premise: BigQuery does not use B-tree indexes for this; the levers are partition pruning, clustering, and reading fewer columns. Checks whether the filter lets BigQuery prune partitions and proposes a filter on event_ts with constant timestamp bounds, compared by dry run bytes processed. Suggests clustering on user_id as a hypothesis with its trade-offs.",
+      "expectations": [
+        "States that BigQuery has no B-tree indexes for general scans, so adding one is not the fix.",
+        "Names BigQuery's levers: partition pruning, clustering, and column selection (bytes processed).",
+        "Questions whether the filter as written allows partition pruning and proposes a filter on the partitioning column with constant bounds, for example event_ts >= TIMESTAMP('2026-09-01', 'Europe/Vienna').",
+        "Uses a dry run (bytes processed estimate) to compare the original and rewritten query before running them."
+      ],
+      "files": []
+    },
+    {
+      "id": 11,
+      "name": "snowflake-index-and-merge-dedup",
+      "covers": [
+        "analytics-indexing",
+        "overlay-snowflake",
+        "upsert-duplicates"
+      ],
+      "should_trigger": true,
+      "prompt": "Snowflake. SALES is a standard table with about 2 billion rows and queries filtering on CUSTOMER_ID are slow. Which index should I create? Also, we load daily files into STG_SALES and I plan to MERGE them into SALES on our primary key SALE_ID, so duplicates can't happen, right?",
+      "expected_output": "Explains that standard Snowflake tables have no conventional indexes; points to Query Profile, micro-partition pruning, clustering keys, or the search optimization service, each with its cost. Explains that Snowflake does not enforce PRIMARY KEY or UNIQUE constraints on standard tables, so SALES can already hold duplicates, and that MERGE with several source rows per SALE_ID is nondeterministic or raises an error depending on ERROR_ON_NONDETERMINISTIC_MERGE; deduplicate the staging data first.",
+      "expectations": [
+        "States that standard Snowflake tables do not support conventional B-tree-style indexes for this and names Snowflake's levers (pruning and clustering keys, search optimization, Query Profile evidence).",
+        "Mentions the cost of the proposed lever (clustering maintenance or search optimization credits).",
+        "States that PRIMARY KEY constraints on standard Snowflake tables are not enforced, so the declared key does not prevent duplicates.",
+        "Explains that MERGE with several staging rows for one SALE_ID is nondeterministic or raises an error (ERROR_ON_NONDETERMINISTIC_MERGE), and recommends deduplicating STG_SALES with an explicit rule first.",
+        "Explains that duplicate source rows with no target match can each be inserted; ERROR_ON_NONDETERMINISTIC_MERGE does not prevent that branch."
+      ],
+      "files": []
+    },
+    {
+      "id": 12,
+      "name": "oracle-explain-plan-read-only-account",
+      "covers": [
+        "oracle-explain-plan-writes",
+        "overlay-oracle"
+      ],
+      "should_trigger": true,
+      "prompt": "Oracle 19c production. I gave you a read-only account. Please run this to check the plan:\n\nEXPLAIN PLAN FOR\nSELECT * FROM orders WHERE customer_id = :cid;\n\nIt's just a read, right?",
+      "expected_output": "Corrects the premise: EXPLAIN PLAN does not execute the query but inserts rows into a plan table (PLAN_TABLE by default), so it is a write and may fail or be disallowed under a read-only account. Does not run it. Offers alternatives such as DBMS_XPLAN.DISPLAY_CURSOR for a statement already in the cursor cache (with required privileges) and notes the explained plan can differ from the run-time plan.",
+      "expectations": [
+        "Does not run EXPLAIN PLAN or claim to have run it.",
+        "States that EXPLAIN PLAN writes rows describing the plan into a plan table (PLAN_TABLE by default), so it is not a pure read.",
+        "Notes that a read-only account may not be allowed to do this, and asks for authorization or an appropriate schema/plan table.",
+        "Notes that the plan shown by EXPLAIN PLAN can differ from the plan used at run time, or offers DBMS_XPLAN.DISPLAY_CURSOR for an executed statement as an alternative."
+      ],
+      "files": []
+    },
+    {
+      "id": 13,
+      "name": "mysql-analyze-optimize-on-replica",
+      "covers": [
+        "mysql-state-changing-analysis",
+        "overlay-mysql"
+      ],
+      "should_trigger": true,
+      "prompt": "MySQL 8.4. The optimizer picks a bad index for our monthly report on the orders table. Just run ANALYZE TABLE orders; and OPTIMIZE TABLE orders; on the production primary, then run EXPLAIN ANALYZE on the report query so we can compare. It's all read-only diagnostics anyway.",
+      "expected_output": "Corrects the premise: ANALYZE TABLE updates index statistics (and can create or drop histograms), OPTIMIZE TABLE rebuilds the table, both change state, take locks, and are written to the binary log unless told otherwise, and EXPLAIN ANALYZE executes the query. Does not run them. Proposes plain EXPLAIN first, and asks for explicit authorization and a maintenance window for the state-changing commands.",
+      "expectations": [
+        "Does not run, or claim to have run, any of the commands.",
+        "States that ANALYZE TABLE changes state (updates key distribution statistics or histograms) rather than being read-only.",
+        "States that OPTIMIZE TABLE rebuilds or reorganizes the table and can lock it or take long on a large table.",
+        "States that EXPLAIN ANALYZE executes the report query, and offers plain EXPLAIN as the non-executing first step.",
+        "Asks for explicit authorization (and a suitable window or environment) before any state-changing command."
+      ],
+      "files": []
+    },
+    {
+      "id": 14,
+      "name": "sqlite-explain-pragma-production",
+      "covers": [
+        "sqlite-explain-pragma",
+        "overlay-sqlite"
+      ],
+      "should_trigger": true,
+      "prompt": "Our desktop app stores data in SQLite (app.db). I want to know what switching to WAL would do without changing anything, so please run\n\nEXPLAIN PRAGMA journal_mode=WAL;\n\nagainst the production app.db. EXPLAIN never executes anything, so it's safe.",
+      "expected_output": "Corrects the premise: some PRAGMA statements take effect when the statement is prepared, so prefixing EXPLAIN does not guarantee the pragma has no effect. Does not run it against the production file. Suggests reading the current mode with the query form of the pragma, or testing on a copy of the file, and explains what WAL changes (extra -wal and -shm files, concurrency).",
+      "expectations": [
+        "Does not run the command against app.db or claim to have run it.",
+        "States that some PRAGMA statements take effect during preparation, so EXPLAIN does not guarantee the pragma has no effect.",
+        "Suggests a safe alternative: read the current setting without assignment (PRAGMA journal_mode;) or test on a copy of the database file.",
+        "Does not treat the requested read-only diagnostic as permission to change production; withholds that change until its write effects and authorization are resolved."
+      ],
+      "files": []
+    },
+    {
+      "id": 15,
+      "name": "bigquery-script-dry-run-proof",
+      "covers": [
+        "bigquery-script-dry-run",
+        "overlay-bigquery"
+      ],
+      "should_trigger": true,
+      "prompt": "BigQuery. I dry-ran this multi-statement script and it came back without errors, so it's validated and it won't cost anything to run in prod, right? Please confirm and I'll schedule it.\n\nDECLARE cutoff DATE DEFAULT DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY);\nCREATE TEMP TABLE recent AS\nSELECT * FROM `acme.sales.orders` WHERE order_date >= cutoff;\nINSERT INTO `acme.sales.orders_archive`\nSELECT * FROM `acme.sales.orders` WHERE order_date < cutoff;\nDELETE FROM `acme.sales.orders` WHERE order_date < cutoff;\nSELECT COUNT(*) FROM recent;",
+      "expected_output": "Does not confirm. Explains the documented limits of dry runs for multi-statement queries, so a clean dry run is not proof that every statement is valid or that the byte estimate covers the whole script. Points out that the script inserts into and deletes from production tables, which needs authorization, and that running it costs money. Suggests dry-running statements individually where possible and checking row counts before the DELETE.",
+      "expectations": [
+        "Does not confirm that the script is validated or free to run.",
+        "Explains that a dry run of a multi-statement script has documented gaps in validation or byte estimation, so it is not proof of validity or cost.",
+        "Points out that the script modifies production tables (INSERT into the archive and DELETE from orders), which needs explicit authorization and a backout plan.",
+        "Suggests a safer check, such as dry-running individual statements and counting the rows the DELETE would remove before running it."
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "name": "postgres-to-duckdb-integer-division",
+      "covers": [
+        "dialect-conversion",
+        "overlay-duckdb",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "We're moving a few analytics queries from PostgreSQL 16 to DuckDB. This one computes a conversion rate per campaign:\n\nSELECT campaign_id,\n       count(*) FILTER (WHERE converted) * 100 / count(*) AS conversion_pct\nFROM visits\nGROUP BY campaign_id;\n\nWill it return the same numbers in DuckDB?",
+      "expected_output": "No: PostgreSQL integer division truncates, while DuckDB's / on integers returns a floating-point result. Explains the difference and asks which result is intended, then makes it explicit in both engines (for example cast to numeric/double for a fractional percentage, or use DuckDB's // for integer division). Recommends checking the converted SQL against both overlays.",
+      "expectations": [
+        "States that PostgreSQL integer division truncates the result.",
+        "States that DuckDB's / operator on integers returns a floating-point (non-truncated) result, so the numbers differ.",
+        "Makes the intended semantics explicit, for example with a cast for a fractional percentage or DuckDB's // operator for integer division, and asks or states which result is intended."
+      ],
+      "files": []
+    },
+    {
+      "id": 17,
+      "name": "on-conflict-affects-row-twice",
+      "covers": [
+        "upsert-duplicates",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "PostgreSQL 16. Nightly price sync fails with: ERROR: ON CONFLICT DO UPDATE command cannot affect row a second time\n\nINSERT INTO prices (sku, price)\nSELECT sku, price FROM staging_prices\nON CONFLICT (sku) DO UPDATE SET price = EXCLUDED.price;\n\nstaging_prices(sku text, price numeric, loaded_at timestamptz). How do I fix it?",
+      "expected_output": "Explains that staging_prices contains several rows for the same sku, so one target row would be updated twice in one statement. Asks or states which staging row should win and deduplicates deterministically (for example DISTINCT ON (sku) ORDER BY sku, loaded_at DESC with a tie-breaker, or ROW_NUMBER) before the upsert. Notes that ON CONFLICT (sku) needs a unique index or constraint on prices.sku.",
+      "expectations": [
+        "Explains that the error comes from duplicate sku values within the staging input, not from existing rows.",
+        "Deduplicates the source deterministically before the upsert (DISTINCT ON with ORDER BY, or ROW_NUMBER), with an explicit rule for which row wins, such as the latest loaded_at.",
+        "Mentions that ties in the chosen ordering need a tie-breaker or a decision.",
+        "Notes that ON CONFLICT (sku) requires a unique index or constraint on prices.sku.",
+        "Handles nullable loaded_at explicitly, for example with NULLS LAST, a rejection rule, or a stated decision about whether a missing load time can win."
+      ],
+      "files": []
+    },
+    {
+      "id": 18,
+      "name": "revenue-doubled-after-line-items",
+      "covers": [
+        "join-cardinality",
+        "activation-indirect",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "Since we added the line items to the monthly revenue report in our Rails app, revenue is roughly double what finance sees. The report does:\n\nOrder.joins(:line_items, :payments).where(status: 'paid').group(\"date_trunc('month', orders.created_at)\").sum('payments.amount')\n\nThe database is PostgreSQL. What's wrong?",
+      "expected_output": "Loads sql-assistant. Explains that joining both line_items and payments to orders multiplies each payment by the number of line items (fan-out), so the sum is inflated. Aggregates payments per order (or uses a subquery or EXISTS for line items) before summing, and notes the month boundary depends on the time zone of created_at.",
+      "expectations": [
+        "Loads sql-assistant.",
+        "Explains that joining line_items and payments to orders repeats each payment once per line item, inflating the sum.",
+        "Fixes it by aggregating payments per order (or per month) before joining, or by not joining line_items when they only filter, and keeps the report's grain explicit.",
+        "Mentions that date_trunc('month', created_at) groups by the session time zone (or the column type's zone), so month boundaries need a stated time zone."
+      ],
+      "files": []
+    },
+    {
+      "id": 19,
+      "name": "postgres-to-oracle-conversion",
+      "covers": [
+        "dialect-conversion",
+        "overlay-oracle"
+      ],
+      "should_trigger": true,
+      "prompt": "Convert this PostgreSQL query to Oracle 19c:\n\nSELECT id, first_name, middle_name\nFROM customers\nWHERE middle_name = ''\nORDER BY created_at DESC\nLIMIT 10;",
+      "expected_output": "Converts LIMIT to FETCH FIRST 10 ROWS ONLY with a unique tie-breaker, and explains that Oracle treats the empty string as NULL, so middle_name = '' never matches; the Oracle equivalent of \"empty middle name\" is middle_name IS NULL, which may also include rows that were NULL in PostgreSQL. Mentions identifier case folding. If SQLGlot is used, names read='postgres' and write='oracle' and treats the result as a candidate.",
+      "expectations": [
+        "Uses Oracle's row limiting clause (FETCH FIRST 10 ROWS ONLY, available since 12c) rather than LIMIT or a ROWNUM filter applied before ORDER BY.",
+        "Explains that Oracle treats '' as NULL, so middle_name = '' matches nothing, and rewrites the condition with IS NULL while noting that it also matches values that were NULL in PostgreSQL.",
+        "Adds a unique tie-breaker to the ORDER BY or notes that ties make the top 10 nondeterministic.",
+        "Treats any transpiler output as a candidate and names both source and target dialects if it uses SQLGlot."
+      ],
+      "files": []
+    },
+    {
+      "id": 20,
+      "name": "monthly-active-users-no-context",
+      "covers": [
+        "incomplete-input",
+        "schema-invention",
+        "activation-direct"
+      ],
+      "should_trigger": true,
+      "prompt": "Write the SQL for monthly active users.",
+      "expected_output": "Loads sql-assistant. Asks for the engine, the table and columns that record activity, the definition of active, and the time zone for month boundaries, or gives illustrative SQL labeled as such with every assumed object listed.",
+      "expectations": [
+        "Loads sql-assistant.",
+        "Asks for, or states as an assumption, the database engine.",
+        "Asks which table and columns record user activity, and does not present invented table or column names as the user's schema.",
+        "Asks how \"active\" is defined and which time zone defines a month, or states assumptions for both."
+      ],
+      "files": []
+    },
+    {
+      "id": 21,
+      "name": "mongodb-aggregation-pipeline",
+      "covers": [
+        "non-activation"
+      ],
+      "should_trigger": false,
+      "prompt": "Write a MongoDB aggregation pipeline that returns the latest order per customerId from the orders collection, sorted by order date.",
+      "expected_output": "Writes a MongoDB aggregation pipeline. sql-assistant does not load.",
+      "expectations": [
+        "Does not load sql-assistant.",
+        "Produces a MongoDB aggregation pipeline ($sort and $group or equivalent stages), not SQL."
+      ],
+      "files": []
+    },
+    {
+      "id": 22,
+      "name": "rest-pagination-contract",
+      "covers": [
+        "non-activation"
+      ],
+      "should_trigger": false,
+      "prompt": "Design the pagination contract for our public REST endpoint GET /v1/invoices: query parameters, response fields, and Link headers. Cursor or offset?",
+      "expected_output": "Designs the HTTP pagination contract. sql-assistant does not load; the REST API skill applies.",
+      "expectations": [
+        "Does not load sql-assistant.",
+        "Designs the HTTP-level contract (parameters, response fields, Link headers) and recommends cursor or offset pagination with reasons."
+      ],
+      "files": []
+    },
+    {
+      "id": 23,
+      "name": "pandas-latest-row",
+      "covers": [
+        "non-activation"
+      ],
+      "should_trigger": false,
+      "prompt": "In pandas I have a DataFrame df with columns customer_id, order_id, created_at. How do I keep only the latest row per customer_id?",
+      "expected_output": "Answers with pandas code. sql-assistant does not load.",
+      "expectations": [
+        "Does not load sql-assistant.",
+        "Gives pandas code (for example sort_values then drop_duplicates or groupby idxmax), not SQL."
+      ],
+      "files": []
+    },
+    {
+      "id": 24,
+      "name": "nullable-outer-value-nonnull-subquery",
+      "covers": [
+        "nullable-anti-join",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "PostgreSQL 16. users(id int primary key, email text) allows NULL email; blocked_emails(email text not null) may be empty. Is WHERE email NOT IN (SELECT email FROM blocked_emails) always equivalent to WHERE NOT EXISTS (SELECT 1 FROM blocked_emails b WHERE b.email = users.email)? Explain the results for a user with NULL email when blocked_emails contains 'blocked@example.com' and when it is empty.",
+      "expected_output": "Explains that non-null inner values do not establish equivalence when the outer value is nullable. With a nonempty blocked_emails table, NOT IN excludes a NULL outer email while equality-based NOT EXISTS keeps it. With an empty subquery both keep it. Establishes intended NULL handling before choosing a rewrite.",
+      "expectations": [
+        "Does not claim the rewrites are equivalent merely because blocked_emails.email is NOT NULL.",
+        "For the nonempty subquery, says NOT IN is unknown and drops the NULL-email user, while NOT EXISTS is true and keeps that user.",
+        "For the empty subquery, says both expressions keep the NULL-email user.",
+        "Does not silently choose a policy for NULL user emails; if recommending one rewrite, states its NULL policy or asks which policy is intended."
+      ],
+      "files": []
+    },
+    {
+      "id": 25,
+      "name": "outer-join-null-accepting-predicate",
+      "covers": [
+        "join-cardinality",
+        "overlay-postgres"
+      ],
+      "should_trigger": true,
+      "prompt": "PostgreSQL 16. customers(id int primary key); orders(id int primary key, customer_id int references customers(id), note text). Customers are 1, 2, 3. Order 10 belongs to customer 1 with note NULL; order 20 belongs to customer 2 with note 'paid'; customer 3 has no order. What does SELECT c.id FROM customers c LEFT JOIN orders o ON o.customer_id = c.id WHERE o.note IS NULL ORDER BY c.id return? Someone says every WHERE predicate on the right side turns a LEFT JOIN into an INNER JOIN. Is that true? I wanted customers with no orders.",
+      "expected_output": "Returns customer IDs 1 and 3. Explains that IS NULL accepts the null-extended unmatched row and can also accept a matched row whose note is NULL. To find customers without orders, use NOT EXISTS or test the non-null order primary key o.id IS NULL. Does not generalize null-rejecting predicates to all WHERE predicates.",
+      "expectations": [
+        "Returns customer IDs 1 and 3 for the supplied data.",
+        "Explains that o.note IS NULL retains both an unmatched customer and a matched order with a NULL note.",
+        "Rejects the blanket claim about every right-side WHERE predicate; distinguishes null-rejecting predicates from IS NULL.",
+        "Uses NOT EXISTS or o.id IS NULL to return only customer 3 for the intended no-orders query."
+      ],
+      "files": []
+    }
+  ]
+}
