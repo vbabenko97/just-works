@@ -2,7 +2,10 @@
 
 Findings pass three gates before a report: a prepared candidate whose hash the verifier
 binds its verdicts to, a verification bound to the unchanged contract and sources, and
-the claim check that publishes each claim with its verdict.
+the claim check that publishes each claim with its verdict. The report passes three more:
+a prepared version the gateway assembles from the author's narrative and the published
+findings, a report verification bound to that exact version, and the final check that
+alone writes report.md.
 """
 
 import fcntl
@@ -17,12 +20,38 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import context
+import report
 
-STOP_REASONS = {"SUPPORTED", "REFUTED", "INCONCLUSIVE", "BUDGET_EXHAUSTED", "POLICY_BLOCKED"}
+# When an investigation stops with each reason, as the investigate skill, its methods reference and
+# the claim gate state it. The report verifier receives the rule of the recorded reason and checks
+# a stated stop reason, and the explanation given for it, against that rule and the claims.
+STOP_RULES = {
+    "SUPPORTED": "A data claim that the claim verifier supported states the conclusion, and no "
+    "claim is refuted.",
+    "REFUTED": "A data claim that the claim verifier supported states that the evidence "
+    "contradicts the hypothesis, and no claim is refuted.",
+    "INCONCLUSIVE": "An answer that a value is unavailable ends INCONCLUSIVE, and so does "
+    "evidence that does not distinguish competing explanations, or verdicts that no longer "
+    "carry SUPPORTED or REFUTED.",
+    "BUDGET_EXHAUSTED": "A source reached its request limit, or the budget does not allow "
+    "another query pass and the verdicts no longer carry SUPPORTED or REFUTED.",
+    "POLICY_BLOCKED": "A request was refused on policy, and the investigation does not continue "
+    "after a policy refusal.",
+}
+STOP_REASONS = set(STOP_RULES)
 UNCERTAINTY_FIELDS = {"data_quality", "metric_definition", "magnitude", "cause"}
 VERDICTS = {"supported", "refuted", "unverified"}
 CLAIM_KINDS = {"data", "context"}
 SHA256 = re.compile(r"[a-f0-9]{64}")
+REPORT_SCHEMA_VERSION = "1"
+REPORT_VERIFICATIONS_LIMIT = 2
+BLOCK_KINDS = {"analytical", "non_analytical"}
+REPORT_VERIFIER = Path(__file__).resolve().parents[1] / "agents" / "report-verifier.md"
+QUOTE_MIN = 12
+BASIS = re.compile(r"(claim|contract|uncertainty):(.+)")
+# Claude Code saves a tool result longer than 50,000 characters to a file and shows the model a
+# preview; the report verifier has no tool to read that file, so its input stays below this.
+REPORT_INPUT_LIMIT = 40_000
 
 
 class BudgetExceeded(ValueError):
@@ -77,12 +106,17 @@ def _directory(root: Path, investigation_id: str) -> Path:
 
 
 def _atomic(path: Path, value: object) -> None:
+    _atomic_text(path, encoded(value) + "\n")
+
+
+def _atomic_text(path: Path, text: str) -> None:
     temporary = path.with_name(path.name + "." + secrets.token_hex(6) + ".tmp")
     try:
         with temporary.open("x", encoding="utf-8") as stream:
-            stream.write(encoded(value) + "\n")
+            stream.write(text)
             stream.flush()
             os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
         temporary.replace(path)
     finally:
         temporary.unlink(missing_ok=True)
@@ -98,9 +132,16 @@ def _locked(directory: Path):
             fcntl.flock(stream, fcntl.LOCK_UN)
 
 
+def _jsonl(path: Path) -> list:
+    """The rows of a JSONL ledger file. A row ends only at "\\n": encoded() keeps U+2028, U+2029
+    and U+0085 unescaped inside a row, and str.splitlines() would break the row there."""
+    text = path.read_text()
+    return [json.loads(line) for line in text.removesuffix("\n").split("\n")] if text else []
+
+
 def _events(directory: Path) -> list[dict]:
     path = directory / "evidence.jsonl"
-    events = [json.loads(line) for line in path.read_text().splitlines()]
+    events = _jsonl(path)
     if any(
         not isinstance(row, dict) or row.get("event") not in {"reserved", "completed"}
         for row in events
@@ -182,7 +223,6 @@ def start(root: Path, contract: dict, session_id: str) -> dict:
         _atomic(directory / "sources.json", sources)
         _atomic(directory / "context.json", snapshot)
         (directory / "evidence.jsonl").touch(mode=0o600)
-        (directory / "report.md").touch(mode=0o600)
         _atomic(
             directory / "findings.json",
             {
@@ -335,7 +375,7 @@ def _candidates(directory: Path) -> list[dict]:
 def _verifications(directory: Path) -> dict:
     """The one verification recorded for each candidate."""
     path = directory / "verifications.jsonl"
-    rows = [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+    rows = _jsonl(path) if path.exists() else []
     return {row["candidate_sha256"]: row for row in rows}
 
 
@@ -343,6 +383,15 @@ def get_investigation(root: Path, investigation_id: str) -> dict:
     directory = _directory(root, investigation_id)
     with _locked(directory):
         snapshot = directory / "context.json"
+        reports = _report_records(directory)
+        try:
+            current = _report_bindings(root, directory, investigation_id)
+        except ValueError as exc:
+            current = str(exc)
+        for record in reports:
+            record["integrity_errors"] = (
+                [current] if isinstance(current, str) else _report_integrity(record, *current)
+            )
         return {
             "investigation_id": investigation_id,
             "contract": json.loads((directory / "contract.json").read_text()),
@@ -352,6 +401,9 @@ def get_investigation(root: Path, investigation_id: str) -> dict:
             "candidates": _candidates(directory),
             "verifications": list(_verifications(directory).values()),
             "findings": json.loads((directory / "findings.json").read_text()),
+            "reports": reports,
+            "report_verifications": _report_verifications(directory),
+            "report_acceptances": _report_acceptances(directory),
         }
 
 
@@ -693,6 +745,15 @@ def check_claims(
                     "BUDGET_EXHAUSTED findings and have them verified"
                 ],
             }
+        previous = json.loads((directory / "findings.json").read_text())
+        if _report_acceptances(directory) and previous.get("candidate_sha256") != candidate_hash:
+            return {
+                "valid": False,
+                "errors": [
+                    "A report was already accepted for the published findings; start a new "
+                    "investigation to publish other findings"
+                ],
+            }
         published = {
             **findings,
             "claims": [{**claim, "verdict": verdicts[claim["id"]]} for claim in claims],
@@ -705,8 +766,8 @@ def check_claims(
             "errors": [],
             "claim_count": len(claims),
             "verdicts": {claim_id: row["verdict"] for claim_id, row in verdicts.items()},
-            "note": "Only claims with verdict supported are confirmed. Report refuted and "
-            "unverified claims as such, then call check_report.",
+            "note": "Only claims with verdict supported are confirmed. Write the narrative, "
+            "stating refuted and unverified claims as such, then call prepare_report.",
         }
 
 
@@ -740,13 +801,14 @@ IGNORED = (
 )
 
 
-def _numbers(text: str) -> set[float]:
+def _numbers(text: str, lists: bool = True) -> set[float]:
     """Numbers stated in prose; dates, times, IDs, URLs, ordinals and list numbering excluded.
 
     A comma, no-break space or thin space between groups of three digits is a thousands
-    separator; any other comma between digits is a decimal comma.
+    separator; any other comma between digits is a decimal comma. With lists false, a number
+    at the start of a line counts even when it looks like list numbering, as in a title.
     """
-    for pattern in IGNORED:
+    for pattern in IGNORED if lists else IGNORED[:-1]:
         text = pattern.sub(" ", text)
     text = GROUPED.sub(lambda match: re.sub(r"[,  ]", "", match.group()), text)
     return {float(token.replace(",", ".")) for token in NUMBER.findall(text)}
@@ -760,39 +822,597 @@ def _strings(value: object) -> list[str]:
     return [value] if isinstance(value, str) else [str(value)]
 
 
-def check_report(root: Path, investigation_id: str) -> dict:
-    """Flag numbers in report.md that appear in no published claim, uncertainty or contract.
+def _allowed_numbers(contract: dict, findings: dict) -> set[float]:
+    """Numbers a narrative may state: the contract, the global uncertainty, data claims with
+    their uncertainty, and the fixed text of context claims, whose uncertainty adds none."""
+    sources = [
+        contract,
+        findings["uncertainty"],
+        [
+            claim["text"]
+            if claim.get("kind", "data") == "context"
+            else [claim["text"], claim["uncertainty"]]
+            for claim in findings["claims"]
+        ],
+    ]
+    return {number for text in _strings(sources) for number in _numbers(text)}
 
-    A lexical check: see _numbers for what is ignored; fenced code blocks are ignored too.
+
+def _unsupported_numbers(text: str, allowed: set[float]) -> list[dict]:
+    """A lexical check of the authored lines by line; fenced code blocks are ignored. Lines end
+    only at "\n", as in Markdown, so U+2028 cannot make a number look like list numbering.
+
+    Line 1 is the title, a heading, so a number that opens it is not list numbering.
+    """
+    text = FENCE.sub(lambda match: "\n" * match.group().count("\n"), text)
+    unsupported = []
+    for number, line in enumerate(text.split("\n"), start=1):
+        found = _numbers(line.removeprefix("# "), lists=False) if number == 1 else _numbers(line)
+        extra = sorted(found - allowed)
+        if extra:
+            unsupported.append({"line": number, "numbers": extra, "text": line.strip()[:200]})
+    return unsupported
+
+
+def _report_bindings(root: Path, directory: Path, investigation_id: str) -> tuple:
+    """What a report version is bound to now, with the contract and published findings."""
+    findings = json.loads((directory / "findings.json").read_text())
+    if "candidate_sha256" not in findings:
+        raise ValueError("Findings are not published; run check_claims")
+    sources = _check_sources(root, directory)
+    contract = json.loads((directory / "contract.json").read_text())
+    bindings = {
+        "investigation_id": investigation_id,
+        "candidate_sha256": findings["candidate_sha256"],
+        "findings_sha256": _hash({k: v for k, v in findings.items() if k != "published_at"}),
+        "contract_sha256": _hash(contract),
+        "sources_sha256": _hash(sources),
+        "renderer_version": report.RENDERER_VERSION,
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "verifier_sha256": _verifier_fingerprint(),
+        # The rule of the recorded stop reason is part of the verifier's basis, so a verdict holds
+        # only under the rule it was given, as under the instructions.
+        "stop_rule_sha256": _hash(STOP_RULES[findings["stop_reason"]]),
+    }
+    return bindings, contract, findings
+
+
+def _verifier_fingerprint() -> str:
+    """The report verifier's instructions: a verdict holds only under the rules it was given."""
+    try:
+        return hashlib.sha256(REPORT_VERIFIER.read_bytes()).hexdigest()
+    except OSError as exc:
+        raise ValueError(f"The report verifier's instructions cannot be read: {exc}") from None
+
+
+def _version_key(bindings: dict, report_sha256: object) -> str:
+    return _hash({**bindings, "report_sha256": report_sha256})
+
+
+def _load_record(path: Path) -> dict:
+    """A stored report version; an unreadable one becomes a record that fails integrity."""
+    try:
+        record = json.loads(path.read_text())
+    except ValueError:
+        record = None
+    if not isinstance(record, dict) or record.get("version_sha256") != path.stem:
+        return {"version_sha256": path.stem, "prepared_at": "", "unreadable": True}
+    return record
+
+
+def _report_records(directory: Path) -> list[dict]:
+    """Prepared report versions, the most recently prepared last."""
+    folder = directory / "reports"
+    if not folder.is_dir():
+        return []
+    rows = [_load_record(path) for path in folder.glob("*.json")]
+    return sorted(rows, key=lambda row: str(row.get("prepared_at", "")))
+
+
+def _report_record(directory: Path, version_sha256: object) -> dict | None:
+    if not isinstance(version_sha256, str) or not SHA256.fullmatch(version_sha256):
+        return None
+    path = directory / "reports" / f"{version_sha256}.json"
+    return _load_record(path) if path.is_file() else None
+
+
+def _report_verifications(directory: Path) -> list[dict]:
+    path = directory / "report_verifications.jsonl"
+    return _jsonl(path) if path.exists() else []
+
+
+def _report_acceptances(directory: Path) -> list[dict]:
+    path = directory / "report_acceptances.jsonl"
+    return _jsonl(path) if path.exists() else []
+
+
+def _report_integrity(record: dict, current: dict, contract: dict, findings: dict) -> list[str]:
+    """Whether a prepared version is unchanged, current, and what the gateway assembles now."""
+    if _version_key({key: record.get(key) for key in current}, record.get("report_sha256")) != (
+        record.get("version_sha256")
+    ):
+        return ["The prepared report record was changed after preparation; prepare it again"]
+    stale = sorted(key for key in current if record.get(key) != current[key])
+    if stale:
+        return [
+            "The prepared report is stale: "
+            + ", ".join(stale)
+            + " changed since it was prepared; prepare it again"
+        ]
+    text = record.get("report")
+    if (
+        not isinstance(text, str)
+        or hashlib.sha256(text.encode()).hexdigest() != (record["report_sha256"])
+    ):
+        return ["The prepared report text was changed after preparation; prepare it again"]
+    narrative = record.get("narrative")
+    if (
+        report.narrative_errors(narrative)
+        or report.normalised(narrative) != narrative
+        or report.render(narrative, contract, findings) != (text, record.get("blocks"))
+    ):
+        return [
+            "The prepared report is not what the gateway assembles from its narrative and the "
+            "published findings; prepare it again"
+        ]
+    if _unsupported_numbers(
+        "\n".join(report.authored(narrative)[0]), _allowed_numbers(contract, findings)
+    ):
+        return ["The prepared narrative states numbers outside the published findings"]
+    return []
+
+
+def prepare_report(root: Path, investigation_id: str, narrative: dict) -> dict:
+    """Assemble report.md's text from the narrative and the published findings, and store it as
+    a version for the report verifier; report.md itself is written only by check_report."""
+    directory = _directory(root, investigation_id)
+    with _locked(directory):
+        try:
+            current, contract, findings = _report_bindings(root, directory, investigation_id)
+        except ValueError as exc:
+            return {"valid": False, "errors": [str(exc)]}
+        errors = report.narrative_errors(narrative)
+        if errors:
+            return {"valid": False, "errors": errors}
+        narrative = report.normalised(narrative)
+        text, blocks = report.render(narrative, contract, findings)
+        authored = "\n".join(report.authored(narrative)[0])
+        unsupported = _unsupported_numbers(authored, _allowed_numbers(contract, findings))
+        if unsupported:
+            return {
+                "valid": False,
+                "errors": ["The narrative states numbers outside the published findings"],
+                "unsupported": unsupported,
+            }
+        report_hash = hashlib.sha256(text.encode()).hexdigest()
+        key = _version_key(current, report_hash)
+        record = {
+            "version_sha256": key,
+            **current,
+            "report_sha256": report_hash,
+            "narrative": narrative,
+            "report": text,
+            "blocks": blocks,
+        }
+        size = _input_size(_verifier_input(investigation_id, record, current, contract, findings))
+        if size > REPORT_INPUT_LIMIT:
+            return {"valid": False, "errors": [_too_large(size)]}
+        folder = directory / "reports"
+        folder.mkdir(mode=0o700, exist_ok=True)
+        _atomic(folder / f"{key}.json", {**record, "prepared_at": _time()})
+        return {
+            "valid": True,
+            "errors": [],
+            "version_sha256": key,
+            "report_sha256": report_hash,
+            "blocks": [
+                {name: block[name] for name in ("block_id", "start_line", "end_line")}
+                for block in blocks
+            ],
+            "next": "Ask product-analyst:report-verifier to verify this version",
+        }
+
+
+def _verifier_input(
+    investigation_id: str, record: dict, current: dict, contract: dict, findings: dict
+) -> str:
+    """The report verifier's input for a version that passed integrity: its binding hashes, the
+    narrative and every authored block, and the basis they are checked against."""
+    return encoded(
+        {
+            "investigation_id": investigation_id,
+            "version_sha256": record["version_sha256"],
+            "errors": [],
+            "version": {key: record[key] for key in (*current, "report_sha256")},
+            "narrative": record["narrative"],
+            "blocks": record["blocks"],
+            "basis": {
+                "contract": contract,
+                "claims": findings["claims"],
+                "uncertainty": findings["uncertainty"],
+                "stop_reason": findings["stop_reason"],
+                "stop_rule": STOP_RULES[findings["stop_reason"]],
+            },
+        }
+    )
+
+
+def _input_size(text: str) -> int:
+    """Length as Claude Code measures it, in UTF-16 code units: a character outside the BMP
+    counts twice."""
+    return len(text.encode("utf-16-le")) // 2
+
+
+def _too_large(size: int) -> str:
+    return (
+        f"snapshot_too_large: the report verifier's input is {size} UTF-16 code units, over the "
+        f"limit of {REPORT_INPUT_LIMIT}, and is never cut. Shorten the narrative, which the input "
+        "carries twice, as text and as blocks, or publish smaller findings, then prepare the "
+        "report again"
+    )
+
+
+def _supported(verification: dict) -> bool:
+    """Whether a recorded report verification supports every authored block and the caveats."""
+    return verification["caveats"]["verdict"] == "supported" and all(
+        entry["verdict"] == "supported" for entry in verification["blocks"]
+    )
+
+
+def _verification_refusal(
+    directory: Path, version_sha256: str, current: dict, contract: dict, findings: dict
+) -> list[str]:
+    """Why a version can take no further report verification, and what to do instead; empty when
+    it can be verified. Only a version that is intact, current and supported in every block and
+    the caveats is named for check_report, the same test check_report applies."""
+    rows = _report_verifications(directory)
+    publishable = []
+    for row in rows:
+        record = _report_record(directory, row["version_sha256"])
+        if (
+            _supported(row["verification"])
+            and record is not None
+            and not _report_integrity(record, current, contract, findings)
+        ):
+            publishable.append(row["version_sha256"])
+    if len(rows) >= REPORT_VERIFICATIONS_LIMIT:
+        if publishable:
+            chosen = version_sha256 if version_sha256 in publishable else publishable[-1]
+            return [
+                f"This investigation has used its {REPORT_VERIFICATIONS_LIMIT} report "
+                f"verifications; version {chosen} is current and supported in every block and "
+                "the caveats, so call check_report with it"
+            ]
+        return [
+            f"This investigation has used its {REPORT_VERIFICATIONS_LIMIT} report verifications "
+            "and no current version is supported in every block and the caveats; its report "
+            "stays a draft"
+        ]
+    if version_sha256 in publishable:
+        return [
+            "This version is already verified and supported in every block and the caveats; "
+            "call check_report with it"
+        ]
+    if any(row["version_sha256"] == version_sha256 for row in rows):
+        return [
+            "This version is already verified and not supported in every block; revise the "
+            "narrative and prepare it again"
+        ]
+    return []
+
+
+def report_verification_input(root: Path, investigation_id: str, version_sha256: str) -> str:
+    """The report verifier's whole input for one prepared version, as the exact text it reads.
+
+    It holds the version's binding hashes, the narrative and every authored block, and the basis
+    they are checked against: the full contract, every published claim unchanged, the global
+    uncertainty, the stop reason and the rule of that reason. Evidence, sources, candidates, other versions and earlier
+    verdicts are left out. A version that fails integrity or can take no further verification,
+    or an input over REPORT_INPUT_LIMIT UTF-16 code units, returns only its errors: nothing is
+    cut. prepare_report refuses a narrative whose input would be over the limit."""
+    directory = _directory(root, investigation_id)
+    head = {"investigation_id": investigation_id, "version_sha256": version_sha256}
+    with _locked(directory):
+        record = _report_record(directory, version_sha256)
+        if record is None:
+            return encoded({**head, "errors": ["Unknown report version; call prepare_report"]})
+        try:
+            current, contract, findings = _report_bindings(root, directory, investigation_id)
+        except ValueError as exc:
+            return encoded({**head, "errors": [str(exc)]})
+        errors = _report_integrity(record, current, contract, findings)
+        errors = errors or _verification_refusal(
+            directory, version_sha256, current, contract, findings
+        )
+        if errors:
+            return encoded({**head, "errors": errors})
+        text = _verifier_input(investigation_id, record, current, contract, findings)
+        size = _input_size(text)
+        if size > REPORT_INPUT_LIMIT:
+            return encoded({**head, "errors": [_too_large(size)]})
+        return text
+
+
+def _basis_names(value: object, claims: set, contract: dict) -> bool:
+    if value == "stop_reason":
+        return True
+    match = BASIS.fullmatch(value) if isinstance(value, str) else None
+    if match is None:
+        return False
+    kind, name = match.groups()
+    return name in {"claim": claims, "contract": contract, "uncertainty": UNCERTAINTY_FIELDS}[kind]
+
+
+def _report_verification_errors(
+    record: dict, verification: object, contract: dict, findings: dict
+) -> list[str]:
+    if not isinstance(verification, dict) or not isinstance(verification.get("blocks"), list):
+        return ["Verification must be an object with a blocks list and a caveats object"]
+    blocks = {block["block_id"]: block for block in record["blocks"]}
+    claims = {claim["id"] for claim in findings["claims"]}
+    errors, seen = [], set()
+    for index, entry in enumerate(verification["blocks"]):
+        block_id = entry.get("block_id") if isinstance(entry, dict) else None
+        if not isinstance(block_id, str) or block_id not in blocks:
+            errors.append(f"Block entry {index} names no authored block of this report")
+            continue
+        if block_id in seen:
+            errors.append(f"Block {block_id} has more than one entry")
+            continue
+        seen.add(block_id)
+        quote, text = entry.get("quote"), blocks[block_id]["text"]
+        if (
+            not isinstance(quote, str)
+            or len(quote.strip()) < min(QUOTE_MIN, len(text.strip()))
+            or quote not in text
+        ):
+            errors.append(
+                f"Block {block_id} quote must be text copied exactly from the block, at least "
+                f"{QUOTE_MIN} characters or the whole block"
+            )
+        value = entry.get("verdict")
+        if not isinstance(value, str) or value not in VERDICTS:
+            errors.append(f"Block {block_id} verdict must be supported, refuted or unverified")
+        kind = entry.get("kind")
+        if not isinstance(kind, str) or kind not in BLOCK_KINDS:
+            errors.append(f"Block {block_id} kind must be analytical or non_analytical")
+        elif block_id == "title" and kind != "analytical":
+            errors.append("Block title is the headline result and must be judged analytical")
+        elif kind == "analytical":
+            statements = entry.get("statements")
+            if (
+                not isinstance(statements, list)
+                or not statements
+                or any(not isinstance(text, str) or not text.strip() for text in statements)
+            ):
+                errors.append(f"Block {block_id} needs the statements it makes")
+            basis = entry.get("basis")
+            if not isinstance(basis, list) or not basis:
+                errors.append(
+                    f"Block {block_id} needs a basis: claim:<id>, contract:<field>, "
+                    "uncertainty:<field> or stop_reason"
+                )
+            else:
+                errors += [
+                    f"Block {block_id} basis {ref!r} names no claim, contract field, "
+                    "uncertainty field or the stop reason"
+                    for ref in basis
+                    if not _basis_names(ref, claims, contract)
+                ]
+            comparison = entry.get("comparison")
+            if not isinstance(comparison, str) or not comparison.strip():
+                errors.append(f"Block {block_id} needs a comparison of its meaning with the basis")
+        else:
+            explanation = entry.get("explanation")
+            if not isinstance(explanation, str) or not explanation.strip():
+                errors.append(f"Block {block_id} is non_analytical and needs an explanation")
+            # A non_analytical block states nothing about the data, so there is nothing in it to
+            # refute or to leave unverified; a block with such a statement is judged analytical.
+            if value in VERDICTS and value != "supported":
+                errors.append(
+                    f"Block {block_id} is non_analytical, so it states nothing the basis could "
+                    "contradict and is supported; judge a block that says something about the "
+                    "data, a metric, a source or how a value was obtained as analytical"
+                )
+    missing = [block_id for block_id in blocks if block_id not in seen]
+    if missing:
+        errors.append("Missing entries for authored blocks: " + ", ".join(missing))
+    caveats = verification.get("caveats")
+    if (
+        not isinstance(caveats, dict)
+        or not isinstance(caveats.get("verdict"), str)
+        or caveats["verdict"] not in VERDICTS
+        or not isinstance(caveats.get("explanation"), str)
+        or not caveats["explanation"].strip()
+    ):
+        errors.append(
+            "caveats needs a verdict on whether the answer keeps the material limits of its "
+            "claims, and an explanation"
+        )
+    return errors
+
+
+def _rejections(record: dict, verification: dict) -> list[dict]:
+    """Every authored block, and the caveats judgement, that the verifier did not support."""
+    blocks = {block["block_id"]: block for block in record["blocks"]}
+    rejected = [
+        {
+            "block_id": entry["block_id"],
+            "start_line": blocks[entry["block_id"]]["start_line"],
+            "end_line": blocks[entry["block_id"]]["end_line"],
+            "verdict": entry["verdict"],
+            "reason": entry.get("comparison") or entry.get("explanation", ""),
+        }
+        for entry in verification["blocks"]
+        if entry["verdict"] != "supported"
+    ]
+    caveats = verification["caveats"]
+    if caveats["verdict"] != "supported":
+        rejected.append(
+            {"block_id": "caveats", "verdict": caveats["verdict"], "reason": caveats["explanation"]}
+        )
+    return rejected
+
+
+def submit_report_verification(
+    root: Path, investigation_id: str, version_sha256: str, verification: dict
+) -> dict:
+    """Record the report verifier's judgement of every authored block of one version, once."""
+    directory = _directory(root, investigation_id)
+    with _locked(directory):
+        record = _report_record(directory, version_sha256)
+        if record is None:
+            return {"valid": False, "errors": ["Unknown report version; call prepare_report"]}
+        try:
+            current, contract, findings = _report_bindings(root, directory, investigation_id)
+        except ValueError as exc:
+            return {"valid": False, "errors": [str(exc)]}
+        errors = _report_integrity(record, current, contract, findings)
+        if errors:
+            return {"valid": False, "errors": errors}
+        errors = _verification_refusal(directory, version_sha256, current, contract, findings)
+        if errors:
+            return {"valid": False, "errors": errors}
+        errors = _report_verification_errors(record, verification, contract, findings)
+        if errors:
+            return {"valid": False, "errors": errors}
+        _append_line(
+            directory / "report_verifications.jsonl",
+            {
+                "version_sha256": version_sha256,
+                "report_sha256": record["report_sha256"],
+                "findings_sha256": record["findings_sha256"],
+                "verifier_sha256": record["verifier_sha256"],
+                "stop_rule_sha256": record["stop_rule_sha256"],
+                "verification": verification,
+                "submitted_at": _time(),
+            },
+        )
+        return {
+            "valid": True,
+            "errors": [],
+            "rejected": _rejections(record, verification),
+        }
+
+
+def _report_file_state(path: Path, text: str) -> str:
+    """ "absent", "published" when path holds exactly text, or else why the file is kept."""
+    if not os.path.lexists(path):
+        return "absent"
+    if path.is_symlink() or not path.is_file():
+        return (
+            "report.md is a symlink or not a file and was kept; move it aside and call "
+            "check_report again"
+        )
+    if path.read_bytes() == text.encode():
+        return "published"
+    return (
+        "report.md already exists, empty, edited, or holding another accepted version, and "
+        "was kept; check_report never overwrites it. Move it aside and call check_report again"
+    )
+
+
+def _create_exclusive(path: Path, text: str) -> bool:
+    """Create path holding text in one step, or return False and leave an existing path alone.
+
+    The text is written to a private temporary file first and then hard-linked into place;
+    linking fails when anything already has the name, so no writer's file is ever replaced.
+    """
+    temporary = path.with_name(path.name + "." + secrets.token_hex(6) + ".tmp")
+    try:
+        with temporary.open("x", encoding="utf-8") as stream:
+            stream.write(text)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            return False
+        return True
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def check_report(root: Path, investigation_id: str, version_sha256: str | None = None) -> dict:
+    """Accept a prepared report version and write it to report.md.
+
+    The version, named by its hash or else the most recently prepared, must still be what the
+    gateway assembles from the published findings, and its one report verification must
+    support every authored block and the answer's caveats. report.md is written only here and
+    only when no file is at that path: any existing file, empty or holding an earlier accepted
+    version, is kept and reported as a conflict.
     """
     directory = _directory(root, investigation_id)
     with _locked(directory):
-        findings = json.loads((directory / "findings.json").read_text())
-        if "candidate_sha256" not in findings:
-            return {"valid": False, "errors": ["Findings are not published; run check_claims"]}
-        report = (directory / "report.md").read_text()
-        if not report.strip():
-            return {"valid": False, "errors": ["report.md is empty"]}
-        sources = [
-            json.loads((directory / "contract.json").read_text()),
-            findings["uncertainty"],
-            [
-                claim["text"]
-                if claim.get("kind", "data") == "context"
-                else [claim["text"], claim["uncertainty"]]
-                for claim in findings["claims"]
-            ],
-        ]
-        allowed = {number for text in _strings(sources) for number in _numbers(text)}
-        report = FENCE.sub(lambda match: "\n" * match.group().count("\n"), report)
-        unsupported = []
-        for number, line in enumerate(report.splitlines(), start=1):
-            extra = sorted(_numbers(line) - allowed)
-            if extra:
-                unsupported.append({"line": number, "numbers": extra, "text": line.strip()[:200]})
+        try:
+            current, contract, findings = _report_bindings(root, directory, investigation_id)
+        except ValueError as exc:
+            return {"valid": False, "errors": [str(exc)]}
+        if version_sha256 is None:
+            records = _report_records(directory)
+            record = records[-1] if records else None
+        else:
+            record = _report_record(directory, version_sha256)
+        if record is None:
+            return {
+                "valid": False,
+                "errors": ["No prepared report; write the narrative and call prepare_report"],
+            }
+        errors = _report_integrity(record, current, contract, findings)
+        if errors:
+            return {"valid": False, "errors": errors}
+        key = record["version_sha256"]
+        row = next(
+            (row for row in _report_verifications(directory) if row["version_sha256"] == key), None
+        )
+        if row is None:
+            return {
+                "valid": False,
+                "errors": ["No report verification for this version; run the report verifier"],
+            }
+        errors = _report_verification_errors(record, row["verification"], contract, findings)
+        if errors:
+            return {"valid": False, "errors": errors}
+        rejected = _rejections(record, row["verification"])
+        if rejected:
+            return {
+                "valid": False,
+                "errors": ["The report verifier did not support every authored block"],
+                "rejected": rejected,
+            }
+        path = directory / "report.md"
+        state = _report_file_state(path, record["report"])
+        if state not in ("absent", "published"):
+            return {"valid": False, "errors": [state]}
+        # The acceptance is recorded before report.md is created, so a crash in between leaves
+        # a version the next check_report publishes, or reports a conflict for, never overwrites.
+        if not any(row["version_sha256"] == key for row in _report_acceptances(directory)):
+            _append_line(
+                directory / "report_acceptances.jsonl",
+                {
+                    "version_sha256": key,
+                    **current,
+                    "report_sha256": record["report_sha256"],
+                    "path": "report.md",
+                    "accepted_at": _time(),
+                },
+            )
+        if state == "absent" and not _create_exclusive(path, record["report"]):
+            if _report_file_state(path, record["report"]) != "published":
+                return {
+                    "valid": False,
+                    "errors": [
+                        "report.md appeared while the report was being published and was kept; "
+                        "move it aside and call check_report again"
+                    ],
+                }
         return {
-            "valid": not unsupported,
-            "errors": [] if not unsupported else ["report.md states numbers outside the findings"],
-            "unsupported": unsupported,
-            "note": "Lexical check of numbers only; it does not judge wording or completeness.",
+            "valid": True,
+            "errors": [],
+            "version_sha256": key,
+            "report_sha256": record["report_sha256"],
+            "path": str(path),
+            "note": "Give the reader this path or the report's text unchanged; do not restate "
+            "its numbers in other words.",
         }

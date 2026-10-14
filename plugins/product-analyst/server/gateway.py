@@ -96,7 +96,8 @@ def build_server(root: Path):
 
     @server.tool()
     def get_investigation(investigation_id: str) -> dict:
-        """Read the contract, context snapshot, evidence, candidates, verdicts and findings."""
+        """Read the contract, context snapshot, evidence, candidates, verdicts, findings and
+        prepared report versions with their integrity."""
         return ledger.get_investigation(root, investigation_id)
 
     @server.tool()
@@ -119,9 +120,34 @@ def build_server(root: Path):
         return ledger.check_claims(root, investigation_id, findings, candidate_sha256)
 
     @server.tool()
-    def check_report(investigation_id: str) -> dict:
-        """Flag numbers in report.md that the published findings do not contain."""
-        return ledger.check_report(root, investigation_id)
+    def prepare_report(investigation_id: str, narrative: dict) -> dict:
+        """Assemble the report from a narrative (title, answer, explanation) and the published
+        findings; returns the version hash the report verifier must use."""
+        return ledger.prepare_report(root, investigation_id, narrative)
+
+    # The text is returned as prepared, not re-serialised, so the size limit holds for exactly
+    # what the client receives.
+    @server.tool(structured_output=False)
+    def get_report_verification_input(investigation_id: str, version_sha256: str) -> str:
+        """Read one prepared report version for the report verifier: its hashes, narrative,
+        authored blocks, the contract, every published claim, the uncertainty, the stop reason
+        and the rule of that reason."""
+        return ledger.report_verification_input(root, investigation_id, version_sha256)
+
+    @server.tool()
+    def submit_report_verification(
+        investigation_id: str, version_sha256: str, verification: dict
+    ) -> dict:
+        """Record a verdict for every authored block of a prepared report. For the report
+        verifier."""
+        return ledger.submit_report_verification(
+            root, investigation_id, version_sha256, verification
+        )
+
+    @server.tool()
+    def check_report(investigation_id: str, version_sha256: str | None = None) -> dict:
+        """Accept a verified report version and write it to report.md."""
+        return ledger.check_report(root, investigation_id, version_sha256)
 
     return server
 

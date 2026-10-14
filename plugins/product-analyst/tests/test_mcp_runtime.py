@@ -80,6 +80,9 @@ class McpRuntimeTests(unittest.TestCase):
                         "prepare_findings",
                         "submit_verification",
                         "check_claims",
+                        "prepare_report",
+                        "get_report_verification_input",
+                        "submit_report_verification",
                         "check_report",
                     },
                 )
@@ -119,6 +122,41 @@ class McpRuntimeTests(unittest.TestCase):
                     },
                 )
                 self.assertTrue(tool_result(checked)["valid"])
+                narrative = {"title": "No answer yet", "answer": "The question stays open."}
+                report = send(
+                    "tools/call",
+                    {
+                        "name": "prepare_report",
+                        "arguments": {"investigation_id": inv, "narrative": narrative},
+                    },
+                )
+                version = tool_result(report)["version_sha256"]
+                self.assertEqual(len(version), 64)
+                verifier_input = send(
+                    "tools/call",
+                    {
+                        "name": "get_report_verification_input",
+                        "arguments": {"investigation_id": inv, "version_sha256": version},
+                    },
+                )
+                # The text is the gateway's own serialisation, sent once and not re-serialised.
+                self.assertFalse(verifier_input.get("isError"), verifier_input)
+                self.assertNotIn("structuredContent", verifier_input)
+                self.assertEqual(len(verifier_input["content"]), 1)
+                text = verifier_input["content"][0]["text"]
+                value = json.loads(text)
+                self.assertEqual(
+                    text,
+                    json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False),
+                )
+                self.assertEqual(value["errors"], [])
+                self.assertEqual(value["basis"]["contract"], CONTRACT)
+                self.assertEqual(value["narrative"]["title"], narrative["title"])
+                gate = send(
+                    "tools/call",
+                    {"name": "check_report", "arguments": {"investigation_id": inv}},
+                )
+                self.assertIn("No report verification", tool_result(gate)["errors"][0])
                 missing = send("tools/call", {"name": "get_analysis_context", "arguments": {}})
                 self.assertTrue(missing.get("isError"), missing)
                 self.assertTrue(

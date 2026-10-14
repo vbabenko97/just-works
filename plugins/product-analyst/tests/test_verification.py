@@ -326,22 +326,26 @@ class VerificationTests(ProjectTestCase):
         result = self.verify(candidate, {**verdict("dau", "x"), "verdict": ["supported"]})
         self.assertFalse(result["valid"])
 
-    def test_report_numbers_must_come_from_published_findings(self):
+    def test_narrative_numbers_must_come_from_published_findings(self):
         candidate = self.verified(
             findings(claim("dau", "DAU on 2026-10-05 was 1.\nRetention: 12.5%.", [self.primary]))
         )
-        self.assertIn("not published", ledger.check_report(self.root, self.inv)["errors"][0])
-        self.publish(candidate)
-        path = self.root / ".analyst/investigations" / self.inv / "report.md"
-        path.write_text(
-            "# DAU was 1 on 2026-10-05\n\n1. Evidence: `"
+        narrative = {
+            "title": "DAU was 1 on 2026-10-05",
+            "answer": "1. Evidence: `"
             + self.primary
             + "`, window ends 2026-10-06T00:00:00+00:00 at 00:00 UTC; retention 12.5%.\n\n"
-            + "```sql\nSELECT count() FROM events\nLIMIT 500\n```\n\nSee 5 октября 2026.\n"
+            + "```sql\nSELECT count() FROM events\nLIMIT 500\n```\n\nSee 5 октября 2026.",
+        }
+        prepare = ledger.prepare_report
+        self.assertIn("not published", prepare(self.root, self.inv, narrative)["errors"][0])
+        self.publish(candidate)
+        self.assertTrue(prepare(self.root, self.inv, narrative)["valid"])
+        result = prepare(
+            self.root,
+            self.inv,
+            {"title": "DAU was 1 on 2026-10-05", "answer": "Today so far adds 2 more users."},
         )
-        self.assertTrue(ledger.check_report(self.root, self.inv)["valid"])
-        path.write_text("# DAU was 1 on 2026-10-05\n\nToday so far adds 2 more users.\n")
-        result = ledger.check_report(self.root, self.inv)
         self.assertFalse(result["valid"])
         self.assertEqual(
             result["unsupported"],
@@ -368,11 +372,12 @@ class VerificationTests(ProjectTestCase):
         candidate = self.prepare(unavailable)
         self.verify(candidate, verdict("source", "supported"))
         self.publish(candidate)
-        path = self.root / ".analyst/investigations" / self.inv / "report.md"
-        path.write_text("# Source is unavailable\n\nRetention is 100%.\n")
-        self.assertEqual(
-            ledger.check_report(self.root, self.inv)["unsupported"][0]["numbers"], [100.0]
+        result = ledger.prepare_report(
+            self.root,
+            self.inv,
+            {"title": "Source is unavailable", "answer": "Retention is 100%."},
         )
+        self.assertEqual(result["unsupported"][0]["numbers"], [100.0])
 
     def test_get_investigation_exposes_candidates_and_verdicts(self):
         candidate = self.verified()
