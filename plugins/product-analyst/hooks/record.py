@@ -82,6 +82,9 @@ def main() -> int:
         found = source_and_operation(payload)
         if found is None:
             return 0
+        if policy.ledger is None:
+            emit(event, f"Analyst result was not recorded: {policy.UNAVAILABLE}.")
+            return 0
         session = payload.get("session_id")
         if not isinstance(session, str) or not session:
             emit(event, "Analyst result was not recorded: missing session_id.")

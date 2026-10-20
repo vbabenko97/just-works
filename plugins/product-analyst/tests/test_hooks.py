@@ -413,6 +413,42 @@ class HookTests(unittest.TestCase):
             json.loads(proc.stdout)["hookSpecificOutput"]["permissionDecision"], "deny"
         )
 
+    def test_python_without_tomllib_denies_only_governed_calls(self) -> None:
+        # Blocking tomllib reproduces a python3 older than 3.11, such as the macOS
+        # system Python that Codex in the ChatGPT app puts on its hooks' PATH.
+        def run_without_tomllib(name: str, payload: dict) -> dict:
+            script = (
+                "import runpy, sys; sys.modules['tomllib'] = None; "
+                f"runpy.run_path({str(HOOKS / name)!r}, run_name='__main__')"
+            )
+            proc = subprocess.run(
+                [sys.executable, "-c", script],
+                input=json.dumps(payload),
+                text=True,
+                capture_output=True,
+                env=os.environ | {"CLAUDE_PROJECT_DIR": str(self.project)},
+                check=False,
+            )
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            return json.loads(proc.stdout or "{}")
+
+        def bash(command: str) -> dict:
+            return {
+                "tool_name": "Bash",
+                "tool_use_id": "old-python",
+                "session_id": self.session,
+                "cwd": str(self.project),
+                "tool_input": {"command": command},
+            }
+
+        self.assertEqual(run_without_tomllib("policy.py", bash("pwd")), {})
+        governed = bash("aws quicksight list-dashboards --aws-account-id 1")
+        denied = run_without_tomllib("policy.py", governed)["hookSpecificOutput"]
+        self.assertEqual(denied["permissionDecision"], "deny")
+        self.assertIn("Python 3.11 or later", denied["permissionDecisionReason"])
+        recorded = run_without_tomllib("record.py", governed)["hookSpecificOutput"]
+        self.assertIn("Python 3.11 or later", recorded["additionalContext"])
+
     def test_guard_timeout_is_fixed_and_denies_without_waiting(self) -> None:
         output = io.StringIO()
         with patch.dict(os.environ, {"PRODUCT_ANALYST_GUARD_TIMEOUT": "999"}):

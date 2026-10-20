@@ -20,8 +20,18 @@ from typing import Mapping
 
 SERVER = Path(__file__).resolve().parents[1] / "server"
 sys.path.insert(0, str(SERVER))
-import config  # type: ignore  # noqa: E402
-import ledger  # type: ignore  # noqa: E402
+# The server modules need Python 3.11 or later (tomllib). Some hosts run hooks with
+# an older python3, such as the macOS system Python 3.9 on the PATH that Codex in
+# the ChatGPT app gives its hooks. A failed import must not deny unrelated tools, so
+# it only denies the governed calls that need these modules.
+try:
+    import config  # type: ignore  # noqa: E402
+    import ledger  # type: ignore  # noqa: E402
+except ImportError:
+    config = ledger = None
+UNAVAILABLE = (
+    f"analyst hooks need Python 3.11 or later on PATH; python3 is {sys.version.split()[0]}"
+)
 
 # This is deliberately a small exact allowlist. `check_posthog_tools.py`
 # verifies every name against the checked-in PostHog generated inventory.
@@ -321,6 +331,9 @@ def main() -> int:
         )
         if not relevant or not is_analyst_project(root_from(payload)):
             noop()
+            return 0
+        if ledger is None:
+            emit("deny", UNAVAILABLE)
             return 0
 
         if operation != "":
