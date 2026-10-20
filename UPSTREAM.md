@@ -272,6 +272,34 @@ Third batch: the six upstream commits from `060e8a9` (exclusive) to `fc9318c`, r
 
 **Third batch status: reviewed. Three changes imported, two adapted, one rejected.**
 
+Fourth batch: the three upstream commits from `fc9318c` (exclusive) to `80542b0`, reviewed on
+2026-10-20 against fork HEAD `9f141d9`. `80542b0` touches 142 files, so it is split into rows by
+change.
+
+| Date | Upstream SHA | Change | Disposition | Reason |
+|---|---|---|---|---|
+| 2026-10-20 | `47f99d4` | force subagents to Sonnet 5.5, concurrency 5, `modelSettings` effort `high` | **rejected** | Keeps `CLAUDE_CODE_SUBAGENT_MODEL_FORCE` (see "Subagent model routing"). This fork keeps concurrency 2 and never had the effort override, and the `CLAUDE.md` paragraph the commit edits does not exist here |
+| 2026-10-20 | `891f315` | Rule 2: no plain-text option menus | **rejected** | Removes a clause in upstream's Rule 2 that let long decisions skip AskUserQuestion. This fork's Rule 2 has no such clause |
+| 2026-10-20 | `80542b0` | `csharp-coding`, `python-coding`, `react-coding`, `rest-api`, `shadcn-ui-coding`, `tailwind-css-coding`, `swift-coding`, `typescript-coding` | **imported** | Taken verbatim into both skill trees. Corrects the HttpClient lifetime rule (Microsoft Learn, "HttpClient guidelines for .NET"), React Compiler memoization (react.dev), Swift capture lists (The Swift Programming Language, ARC chapter), Tailwind v4 spacing and renames (Tailwind upgrade guide), shadcn Base UI `render` and Field forms (ui.shadcn.com), and Zod 4 and enum facts. Most cuts are examples. Lost rules: Python mutable default arguments, and Tailwind's ban on invented class names. `shadcn-ui-coding` now defers dark mode to `tailwind-css-coding`, so both came in together |
+| 2026-10-20 | `80542b0` | `plantuml-diagramming` | **imported** | Taken verbatim as a whole directory, because SKILL.md now points to sections moved into `references/`. Its new file-placement rule repeats the `diagrammer` agent's rule without conflict |
+| 2026-10-20 | `80542b0` | `human-writing`, `predictive-ux-evaluation`, `staged-docs` | **imported** | Taken verbatim into both skill trees; `staged-docs` keeps the Codex-only `agents/openai.yaml`. `human-writing` drops `references/sources.md` (an unlinked bibliography) and two minor rules. `staged-docs` asks through AskUserQuestion when the host has it and relies on the new `human-writing` |
+| 2026-10-20 | `80542b0` | `fable-5-1-prompting` restructure | **adapted** | Upstream's SKILL.md and new `references/` taken. The pointer to `opus-5-5-prompting`'s migrate mode is re-applied in `references/migration.md`, where upstream moved the paragraph |
+| 2026-10-20 | `80542b0` | `ticket-writing` de-duplication | **adapted** | Three-way merged. The one conflict, in Anti-patterns, is resolved with upstream's shorter list followed by this fork's five additions |
+| 2026-10-20 | `80542b0` | `minimal-coding` | **rejected** | Carries the deferred `1836546` trigger change, drops the stop-control, annotation and runnable-check rules, and adds "implement the narrower interpretation", which contradicts `CLAUDE.md` Rule 2 |
+| 2026-10-20 | `80542b0` | `opus-5-5-prompting`, `gpt-6-prompting`, `gemini-3-prompting`, `synthetic-user-research` | **rejected / deferred** | Dispositions unchanged from the second batch. Upstream's GPT-6 model and effort table now matches OpenAI's documentation, but this fork's package names no model IDs, so no fork fact is wrong |
+| 2026-10-20 | `80542b0` | writer agents: Quality checks from project config, a Report section, `rest-api` loaded on demand, `react-code-writer` loads `typescript-coding`, Scope sections removed | **adapted** | Three-way merged into the `.claude` and `.codex` agents. This fork keeps its descriptions (without "including small fixes"), `model: inherit`, and the Codex model lines |
+| 2026-10-20 | `80542b0` | `prompt-writer` loads only the target model's skill | **adapted** | The Skill tool replaces four preloaded skills; this fork's Gemini 3.8 Flash row stays. The subagent documentation (code.claude.com/docs/en/sub-agents) confirms that subagents can invoke skills through the Skill tool |
+| 2026-10-20 | `80542b0` | delegation rules in `CLAUDE.md` and `AGENTS.md`; Rule 2 extension | **rejected** | This fork's `CLAUDE.md` and `AGENTS.md` follow the global versions (`b61dcbf`, `6341a2a`), whose Agents section has the main session handle small targeted work directly |
+| 2026-10-20 | `80542b0` | delete `diagrammer`, `git-sync`, `project-docs`, `docs/`, `web-chat-prompt.md` | **rejected** | See "Capability deletions". `ticket-creator` and the ClickUp MCP server are already absent here |
+| 2026-10-20 | `80542b0` | Compressed output style without the plain-wording block | **imported** | All three installers also install `CLAUDE.md`, which carries the same block, so sessions loaded it twice |
+| 2026-10-20 | `80542b0` | installers keep destination directories when backups are off | **adapted** | `bin/cli.mjs` and `install.bat` deleted each destination directory, such as `~/.claude/skills`, before copying when backups were off. They now delete only files, as `install.sh` already did. Upstream's installer rewrite (per-entry manifest, Codex skills built from `.claude/skills`, `CLAUDE_CONFIG_DIR` and `CODEX_HOME` targets) is not taken, because `install.sh` has its own manifest and this fork keeps both skill trees. The maintainer ran `HOME=/tmp/jw-home node bin/cli.mjs --no-backup` against a temporary home with a user-owned `~/.claude/skills/my-own-skill`; the skill survived and the installer removed nothing. `install.bat` is checked by reading only, because it was not run on Windows |
+| 2026-10-20 | `80542b0` | `package.json` excludes `__pycache__` | **adapted** | `npm pack --dry-run` listed two `.pyc` files from `.claude/hooks/`. npm already leaves out `.DS_Store` |
+| 2026-10-20 | `80542b0` | Codex config keys and model pins | **deferred** | `sandbox_mode`, `hooks` and `[analytics]` are already in place. The Codex 0.162.0 binary contains both `max_threads` and `max_concurrent_threads_per_session`; whether `max_threads` is deprecated is not verified. The `gpt-5.6` default model is the maintainer's choice |
+| 2026-10-20 | `80542b0` | `.env` read denial; statusline GNU `date` fallback | **rejected** | `Read(**/.env*)` already covers `.env`. This fork's statusline does not parse reset times |
+
+**Fourth batch status: reviewed. Twelve skills and the output-style change imported, six change
+groups adapted, the rest rejected or deferred.**
+
 ## Vendored third-party skills
 
 Copied verbatim into both `.claude/skills/` and `.codex/skills/`; no local edits. To refresh: clone

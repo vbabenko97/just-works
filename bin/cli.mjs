@@ -161,10 +161,12 @@ function cleanTarget(targetPath, dryRun) {
   }
 }
 
+// Directories are never wholesale-removed: destinations legitimately contain
+// user-owned entries (local skills, personal agents) alongside installed ones.
 function prepareTarget(targetPath, backupDir, doBackup, dryRun) {
   if (doBackup) {
     backupTarget(targetPath, backupDir, dryRun);
-  } else {
+  } else if (existsSync(targetPath) && statSync(targetPath).isFile()) {
     cleanTarget(targetPath, dryRun);
   }
 }

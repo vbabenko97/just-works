@@ -27,7 +27,8 @@
     "CLAUDE.md",
     "CLAUDE-CHAT.md",
     "AGENTS.md",
-    "LICENSE"
+    "LICENSE",
+    "!**/__pycache__/"
   ],
   "engines": {
     "node": ">=18.0.0"

@@ -147,11 +147,13 @@ exit /b 0
 
 :prepare_target
 :: %~1 = target path (file or dir)
+:: Directories are never wholesale-removed: destinations legitimately contain
+:: user-owned entries (local skills, personal agents) alongside installed ones.
 if not exist "%~1" exit /b 0
 if "%DO_BACKUP%"=="1" (
     call :backup_target "%~1"
 ) else (
-    call :clean_target "%~1"
+    if not exist "%~1\" call :clean_target "%~1"
 )
 exit /b 0
 

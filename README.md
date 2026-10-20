@@ -53,7 +53,7 @@ To update: `git pull && ./install.sh` (existing config files are kept; add `--re
 
 To clean up copies left by earlier installs, compare complete skill directories with the shared source, preserve local changes, and move confirmed copies to a backup outside the project's skill directories. Check that the corresponding global skill is installed before removing its project copy. Keep project-specific skills in place. This source repository retains both provider trees for distribution.
 
-The protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script without them: it has no `--prune`, `--replace-config`, or `--personal` refusal, it overwrites existing config files, and with backups off it deletes each destination directory before copying.
+Most protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script: it has no `--prune`, `--replace-config`, or `--personal` refusal, and it overwrites existing config files. Like `install.sh`, it leaves entries you added in place: with backups off it deletes only the files it is about to replace, never a destination directory.
 
 `bootstrap.sh` (upstream's `curl | bash` one-liner) downloads `dynokostya/just-works` and runs that repository's own installer unless `JUST_WORKS_REPO` (set in `bash`'s environment) names another repository; the npm package `@dynokostya/just-works` is upstream's. By default both install upstream, not this fork — use the source checkout above.
 
