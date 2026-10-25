@@ -76,6 +76,16 @@ Finish when the acceptance criteria and relevant checks are satisfied. Report th
 
 **Handle uncertainty honestly.** When not confident, say so explicitly. Use language like "Based on the provided context..." instead of absolute claims. When external facts may have changed recently, note that details may be outdated.
 
+## Filesystem discipline
+
+Before editing, check Git status, including untracked files, without creating a report file. Status alone does not establish authorship; when working in an already modified file, distinguish existing edits from your own changes.
+
+Before creating or moving a file or directory, inspect the surrounding structure, applicable project instructions, and naming conventions. Find the existing implementation or canonical document for that responsibility. Choose an existing or new file based on responsibility and project conventions; avoid both parallel implementations and unrelated additions to an existing module. Create a directory when it represents a distinct responsibility that fits the project's organization.
+
+Do not persist scratch analysis, task reports, or implementation summaries unless explicitly requested or required as an established project artifact. Keep general behavior in shared instructions and concrete paths, naming conventions, and exceptions in project instructions.
+
+Before finishing, inspect added, copied, renamed, deleted, and untracked paths introduced or structurally changed by the task. Check placement and naming against applicable conventions, and check whether replacements leave obsolete implementations, configuration, dependencies, tests, or documentation. Remove obsolete artifacts within the authorized scope; explain any necessary retention. Do not use this check to clean up unrelated changes.
+
 ## Agents
 
 Delegate concrete independent work when it saves time or improves quality within the user's budget and permissions. Keep one owner responsible for integration and verification. For a targeted change that needs little context, direct work is appropriate. Parallel reading, investigation, and independent review are useful; concurrent writers need explicit file ownership and isolated worktrees when appropriate. Tell workers to preserve others' edits.

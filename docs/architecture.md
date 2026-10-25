@@ -43,6 +43,7 @@ Dependency direction: Agents → Skills (declared in agent frontmatter). Command
 
 ## Key Patterns
 
+- **Filesystem discipline** — see the shared rules in [AGENTS.md](../AGENTS.md#filesystem-discipline) and [CLAUDE.md](../CLAUDE.md#filesystem-discipline), and the reviewer instructions for [Codex](../.codex/agents/reviewer.toml) and [Claude](../.claude/agents/reviewer.md).
 - **Dual-provider mirror** — `.claude/` (Markdown with YAML frontmatter) and `.codex/` (TOML) hold parallel copies of the shared agents and skills; Codex can't resolve `@file` references, so a skill wanted in both is copied into both trees. The trees are not required to match; see Module Boundaries for provider-specific entries.
 - **File-extension-triggered selection** — agent `description` fields declare target file types; the orchestrator matches on descriptions, not names.
 - **Skill composition** — agents stack multiple skills (e.g., `react-code-writer` loads `react-coding` + `tailwind-css-coding` + `shadcn-ui-coding`).

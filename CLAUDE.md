@@ -130,6 +130,16 @@ Reading in chunks, streaming, and delegation are allowed with preserved original
 
 Distinguish shortened presentation from shortened processing. The local Bash evidence hooks retain redacted, bounded excerpts, not complete transcripts; older entries without an excerpt marker are also incomplete. Label shortened logs and displayed outputs as excerpts; a truncated tool or subagent response is not evidence of completeness. Do not expand logging to retain secrets or unnecessary confidential data. If a technical limit prevents completion, preserve the originals, identify the concrete gap, and obtain agreement before a lossy transformation or exclusion. Pass these requirements to delegated work.
 
+## Filesystem discipline
+
+Before editing, check Git status, including untracked files, without creating a report file. Status alone does not establish authorship; when working in an already modified file, distinguish existing edits from your own changes.
+
+Before creating or moving a file or directory, inspect the surrounding structure, applicable project instructions, and naming conventions. Find the existing implementation or canonical document for that responsibility. Choose an existing or new file based on responsibility and project conventions; avoid both parallel implementations and unrelated additions to an existing module. Create a directory when it represents a distinct responsibility that fits the project's organization.
+
+Do not persist scratch analysis, task reports, or implementation summaries unless explicitly requested or required as an established project artifact. Keep general behavior in shared instructions and concrete paths, naming conventions, and exceptions in project instructions.
+
+Before finishing, inspect added, copied, renamed, deleted, and untracked paths introduced or structurally changed by the task. Check placement and naming against applicable conventions, and check whether replacements leave obsolete implementations, configuration, dependencies, tests, or documentation. Remove obsolete artifacts within the authorized scope; explain any necessary retention. Do not use this check to clean up unrelated changes.
+
 ## Documentation
 
 Maintain project documentation in the same change as the behavior, interfaces, configuration, or rules it describes. Read the existing docs first, update the established source for each topic, and link to it instead of duplicating it. Keep session reports, temporary plans, and review logs out of maintained docs unless the user requests them or the project requires them.
