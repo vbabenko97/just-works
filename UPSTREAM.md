@@ -311,6 +311,7 @@ the source, `diff -r` against both copies, copy over, and repeat the verificatio
 | `lossless-doc-compress` | `ML-SystemDesign/MLSystemDesign` | `main`, SHA not recorded | MIT | `8acf4c7` | — |
 | `ml-system-design-review` | `ML-SystemDesign/MLSystemDesign` | `main`, SHA not recorded | MIT | `86b3e63` | — |
 | `scenario-blender-*` (13: router + 12 specialists) | `scenario-labs/skills`, `skills/dcc/blender/` (family `README.md` not copied) | `9624e295fa33` | MIT | 2026-09-26 | see below |
+| `ex-ussr-kinship-research` | `DenisSergeevitch/ex-ussr-kinship-research`, repository root (`README.md`, `docs/cover.jpg` and `.gitignore` not copied; `LICENSE` copied) | `5a430a2e8eb1` | MIT | 2026-10-25 | see below |
 
 **Blender family, verified 2026-09-26 on Blender 5.2.0 LTS** (upstream tested 5.2.1), headless with
 `--factory-startup` via `--python-expr`: all 15 `bx_*.py` modules import; `bx_audit.audit` and
@@ -334,6 +335,18 @@ Write-then-run path the allowlist closes for `python3`. Left as is because:
 
 Revisit as one gate review covering every uncovered interpreter, with Blender-aware argument parsing
 and tests, not as a one-off entry.
+
+**Genealogy skill, verified 2026-10-25.** `verify_tree_equivalence.py` reports both copies equivalent
+to the upstream checkout with the three uncopied names excluded, and to each other. The frontmatter
+`description` is 880 characters (1329 bytes in UTF-8), under the 1024-character limit that Codex
+counts with `chars().count()` (`openai/codex`, `codex-rs/ext/skills/src/loader/metadata.rs`). The three
+scripts use the standard library only, make no network or subprocess calls, and `init_case.py` writes
+only inside `--case-dir`. The maintainer ran them from the `.claude/` copy outside Claude, with the
+conda base `python3` (version not recorded): `init_case.py` created a case in `/tmp` with all seven
+files, `hash_artifact.py` hashed `LICENSE`, and `audit_evidence.py` reported no errors or warnings on
+the empty registers. Not verified: the audit on filled registers, and the research workflow itself.
+In this repository the reliability policy denies the scripts to agents until the owner pins them in
+`.claude/allowed-scripts.json`; repositories without an allowlist run them unchecked.
 
 ### Removed 2026-09-27 — ResumeSkills-derived Codex career skills
 
