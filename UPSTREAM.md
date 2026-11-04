@@ -302,8 +302,9 @@ groups adapted, the rest rejected or deferred.**
 
 ## Vendored third-party skills
 
-Copied verbatim into both `.claude/skills/` and `.codex/skills/`; no local edits. To refresh: clone
-the source, `diff -r` against both copies, copy over, and repeat the verification listed.
+Copied verbatim into both `.claude/skills/` and `.codex/skills/`, with no local edits unless the
+notes below state one. To refresh: clone the source, `diff -r` against both copies, copy over,
+reapply any stated local edit, and repeat the verification listed.
 
 | Skills | Source | Revision | License | Added in | Verified |
 |---|---|---|---|---|---|
@@ -312,6 +313,10 @@ the source, `diff -r` against both copies, copy over, and repeat the verificatio
 | `ml-system-design-review` | `ML-SystemDesign/MLSystemDesign` | `main`, SHA not recorded | MIT | `86b3e63` | — |
 | `scenario-blender-*` (13: router + 12 specialists) | `scenario-labs/skills`, `skills/dcc/blender/` (family `README.md` not copied) | `9624e295fa33` | MIT | 2026-09-26 | see below |
 | `ex-ussr-kinship-research` | `DenisSergeevitch/ex-ussr-kinship-research`, repository root (`README.md`, `docs/cover.jpg` and `.gitignore` not copied; `LICENSE` copied) | `5a430a2e8eb1` | MIT | 2026-10-25 | see below |
+| `saas-product-demo-production`, `screen-demo-production`, `editing-montage`, `captions-media-accessibility`, `media-qc-delivery`, `media-provenance-rights`, `storyboard-previsualization`, `generated-media-qa` | `calesthio/generative-media-skills`, `skills/production/` (`EVAL.md` and `tests/` not copied, as upstream's `tools/package_skill.py` also excludes them; root `LICENSE` copied into each skill) | `8c85352d5d75` | MIT | 2026-11-04 | see below |
+| `short-form-video`, `caption-animation` | `iart-ai/tiktok-video-skills`, `skills/` (per-skill `README.md` not copied; root `scripts/` and `LICENSE` copied into each skill, because both `SKILL.md` files call those scripts) | `2a775336b5a6` | MIT | 2026-11-04 | see below |
+| `app-demo-agent`, `voice-generation`, `music-generation`, `media-utils` | `michaelboeding/skills`, `skills/` (`device-framer` not copied; root `LICENSE` copied into each skill) | `9e7cf764f36c` | MIT | 2026-11-04 | see below; local edits |
+| `demo-video` | `Hmache/demo`, repository root (`README.md` not copied) | `c78aa32fbcf3` | MIT | 2026-11-04 | see below; local edits |
 
 **Blender family, verified 2026-09-26 on Blender 5.2.0 LTS** (upstream tested 5.2.1), headless with
 `--factory-startup` via `--python-expr`: all 15 `bx_*.py` modules import; `bx_audit.audit` and
@@ -347,6 +352,65 @@ files, `hash_artifact.py` hashed `LICENSE`, and `audit_evidence.py` reported no 
 the empty registers. Not verified: the audit on filled registers, and the research workflow itself.
 In this repository the reliability policy denies the scripts to agents until the owner pins them in
 `.claude/allowed-scripts.json`; repositories without an allowlist run them unchecked.
+
+**Demo-video skills, verified 2026-11-04.** `verify_tree_equivalence.py` reports all 15 skills
+equivalent to their upstream checkouts with the exclusions in the table, and the `.claude/` and
+`.codex/` copies equivalent to each other. Every `SKILL.md` frontmatter parses as YAML, every `name`
+matches its directory, descriptions run from 213 to 679 characters, and every Python file parses.
+Codex 0.164.0 lists them through `codex app-server` (`skills/list`) with no errors, from
+`~/.agents/skills` in another repository and also from `.codex/skills` in this one. Not
+verified: no bundled script was run and no workflow was exercised, because the reliability policy
+denies these scripts to agents until the owner pins them in `.claude/allowed-scripts.json`.
+
+Local edits:
+
+- The `SKILL.md` files of `app-demo-agent`, `voice-generation` and `music-generation` replace
+  `${CLAUDE_PLUGIN_ROOT}/skills` with `${CLAUDE_SKILL_DIR}/..`. Claude Code substitutes
+  `${CLAUDE_PLUGIN_ROOT}` only in plugin skills and `${CLAUDE_SKILL_DIR}` in all skills
+  (code.claude.com/docs/en/skills, "Available string substitutions"). In a loaded skill, Claude Code
+  rendered `~/.claude/skills/voice-generation/../voice-generation/scripts/gemini_tts.py`. Of the 33
+  script references in these files, 31 resolve to files and the other two name the absent
+  `device-framer`. Codex's skills documentation mentions no variable substitution, so in Codex the
+  agent has to resolve these paths from the skill's location; this is not tested.
+- `demo-video`, `app-demo-agent`, `voice-generation` and `music-generation` are manual-only, because
+  they spend money on paid APIs or drive a live site. Each `SKILL.md` adds
+  `disable-model-invocation: true`, and each skill adds `agents/openai.yaml` with
+  `allow_implicit_invocation: false`, as `github-presentation` does. A fresh Claude Code session started
+  in another repository refused the Skill tool call for `demo-video` with "cannot be used with Skill
+  tool due to disable-model-invocation", and did not list the four. A session that was already open
+  when the frontmatter changed still loaded the skill. Codex's refusal of implicit invocation is not
+  tested.
+
+A comparison against upstream shows no other change to these `SKILL.md` files.
+
+Known limits of these copies:
+
+- `device-framer` is left out because its frames take 18 MB, so the device-frame step of
+  `app-demo-agent` fails. Answer "No" to that step.
+- `voice-generation` and `music-generation` send text to Google, OpenAI, ElevenLabs, Suno or Udio and
+  need the matching paid API key. Their scripts load keys from `~/.config/skills/.env`, `~/.env`, or a
+  `.env` up to ten directories above the script. The Google scripts need the `google-genai` package.
+- `demo-video` runs its `setup.sh`, which installs Playwright with `npm install -g`, installs Python
+  packages with `pip --break-system-packages` when it can, and downloads models and fonts. It drives
+  the target site in a real browser, so an application's paid calls run during recording. Its
+  `SKILL.md` also names `device_bash`, a tool neither Claude Code nor this repository provides.
+- `captions-media-accessibility` shows commands with upstream's repository path; the validator is at
+  `scripts/validate_captions.py` inside the skill. `generated-media-qa` names
+  `precise-video-description` and `video-description-oversight`, which exist upstream and are not
+  copied here.
+- The render commands in `short-form-video` and `caption-animation` use Remotion, which has its own
+  license (see below).
+
+### Not vendored — `remotion-best-practices`
+
+`remotion-dev/skills` (`c7cb2fdcacd1`) has no license file, and the GitHub API reports `license: null`
+for it. Its `package.json` points to `remotion-dev/remotion`, `packages/skills`; that repository's
+`LICENSE.md` is the Remotion License, which grants use and modification but no redistribution, and
+requires a company license for for-profit organizations above three employees. Whether that license
+covers the skills is not verified. This repository is public under Apache-2.0, so the skill is not
+copied here. It was copied unchanged to `~/.claude/skills/` and `~/.agents/skills/` on the
+maintainer's machine, where `install.sh` leaves it in place because this repository ships no entry
+of that name.
 
 ### Removed 2026-09-27 — ResumeSkills-derived Codex career skills
 
