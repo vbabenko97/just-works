@@ -22,8 +22,20 @@ those into exit 2 naming the guard that failed.
 `ask` is upgraded to a refusal because `ask` was measured to be unreliable: six
 interactive `ask` verdicts proceeded with no prompt. See docs/upstream-ask-divergence.md.
 
+A guard with no objection prints `{}`, an explicit "no opinion". It does not answer
+`allow`: the Claude Code hooks reference documents that `allow` skips the permission
+prompt, so a guard that allowed whatever it did not deny would approve every other
+call on the user's behalf. This gate passes `{}` on unchanged, and run_gate.sh
+releases it as no output, the reference row above, so the user's own permission
+rules decide the call. A guard that prints nothing at all is still a refusal: silence
+cannot be told apart from a guard that died before answering.
+
 The deadline here must stay shorter than the timeout configured for the hook, or
 Claude Code gives up first and fails open. Nesting: guard 10s < launcher 15s < hook 30s.
+hooks.json also sets `onFailure: "block"` on these hooks, which the hooks reference
+documents as blocking the call when the hook times out (Claude Code 2.1.295 and
+later). That covers the last row of the table; the nesting still keeps every deadline
+inside this chain.
 """
 from __future__ import annotations
 
@@ -88,7 +100,19 @@ def main() -> int:
         return refuse(guard_arg, "the guard exited 0 without printing a decision")
 
     try:
-        decision = json.loads(proc.stdout)["hookSpecificOutput"]
+        answer = json.loads(proc.stdout)
+    except Exception as exc:
+        return refuse(guard_arg, f"the guard printed something that is not a "
+                                 f"PreToolUse decision ({exc})")
+    if answer == {}:
+        # Exactly `{}`: the guard's explicit "no opinion". Anything else that is not
+        # a full decision, such as `{"continue": true}` or `[]`, falls through to
+        # the checks below and is refused.
+        sys.stdout.write("{}\n")
+        return 0
+
+    try:
+        decision = answer["hookSpecificOutput"]
         event = decision["hookEventName"]
         verdict = decision["permissionDecision"]
     except Exception as exc:

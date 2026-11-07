@@ -77,7 +77,10 @@ def payload_for(event: str, matcher: str, project: pathlib.Path) -> dict:
 
 def expected_ok(event: str, out: str) -> bool:
     if event == "PreToolUse":
-        return '"permissionDecision"' in out
+        # The control payloads (`ls -la`, a main-session Read) are not refused, so
+        # the launcher answers with no output: no opinion. An `allow` would skip the
+        # user's permission prompt.
+        return out.strip() == ""
     if event == "SubagentStart":
         return '"additionalContext"' in out
     if event == "SubagentStop":
@@ -117,6 +120,18 @@ def main() -> int:
                 check(ok, f"source control [{event}/{matcher}] -> exit 0, "
                          f"well-formed output",
                       f"exit {code}: out={out[:120]!r} err={err!r}")
+
+        # ---- a refusal still arrives as a deny decision, not as no opinion -----
+        bash_command = next((c for m, c in by_event.get("PreToolUse", [])
+                             if m == "Bash"), None)
+        check(bash_command is not None, "source hooks.json declares a Bash command")
+        if bash_command is not None:
+            destructive = {"session_id": "s-source", "cwd": str(project),
+                           "tool_name": "Bash", "tool_input": {"command": "rm -rf ."}}
+            code, _, out, err = run(bash_command, CHECKOUT, destructive, project, data)
+            check(code == 0 and '"permissionDecision": "deny"' in out,
+                  "source: recursive delete -> deny decision",
+                  f"exit {code}: out={out[:120]!r} err={err!r}")
 
         # ---- guard-specific sabotage, against a copy of the checkout only -------
         replica = work / "replica"

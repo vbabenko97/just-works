@@ -42,8 +42,9 @@ def main_thread_payload(**extra) -> dict:
 
 def run_guard(project: pathlib.Path, payload: dict, env_extra: dict
              ) -> tuple[str, str]:
-    """(permissionDecision, reason). guard_common.py directly — the launcher
-    (run_gate.sh) is a separate concern already covered elsewhere."""
+    """(permissionDecision, reason), or ("no opinion", "") when the guard prints
+    `{}`. guard_common.py directly — the launcher (run_gate.sh) is a separate
+    concern already covered elsewhere."""
     env = os.environ.copy()
     env["CLAUDE_PROJECT_DIR"] = str(project)
     env.update(env_extra)
@@ -51,6 +52,8 @@ def run_guard(project: pathlib.Path, payload: dict, env_extra: dict
                           input=json.dumps(payload), capture_output=True, text=True,
                           timeout=30, cwd=str(project), env=env)
     out = json.loads(proc.stdout)
+    if out == {}:
+        return ("no opinion", "")
     hso = out["hookSpecificOutput"]
     return hso["permissionDecision"], hso["permissionDecisionReason"]
 
@@ -78,7 +81,7 @@ def main() -> int:
 
             # ---- main-thread call: unaffected regardless of policy state -------
             decision, reason = run_guard(repo, main_thread_payload(), env_extra)
-            check(decision == "allow",
+            check(decision == "no opinion",
                   f"[{label}] main-thread call (no agent_id) is unaffected",
                   reason)
 
@@ -90,7 +93,7 @@ def main() -> int:
                   f"[{label}] subagent without a receipt is denied universally",
                   reason)
 
-            # ---- subagent with a valid, current receipt: universal allow -------
+            # ---- subagent with a valid, current receipt: no opinion -------------
             pol = policy_mod.load(str(repo))
             composed = paths.compose_contract(str(repo), pol)
             check(composed.ok, f"[{label}] composition succeeds for this fixture",
@@ -103,9 +106,9 @@ def main() -> int:
             check(written is not None, f"[{label}] a receipt could be issued for "
                                        f"this fixture", str(written))
             decision, reason = run_guard(repo, live_payload, env_extra)
-            check(decision == "allow",
-                  f"[{label}] subagent with a valid, current receipt is allowed "
-                  f"universally", reason)
+            check(decision == "no opinion",
+                  f"[{label}] subagent with a valid, current receipt is not "
+                  f"refused", reason)
 
         # The "unflagged" fixture in the loop above has require_subagent_receipts
         # set to false and still gets denied/allowed identically to "valid" — that

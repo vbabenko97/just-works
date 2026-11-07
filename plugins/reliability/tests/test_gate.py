@@ -31,10 +31,16 @@ DECISION = ('import json\nprint(json.dumps({"hookSpecificOutput": '
             '{"hookEventName": "PreToolUse", "permissionDecision": "%s", '
             '"permissionDecisionReason": "test"}}))\n')
 
+NO_OPINION = "no opinion `{}` is released as no output"
+
 GUARDS = {
     # label: (guard body, expected exit)
     "valid allow passes through": (DECISION % "allow", 0),
     "valid deny passes through": (DECISION % "deny", 0),
+    NO_OPINION: ('print("{}")\n', 0),
+    "an object that is neither `{}` nor a decision": (
+        'print(\'{"continue": true}\')\n', 2),
+    "a JSON array": ('print("[]")\n', 2),
     "guard refuses with exit 2": ('import sys\nprint("why", file=sys.stderr)\n'
                                   'sys.exit(2)\n', 2),
     "syntax error": ("def broken(:\n    pass\n", 2),
@@ -87,7 +93,10 @@ def main() -> int:
             code, elapsed, out, err = run(["bash", launcher, "probe_guard.py"],
                                           root, payload)
             ok = code == want
-            if ok and want == 0:
+            if ok and label == NO_OPINION:
+                # Silence is Claude Code's "no opinion"; `{}` must not leak out.
+                ok = out == ""
+            elif ok and want == 0:
                 ok = '"permissionDecision"' in out
             if ok and "hangs" in label:
                 # Cut short by the guard's own 3s deadline, not by the launcher's 6s.

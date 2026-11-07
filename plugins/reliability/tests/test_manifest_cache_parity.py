@@ -235,8 +235,9 @@ def main() -> int:
         for matcher, command in configured:
             code, _, out, err = run(command, root, payload_for(matcher, project),
                                     project, data)
-            ok = code == 0 and '"permissionDecision"' in out
-            check(ok, f"control, installed cache [{matcher}] -> exit 0",
+            # Not refused, so no opinion: no output at all, never an `allow`.
+            ok = code == 0 and out.strip() == ""
+            check(ok, f"control, installed cache [{matcher}] -> exit 0, no output",
                   f"exit {code}: out={out[:100]!r} err={err!r}")
 
         # Sabotage a copy, never the install.
@@ -289,7 +290,8 @@ def main() -> int:
                         "cwd": str(project),
                         "tool_input": {"file_path": "README.md"}}
         code, _, out, err = run(common, root, main_session, project, data)
-        check(code == 0 and '"allow"' in out, "live: main session needs no receipt",
+        check(code == 0 and out.strip() == "",
+              "live: main session needs no receipt and gets no opinion",
               f"exit {code}: out={out[:160]!r}")
 
         destructive = {"tool_name": "Bash", "session_id": "live-probe",
