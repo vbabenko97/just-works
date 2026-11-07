@@ -27,12 +27,16 @@ HINT = (
 
 
 def emit(decision: str, reason: str, layer: str) -> None:
+    # A command this gate does not refuse gets no opinion, `{}`, never `allow`: an
+    # `allow` skips the user's permission prompt, so every command outside the deny
+    # rules would run unasked. gate.py and run_gate.sh release `{}` as no output.
+    if decision == "allow":
+        print("{}")
+        return
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": decision,
-        "permissionDecisionReason": (
-            f"[reliability/{layer}] {reason}" if decision == "allow"
-            else f"[reliability/{layer}] Blocked: {reason}.\n{HINT}")}}))
+        "permissionDecisionReason": f"[reliability/{layer}] Blocked: {reason}.\n{HINT}"}}))
 
 
 def main() -> int:
