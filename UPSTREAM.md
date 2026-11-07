@@ -460,6 +460,17 @@ copied here. It was copied unchanged to `~/.claude/skills/` and `~/.agents/skill
 maintainer's machine, where `install.sh` leaves it in place because this repository ships no entry
 of that name.
 
+### Removed 2026-11-07 — `doc-coauthoring`
+
+Commit `db352be` copied `doc-coauthoring` from `anthropics/skills` (`skills/doc-coauthoring/SKILL.md`,
+last changed upstream in `00756142ab04`) into `.claude/skills/` without a row in the table above. That
+upstream directory holds only `SKILL.md`, and the GitHub API reports `license: null` for the
+repository, so redistribution under this repository's Apache-2.0 license is not established. The skill
+was removed. `ml-system-design` now sends generic documents to `human-writing`. `mcp-builder` and
+`skill-creator`, copied in the same commit, carry their own `LICENSE.txt` and stay. Copies placed by an
+earlier `install.sh` run stay in place: the installer reports them as stale and deletes them only with
+`--prune`. The copy remains in git history from `db352be`.
+
 ### Removed 2026-09-27 — ResumeSkills-derived Codex career skills
 
 Commit `895d25e` copied eight skills from `Paramchoudhary/ResumeSkills` (`skills/<name>/SKILL.md`,
