@@ -317,6 +317,7 @@ reapply any stated local edit, and repeat the verification listed.
 | `short-form-video`, `caption-animation` | `iart-ai/tiktok-video-skills`, `skills/` (per-skill `README.md` not copied; root `scripts/` and `LICENSE` copied into each skill, because both `SKILL.md` files call those scripts) | `2a775336b5a6` | MIT | 2026-11-04 | see below |
 | `app-demo-agent`, `voice-generation`, `music-generation`, `media-utils` | `michaelboeding/skills`, `skills/` (`device-framer` not copied; root `LICENSE` copied into each skill) | `9e7cf764f36c` | MIT | 2026-11-04 | see below; local edits |
 | `demo-video` | `Hmache/demo`, repository root (`README.md` not copied) | `c78aa32fbcf3` | MIT | 2026-11-04 | see below; local edits |
+| `c4-architecture` | `lmammino/c4-codebase-architecture-skill`, `skills/c4-codebase-architecture/SKILL.md` (adapted, not copied verbatim; `LICENSE` copied) | `41b9e00f33d7` | MIT | 2026-11-07 | see below; adapted |
 
 **Blender family, verified 2026-09-26 on Blender 5.2.0 LTS** (upstream tested 5.2.1), headless with
 `--factory-startup` via `--python-expr`: all 15 `bx_*.py` modules import; `bx_audit.audit` and
@@ -400,6 +401,53 @@ Known limits of these copies:
   copied here.
 - The render commands in `short-form-video` and `caption-animation` use Remotion, which has its own
   license (see below).
+
+**`c4-architecture`, adapted 2026-11-07.** This skill is not a verbatim copy, so a refresh is a manual
+merge rather than a `diff -r` and copy. Taken from upstream's single `SKILL.md`: the principles, the
+six-phase repository workflow, the questions, the heuristics by codebase shape, the treatment of
+infrastructure, the output template, and the quality bar, now in `references/reverse-engineering.md`.
+Changed here:
+
+- Diagrams are C4-PlantUML from PlantUML's bundled standard library (`!include <C4/...>`) instead of
+  upstream's default of Markdown plus Mermaid.
+- Every element carries a status (Observed or Inferred when reverse engineering, Given or Proposed when
+  designing), shown in the diagram with a dashed tag and listed with its evidence in the text.
+- The greenfield mode (`references/greenfield.md`), the syntax reference (`references/c4-plantuml.md`),
+  and the local verification steps in `SKILL.md` are written here. The "Library or SDK" heuristic also
+  covers plugins.
+- Sequence, state, and deployment diagrams stay with `plantuml-diagramming`; the `diagrammer` agent
+  loads both skills.
+- The statement written before drawing and the check of both source and rendered output follow
+  `magnus919/agent-skills` `c4-diagramming` (`f6dc2cea9f1e`, MIT). They are rewritten and no text is
+  copied, so that license is not copied. `LICENSE` is upstream's, unchanged.
+
+Verified 2026-11-07 with PlantUML 1.2026.9 and Graphviz 16.1.0 from Homebrew. The three examples in
+`references/c4-plantuml.md`, and a diagram that uses every macro in its table, pass `-checkonly` and
+render under `PLANTUML_SECURITY_PROFILE=SANDBOX`. Under that profile a `!include` of the C4-PlantUML
+GitHub URL fails with exit 200; a local relative include also fails unless
+`PLANTUML_SECURITY_PROFILE=ALLOWLIST` and `PLANTUML_ALLOWLIST_PATH` name its directory. The documented
+SVG name check found every element name in a rendered example and rejected a name that is not in it.
+Without `--disable-metadata`, PlantUML embedded the full source in the SVG (`<?plantuml-src ...?>`) and
+in a PNG text chunk; with the flag, neither file contained it.
+Two agent runs with the skill, reverse engineering `plugins/product-analyst` and designing a knowledge
+assistant from a brief, produced context and container diagrams that pass the syntax check and render
+locally, with an element status table; three claims of the reverse-engineered diagram were checked
+against the plugin's files. Runs of the `diagrammer` agent at `6bb506d` on the same two requests drew
+plain `rectangle` elements without the C4 library, a legend, or element status. `evals/evals.json` holds
+these two requests and a negative case with their expectations. Not verified: Codex loading the skill,
+because the reliability policy denies agents the Codex binary outside the project, and rendering inside
+Codex's `workspace-write` sandbox.
+
+**`ml-system-design` GenAI template, 2026-11-07.** `references/genai-template.md` is written here. Its
+section structure comes from `ML-SystemDesign/MLSystemDesign` (MIT); RAG preparation, retrieval, and
+evaluation guidance from Microsoft Azure Architecture Center, `MicrosoftDocs/architecture-center`
+`docs/ai-ml/guide/rag/` at `aa230846fd13` (CC BY 4.0; the file's source line gives the attribution and
+states the changes); and agent and observability requirements from `ml-system-design-review`'s
+`references/modern-ai-systems.md`. No text is copied. `references/example-rag-system.md` keeps the facts
+of the earlier distillation of the source's MagicSharepoint design document, rearranged into the GenAI
+sections, with notes where the source does not cover a template item. `evals/evals.json` holds the five
+design scenarios used to check the change (forecasting, permission-aware RAG, a tool-using agent at
+production and at POC maturity, and a hybrid LLM classifier) and a routing case, with their expectations.
 
 ### Not vendored — `remotion-best-practices`
 

@@ -7,7 +7,7 @@ sandbox_mode = "workspace-write"
 developer_instructions = """
 Create clear, audience-appropriate diagrams that communicate system behavior and architecture effectively.
 
-Apply the `plantuml-diagramming` skill rules for all diagram work.
+Apply the `plantuml-diagramming` skill rules for all diagram work. For C4 system context, container, and component diagrams, including documenting a repository's architecture, also apply the `c4-architecture` skill; request flows, entity states, and deployment topology stay with `plantuml-diagramming`.
 
 ## Default Behavior
 
@@ -36,5 +36,5 @@ Default to HIGH-LEVEL diagrams understandable by non-technical team members and 
 - Every diagram must have a `title`.
 - Use `<style>` blocks for consistent styling, not inline colors.
 - Keep element count manageable — 15 or fewer elements without grouping.
-- Verify syntax by checking delimiters and structure before completing.
+- Verify syntax by checking delimiters and structure before completing. When `plantuml` is installed, also run the local checks in `c4-architecture` ("Verify locally"), which apply to any `.puml` file; never send diagram source to an online renderer.
 """

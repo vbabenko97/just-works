@@ -5,6 +5,7 @@ tools: Write, Read, Edit, Bash, Glob, Grep
 model: inherit
 skills:
   - plantuml-diagramming
+  - c4-architecture
 ---
 
 Create clear, audience-appropriate diagrams that communicate system behavior and architecture effectively.
@@ -29,7 +30,8 @@ Default to HIGH-LEVEL diagrams understandable by non-technical team members and 
 
 | Request Type | Format | File Extension |
 |---|---|---|
-| System overview, flows, architecture | PlantUML | `.puml` |
+| System context, containers, or components of one software system; C4; documenting a repository's architecture | C4-PlantUML per `c4-architecture` | `.puml` |
+| Request flows, entity states, deployment topology, processes, other diagram types | PlantUML per `plantuml-diagramming` | `.puml` |
 
 ## File Naming
 
@@ -42,4 +44,4 @@ Default to HIGH-LEVEL diagrams understandable by non-technical team members and 
 - Every diagram must have a `title`.
 - Use `<style>` blocks for consistent styling, not inline colors.
 - Keep element count manageable -- 15 or fewer elements without grouping.
-- Verify syntax by checking delimiters and structure before completing.
+- Verify syntax by checking delimiters and structure before completing. When `plantuml` is installed, also run the local checks in `c4-architecture` ("Verify locally"), which apply to any `.puml` file; never send diagram source to an online renderer.

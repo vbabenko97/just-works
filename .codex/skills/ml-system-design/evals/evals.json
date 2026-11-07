@@ -1,0 +1,111 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "ml-system-design",
+  "description": "Runner-neutral behavioral cases for choosing between the predictive-ML and GenAI templates and filling them. All scenarios and numbers are invented. A run is unattended: the agent skips triage and the gap interview and marks unstated facts as assumptions.",
+  "evaluation_protocol": {
+    "positive_cases": "Run each prompt twice in fresh, isolated sessions: a baseline that reads the skill at the commit before the change under test, and a run with the current skill. Keep each document and score every expectation pass or fail with a quoted excerpt as evidence.",
+    "negative_cases": "Run with ml-system-design-review installed next to this skill. Record which skills the agent loaded.",
+    "pass_rule": "A case passes only when every expectation holds. Report baseline and current results separately. Run ml-system-design-review on the positive-case documents to check that every gradecard dimension can be graded without an n/a that the template forced.",
+    "authorization": "Model calls cost money. Run them only with the user's approval and a budget."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "forecasting-predictive-template",
+      "covers": ["template-choice-predictive", "no-regression"],
+      "should_trigger": true,
+      "prompt": "Write the system design document. Demand forecasting for a grocery chain with 300 stores and about 5,000 SKUs per store. Forecast daily unit demand per SKU-store for the next 14 days. Data: 2 years of point-of-sale history, promotions calendar, price history, store attributes, public holidays. Forecasts feed a nightly replenishment job that creates purchase orders; overstock of perishables and stockouts both cost money. Maturity: production.",
+      "expected_output": "A 12-section document on the predictive-ML template with time-based validation, naive baselines, a metric tied to overstock and stockout cost, and retraining triggers, with no GenAI sections.",
+      "expectations": [
+        "The header names the predictive-ML template.",
+        "Validation splits by time (rolling or expanding origins) and guards against future information in features.",
+        "Section V defines a naive or constant baseline before any model.",
+        "Section II links the loss or primary metric to the cost of overstock and stockouts.",
+        "Section XI names retraining triggers.",
+        "No section describes prompts, golden sets, or retrieval."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "permission-aware-rag",
+      "covers": ["template-choice-genai", "permission-path", "relevance"],
+      "should_trigger": true,
+      "prompt": "Write the system design document. Internal knowledge assistant for a 2,000-employee company. Sources: Confluence (about 40k pages), Jira (about 300k issues), and Google Drive (about 100k documents). Every source has its own permissions; an employee must never see an answer drawn from content they cannot open themselves, and permission changes or deletions must take effect within 15 minutes. Answers must cite their sources. Hosted LLM API (vendor model, no fine-tuning). About 5,000 questions per day, answer start within 5 seconds. Maturity: production pilot for 300 employees.",
+      "expected_output": "A GenAI-template document whose Section VIII describes the whole permission path once, with query-time filtering by the asker's identity and the 15-minute propagation target, and an evaluation set with unanswerable, injection, and permission-crossing cases.",
+      "expectations": [
+        "The header names the GenAI template.",
+        "Section VIII describes the permission path in one place: permission source, identity arrival, query-time filtering, and behavior when a check fails; Sections III and X refer to it.",
+        "The design meets the 15-minute target for permission changes and deletions and says how it is measured.",
+        "The evaluation set includes unanswerable, prompt-injection, and permission-crossing cases, and retrieval is scored separately from generation.",
+        "Citations are required and their correctness is measured.",
+        "No loss function, feature store, training pipeline, or retraining is described for the vendor model; any such item is one line with its reason."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "tool-using-agent-production",
+      "covers": ["template-choice-genai", "agent-control-plane"],
+      "should_trigger": true,
+      "prompt": "Write the system design document. Customer-support agent for a SaaS subscription business. It chats with customers in the web widget and can: look up the customer's account and invoices, issue refunds up to 100 USD per customer per 30 days, change or cancel subscription plans, and send follow-up emails to the customer. Integrations: Stripe API, the internal admin API, and the email service. Hosted LLM API with tool calling. About 3,000 conversations per day; human support staff handle escalations. Maturity: production.",
+      "expected_output": "A GenAI-template document with typed tools and risk classes, limits and identity enforced in code, approval or draft-then-commit for writes, idempotent writes, budgets with a kill switch, and evaluation on final system state.",
+      "expectations": [
+        "Each tool has typed inputs and a risk class.",
+        "The 100 USD per 30 days limit is enforced in code, not prompt text.",
+        "Refunds, plan changes, cancellations, and emails need an approval or draft-then-commit step recorded outside chat history.",
+        "Customer identity comes from the authenticated session, never from model-chosen arguments.",
+        "Writes are idempotent, and partial failures (for example a refund issued but the email not sent) are handled.",
+        "Step, token, cost, or time budgets and a kill switch are defined.",
+        "Evaluation scores the final system state and repeats runs."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "name": "hybrid-llm-classifier",
+      "covers": ["template-choice-hybrid", "critical-components"],
+      "should_trigger": true,
+      "prompt": "Write the system design document. Route inbound support tickets into one of four queues: billing, technical, account, sales. Primary classifier: a hosted LLM with a prompt and structured output, no fine-tuning. An existing TF-IDF + logistic regression classifier trained on 50,000 manually triaged historical tickets is already in production; it stays as the fallback when the LLM times out or returns invalid output, and it continues to be retrained. About 20,000 tickets per day; routing decision within 2 seconds; a misrouted ticket costs about 4 hours of extra resolution time. Maturity: production.",
+      "expected_output": "A GenAI-template document that names the trained fallback as a critical component and covers its dataset, time-based validation, retraining, and drift, alongside the LLM's prompt versioning, output validation, and timeout path.",
+      "expectations": [
+        "The header names the GenAI template and lists the trained fallback as a critical component.",
+        "The fallback's labels, time-based split, retraining cadence, and drift monitoring are covered.",
+        "The existing classifier is a baseline measured on the same evaluation set as the LLM.",
+        "Few-shot examples and prompt tuning use data that does not overlap the evaluation set.",
+        "Invalid LLM output and timeouts route to the fallback within the 2-second budget.",
+        "Per-class metrics are reported and the misroute cost informs the metric or threshold."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "name": "poc-agent-keeps-safety-items",
+      "covers": ["any-maturity-safety"],
+      "should_trigger": true,
+      "prompt": "Write the system design document. Customer-support agent for a SaaS subscription business, to be piloted with real customers. It chats with customers in the web widget and can: look up the customer's account and invoices, issue refunds up to 100 USD per customer per 30 days, change or cancel subscription plans, and send follow-up emails to the customer. Integrations: Stripe API, the internal admin API, and the email service. Hosted LLM API with tool calling. About 200 conversations per day during the pilot; human support staff handle escalations. Maturity: POC.",
+      "expected_output": "A POC-depth GenAI document that still defines approval gates, code-enforced limits, idempotent writes, and budgets with a kill switch for the refund, plan, and email tools, and defers the online experiment and optimization.",
+      "expectations": [
+        "Refunds, plan changes, cancellations, and emails each have an approval or draft-then-commit step.",
+        "The refund limit and customer identity are enforced in code.",
+        "Writes are idempotent.",
+        "Budgets and a kill switch are defined.",
+        "The experiment subsection of IX and the Optimization subsection of XII read \"Deferred until production.\""
+      ],
+      "files": []
+    },
+    {
+      "id": 6,
+      "name": "route-design-review",
+      "covers": ["route-review"],
+      "should_trigger": false,
+      "prompt": "Here is our RAG system design doc for the internal knowledge assistant. Grade it against the ML System Design framework and tell us the critical gaps before the architecture review on Friday. [The user pastes a 12-section design document.]",
+      "expected_output": "Uses ml-system-design-review to grade the existing document; does not draft a new design document.",
+      "expectations": [
+        "Loads ml-system-design-review, not ml-system-design.",
+        "Produces a review with a gradecard rather than a new design document."
+      ],
+      "files": []
+    }
+  ]
+}

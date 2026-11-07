@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0",
+  "skill_name": "c4-architecture",
+  "description": "Runner-neutral behavioral cases for C4 diagrams in reverse-engineering and greenfield modes. Case 1 reads plugins/product-analyst in this repository; case 2 is an invented brief. Rendering needs a local PlantUML.",
+  "evaluation_protocol": {
+    "positive_cases": "Run each prompt through the diagrammer agent in two fresh sessions: a baseline at the commit before the change under test, and a run with the current agent and skills. Keep the .puml files, the rendered SVG and PNG, and the text, and score every expectation pass or fail with evidence.",
+    "negative_cases": "Run with plantuml-diagramming installed next to this skill. Record which skills the agent loaded.",
+    "pass_rule": "A case passes only when every expectation holds. Re-run the syntax check and render yourself; do not rely on the agent's report of them. Never send diagram source to an online renderer.",
+    "authorization": "Model calls cost money. Run them only with the user's approval and a budget."
+  },
+  "evals": [
+    {
+      "id": 1,
+      "name": "reverse-engineer-plugin",
+      "covers": ["reverse-engineering", "evidence", "local-render"],
+      "should_trigger": true,
+      "prompt": "Document the architecture of the product-analyst plugin in plugins/product-analyst as C4 diagrams: a system context diagram and a container diagram.",
+      "expected_output": "Context and container diagrams in C4-PlantUML from the bundled library, an element table and a relationship table with file evidence or an Inferred status, and local render results.",
+      "expectations": [
+        "Every .puml file includes C4 with !include <C4/...> and contains no URL include.",
+        "Only context and container diagrams are drawn; no component or code diagram is added unasked.",
+        "The text has an element table and a relationship table; every Observed row cites a file, and every relationship row cites the call, query, or configuration that shows it, or is marked Inferred and tagged in the diagram.",
+        "Every relationship has a verb phrase, and a protocol where the code shows one.",
+        "PLANTUML_SECURITY_PROFILE=SANDBOX plantuml -checkonly exits 0 for each file, and the rendered SVG contains no plantuml-src metadata.",
+        "The rendered PNG has a title and a legend, and no arrow label overlaps another label or element."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "greenfield-knowledge-assistant",
+      "covers": ["greenfield", "status-tags", "constraint-coverage"],
+      "should_trigger": true,
+      "prompt": "We are designing a new internal knowledge assistant. Employees ask questions in Slack and in a web UI. It answers from Confluence, Jira and Google Drive with citations and must respect each source's permissions; permission changes must take effect within 15 minutes. It uses a hosted LLM API and a vector index. Draw the C4 system context diagram and container diagram for the proposed design.",
+      "expected_output": "Context and container diagrams where stated elements are plain and design choices carry the proposed tag, with a constraint-coverage list that names the element meeting the 15-minute permission target and the citation requirement.",
+      "expectations": [
+        "Elements and relationships the brief states are untagged; every design choice carries the proposed tag, and the legend explains it.",
+        "Every proposed external system names the requirement that forces it.",
+        "The constraint-coverage list maps the 15-minute permission propagation and the citation requirement to specific elements, or marks a gap.",
+        "The container diagram uses the same names as the context diagram for shared elements.",
+        "Syntax check and render pass locally under the sandbox profile with --disable-metadata."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "route-sequence-diagram",
+      "covers": ["route-plantuml"],
+      "should_trigger": false,
+      "prompt": "Draw a sequence diagram of our login flow: the browser posts credentials to the API, the API checks them against the identity provider, then issues a session cookie.",
+      "expected_output": "A PlantUML sequence diagram following plantuml-diagramming; no C4 context or container diagram.",
+      "expectations": [
+        "Produces a sequence diagram, not a C4 diagram.",
+        "Follows plantuml-diagramming's sequence rules: a title and participants declared at the top."
+      ],
+      "files": []
+    }
+  ]
+}
