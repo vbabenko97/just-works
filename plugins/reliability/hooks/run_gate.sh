@@ -9,7 +9,7 @@
 # was being validated and never the gate's own. So this validates what it is about to
 # release, then releases it.
 #
-#   gate exited 0 with a valid decision   pass its stdout through, exit 0
+#   gate exited 0 with a deny decision    pass its stdout through, exit 0
 #   gate exited 0 with exactly `{}`       print nothing, exit 0 (no opinion)
 #   gate exited 0 with anything else      exit 2
 #   any other exit code                   exit 2
@@ -65,16 +65,21 @@ rc=$?
 kill -9 "$watchdog" 2>/dev/null
 
 if [ "$rc" -eq 0 ]; then
-  # Exit 0: a valid decision. Exit 3: exactly `{}`. Anything else, including a
-  # crash of this check, is unreadable.
-  python3 -c '
+  # Exit 0: a deny decision. Exit 3: exactly `{}`. Anything else, including
+  # `allow` and a crash of this check, is unreadable. Explicit checks rather than
+  # `assert`, which PYTHONOPTIMIZE removes; -I ignores PYTHON* variables and keeps
+  # the current directory off sys.path, so a json.py in the project cannot stand in
+  # for the standard module.
+  python3 -I -c '
 import json, sys
 answer = json.load(open(sys.argv[1]))
 if answer == {}:
     sys.exit(3)
-decision = answer["hookSpecificOutput"]
-assert decision["hookEventName"] == "PreToolUse", decision
-assert decision["permissionDecision"] in ("allow", "deny"), decision
+decision = answer.get("hookSpecificOutput") if isinstance(answer, dict) else None
+if not (isinstance(decision, dict)
+        and decision.get("hookEventName") == "PreToolUse"
+        and decision.get("permissionDecision") == "deny"):
+    sys.exit(1)
 ' "$out" 2>/dev/null
   verdict=$?
   if [ "$verdict" -eq 0 ]; then

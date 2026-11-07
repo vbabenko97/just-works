@@ -28,7 +28,9 @@ prompt, so a guard that allowed whatever it did not deny would approve every oth
 call on the user's behalf. This gate passes `{}` on unchanged, and run_gate.sh
 releases it as no output, the reference row above, so the user's own permission
 rules decide the call. A guard that prints nothing at all is still a refusal: silence
-cannot be told apart from a guard that died before answering.
+cannot be told apart from a guard that died before answering. An `allow` is refused
+too, here and again in run_gate.sh, so a guard that regresses to approving calls
+blocks them instead of silently skipping the user's prompts.
 
 The deadline here must stay shorter than the timeout configured for the hook, or
 Claude Code gives up first and fails open. Nesting: guard 10s < launcher 15s < hook 30s.
@@ -124,7 +126,11 @@ def main() -> int:
         return refuse(guard_arg, "the guard returned `ask`, which was measured not to "
                                  "prompt in an interactive acceptEdits session; "
                                  "treating it as a refusal")
-    if verdict not in ("allow", "deny"):
+    if verdict == "allow":
+        return refuse(guard_arg, "the guard returned `allow`, which skips the user's "
+                                 "permission prompt; a guard here may only refuse "
+                                 "(`deny`) or give no opinion (`{}`)")
+    if verdict != "deny":
         return refuse(guard_arg, f"the guard returned an unknown decision {verdict!r}")
 
     sys.stdout.write(proc.stdout)

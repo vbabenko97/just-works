@@ -35,7 +35,8 @@ NO_OPINION = "no opinion `{}` is released as no output"
 
 GUARDS = {
     # label: (guard body, expected exit)
-    "valid allow passes through": (DECISION % "allow", 0),
+    "allow is refused: a guard may only deny or give no opinion": (
+        DECISION % "allow", 2),
     "valid deny passes through": (DECISION % "deny", 0),
     NO_OPINION: ('print("{}")\n', 0),
     "an object that is neither `{}` nor a decision": (
@@ -55,7 +56,7 @@ GUARDS = {
     "unknown decision": (DECISION % "maybe", 2),
     "answers the wrong event": (
         'import json\nprint(json.dumps({"hookSpecificOutput": '
-        '{"hookEventName": "PostToolUse", "permissionDecision": "allow"}}))\n', 2),
+        '{"hookEventName": "PostToolUse", "permissionDecision": "deny"}}))\n', 2),
     "hangs past the guard deadline": ("import time\ntime.sleep(30)\n", 2),
 }
 
@@ -64,7 +65,8 @@ PAYLOAD = {"tool_name": "Bash", "cwd": "/tmp",
 
 
 def run(command: list[str], root: pathlib.Path, payload: str,
-        env_extra: dict | None = None) -> tuple[int, float, str, str]:
+        env_extra: dict | None = None,
+        cwd: pathlib.Path | None = None) -> tuple[int, float, str, str]:
     env = os.environ.copy()
     env["RELIABILITY_GUARD_TIMEOUT"] = "3"
     env["RELIABILITY_GATE_DEADLINE"] = "6"
@@ -72,7 +74,7 @@ def run(command: list[str], root: pathlib.Path, payload: str,
     env.update(env_extra or {})
     started = time.time()
     proc = subprocess.run(command, input=payload, capture_output=True, text=True,
-                          timeout=120, env=env)
+                          timeout=120, env=env, cwd=cwd)
     return (proc.returncode, time.time() - started, proc.stdout, proc.stderr[:200])
 
 
@@ -116,8 +118,8 @@ def main() -> int:
         code, _, _, err = run(["bash", launcher, "probe_guard.py"], root, payload)
         check(code == 2, "guard: missing file -> exit 2", f"exit {code}: {err}")
 
-        # A payload that is not JSON must not become an allow.
-        guard.write_text(DECISION % "allow")
+        # A payload that is not JSON must not reach the guard at all.
+        guard.write_text(DECISION % "deny")
         code, _, _, err = run(["bash", launcher, "probe_guard.py"], root, "{not json")
         check(code == 2, "payload: unparseable -> exit 2", f"exit {code}: {err}")
 
@@ -131,6 +133,10 @@ def main() -> int:
         for label, body in (("syntax error", "def broken(:\n    pass\n"),
                             ("prints junk and exits 0", 'print("not a decision")\n'),
                             ("exits 1", "import sys\nsys.exit(1)\n"),
+                            ("prints an allow decision and exits 0",
+                             DECISION % "allow"),
+                            ("prints an unknown decision and exits 0",
+                             DECISION % "maybe"),
                             ("hangs past the launcher deadline",
                              "import time\ntime.sleep(30)\n")):
             gate.write_text(body)
@@ -139,6 +145,26 @@ def main() -> int:
             ok = code == 2 and (elapsed < 20 if "hangs" in label else True)
             check(ok, f"gate: {label} -> exit 2",
                   f"exit {code} in {elapsed:.1f}s; out={out[:80]!r} err={err!r}")
+
+        # The launcher's own check must not depend on the environment or on the
+        # working directory: PYTHONOPTIMIZE strips `assert`, and `python3 -c` puts
+        # the current directory first on sys.path.
+        gate.write_text(DECISION % "maybe")
+        code, _, out, err = run(["bash", launcher, "probe_guard.py"], root, payload,
+                                {"PYTHONOPTIMIZE": "1"})
+        check(code == 2, "gate: unknown decision under PYTHONOPTIMIZE=1 -> exit 2",
+              f"exit {code}: out={out[:80]!r} err={err!r}")
+        planted = root / "planted"
+        planted.mkdir()
+        (planted / "json.py").write_text(
+            "def load(fh):\n"
+            "    return {'hookSpecificOutput': {'hookEventName': 'PreToolUse',\n"
+            "                                   'permissionDecision': 'deny'}}\n")
+        gate.write_text('print("not a decision")\n')
+        code, _, out, err = run(["bash", launcher, "probe_guard.py"], root, payload,
+                                cwd=planted)
+        check(code == 2, "gate: junk beside a json.py in the working directory -> "
+                         "exit 2", f"exit {code}: out={out[:80]!r} err={err!r}")
         gate.unlink()
         code, _, _, err = run(["bash", launcher, "probe_guard.py"], root, payload)
         check(code == 2, "gate: missing -> exit 2", f"exit {code}: {err}")
