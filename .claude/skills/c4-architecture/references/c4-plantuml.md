@@ -131,8 +131,8 @@ SHOW_LEGEND()
 
 ```bash
 PLANTUML_SECURITY_PROFILE=SANDBOX plantuml -checkonly diagrams/kb_c4_container_overview.puml
-PLANTUML_SECURITY_PROFILE=SANDBOX plantuml -tsvg diagrams/kb_c4_container_overview.puml
-PLANTUML_SECURITY_PROFILE=SANDBOX plantuml -tpng -o /tmp/kb-diagrams diagrams/kb_c4_container_overview.puml
+PLANTUML_SECURITY_PROFILE=SANDBOX plantuml --disable-metadata -tsvg diagrams/kb_c4_container_overview.puml
+PLANTUML_SECURITY_PROFILE=SANDBOX plantuml --disable-metadata -tpng -o /tmp/kb-diagrams diagrams/kb_c4_container_overview.puml
 ```
 
-`-checkonly` exits 0 when the source parses and 200 on an error, including a refused include. `-o` with an absolute path writes outside the project. PlantUML needs Java and, for most C4 layouts, Graphviz; the Homebrew `plantuml` formula installs both.
+`-checkonly` exits 0 when the source parses and 200 on an error, including a refused include. `--disable-metadata` keeps the diagram source out of the SVG and PNG files. Give one output format per command; with `-tsvg -tpng` only the last one is written. `-o` with an absolute path writes outside the project. PlantUML needs Java and, for most C4 layouts, Graphviz; the Homebrew `plantuml` formula installs both.

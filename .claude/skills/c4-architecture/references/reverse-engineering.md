@@ -54,7 +54,7 @@ Batch three to seven when the answers change the diagrams.
 - **Monorepo:** decide which packages deploy independently; libraries are not containers; show a shared library only when it explains the architecture.
 - **Serverless:** group functions into meaningful containers ("API", "async worker", "scheduled processor") instead of one box per function; show gateways, queues, buckets, event buses, and data stores.
 - **Microservices:** one container per independently deployable service; trace service-to-service calls; do not mistake shared packages for services.
-- **Library, SDK, or plugin:** the repository may not be a complete runtime system. Say so, show the host that runs it as the system or as an external system, and draw the parts the host loads (for example skills, hooks, or a server process it starts) as containers only when they run separately.
+- **Library, SDK, or plugin:** the repository may not be a complete runtime system. Say so, show the host that runs it as the system or as an external system, and draw the parts the host loads as containers only when they run separately. A server process or hook script the host starts runs separately; a subagent with its own tool list can count as one. A skill or instruction file that the host's main agent follows does not run on its own: name it in the host's description or in a component view, not as a container.
 
 ## Infrastructure and managed services
 
@@ -64,7 +64,7 @@ Show at container level when they shape the architecture: primary databases, que
 
 1. **Scope** — what is documented and the boundary. Example: "This covers the architecture implied by the current repository: the backend service and its deployment configuration, not the full end-user platform."
 2. **Observations** — the strongest concrete signals, each with a path. Example: "Node.js API in `apps/api`; Terraform for RDS and SQS in `infra/`."
-3. **Element status** — a table: element, level, status (Observed or Inferred), evidence (path, or the reasoning for an inference).
+3. **Element and relationship status** — one table for elements (element, level, status, evidence) and one for relationships (from, to, label, status, evidence). Observed evidence is a path, with the function or configuration key for a relationship; an Inferred row gives the reasoning.
 4. **System Context** — two or three sentences and the diagram file.
 5. **Container view** — two or three sentences and the diagram file.
 6. **Component view** — only for the container that needs it.

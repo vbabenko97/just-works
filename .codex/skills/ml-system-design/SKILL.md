@@ -39,7 +39,7 @@ Decide from the components, not from the task label:
 Maturity decides depth. Below the problem summary in the doc header, state the maturity, the template, and the critical components.
 
 - **Production:** complete all 12 sections at full depth.
-- **POC:** keep all 12 section headers; abbreviate throughout; replace the experiment subsection of IX (A/B or online experiment) and the Optimization subsection of XII with the single line "Deferred until production."
+- **POC:** keep all 12 section headers; abbreviate throughout, except items a template marks "Any maturity", which stay at full depth; replace the experiment subsection of IX (A/B or online experiment) and the Optimization subsection of XII with the single line "Deferred until production."
 
 ### 3. Draft
 

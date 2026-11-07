@@ -45,7 +45,7 @@ Every element and relationship has a status, and the diagram shows it:
 | Greenfield | Given | stated in the requirements | plain |
 | Greenfield | Proposed | a design choice | `$tags="proposed"` |
 
-The text next to the diagram lists each element with its status and evidence: the file path for Observed, the reasoning for Inferred, and the requirement or design reason for Given and Proposed. Tag definitions and syntax are in `references/c4-plantuml.md`.
+The text next to the diagram lists each element and each relationship with its status and evidence: the file path for Observed, the reasoning for Inferred, and the requirement or design reason for Given and Proposed. A relationship is Observed only when a file shows that interaction itself, such as the client call, query, queue publish, or configured endpoint, with its direction and protocol; two elements that both exist in the code do not show that they talk to each other. Tag definitions and syntax are in `references/c4-plantuml.md`.
 
 ## Writing the diagram
 
@@ -64,8 +64,8 @@ Render only on this machine. Never paste diagram source into an online editor or
 If `plantuml` is on `PATH`:
 
 1. `PLANTUML_SECURITY_PROFILE=SANDBOX plantuml -checkonly <file>.puml` must exit 0. The sandbox profile refuses network and file includes, so the standard library is the only include that works. If the diagram includes a project file, use `PLANTUML_SECURITY_PROFILE=ALLOWLIST PLANTUML_ALLOWLIST_PATH=<directory of that file>` instead.
-2. Render SVG next to the source with the same profile: `plantuml -tsvg <file>.puml`.
-3. Render a PNG copy to a temporary directory (`plantuml -tpng -o /tmp/<name> <file>.puml`) and look at it. Check that labels do not overlap, every arrow label can be read, the legend explains each tag used, and no element is left unconnected without a reason.
+2. Render SVG next to the source with the same profile: `plantuml --disable-metadata -tsvg <file>.puml`. Without `--disable-metadata`, PlantUML embeds the full diagram source, comments included, in every SVG and PNG, where `plantuml --extract-source` or any text viewer recovers it.
+3. Render a PNG copy to a temporary directory (`plantuml --disable-metadata -tpng -o /tmp/<name> <file>.puml`) and look at it. Check that labels do not overlap, every arrow label can be read, the legend explains each tag used, and no element is left unconnected without a reason.
 4. Check that the SVG contains the name of every element in the source. PlantUML writes each word as its own `<text>` node, so a plain `grep` for a multi-word name fails; strip the tags and collapse whitespace first, and include one name that is not in the diagram as a negative control:
 
    ```bash
@@ -76,7 +76,7 @@ If `plantuml` is not installed, say that the diagrams were not rendered. Install
 
 ## Deliverable
 
-The `.puml` files, their rendered SVGs when rendering was possible, and a short text with: scope and system boundary, the element status list, assumptions, open questions, and what was verified (syntax, render, visual check).
+The `.puml` files, their rendered SVGs when rendering was possible, and a short text with: scope and system boundary, the element and relationship status lists, assumptions, open questions, and what was verified (syntax, render, visual check).
 
 ## Common mistakes
 

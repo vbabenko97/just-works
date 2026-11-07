@@ -427,12 +427,16 @@ render under `PLANTUML_SECURITY_PROFILE=SANDBOX`. Under that profile a `!include
 GitHub URL fails with exit 200; a local relative include also fails unless
 `PLANTUML_SECURITY_PROFILE=ALLOWLIST` and `PLANTUML_ALLOWLIST_PATH` name its directory. The documented
 SVG name check found every element name in a rendered example and rejected a name that is not in it.
+Without `--disable-metadata`, PlantUML embedded the full source in the SVG (`<?plantuml-src ...?>`) and
+in a PNG text chunk; with the flag, neither file contained it.
 Two agent runs with the skill, reverse engineering `plugins/product-analyst` and designing a knowledge
 assistant from a brief, produced context and container diagrams that pass the syntax check and render
 locally, with an element status table; three claims of the reverse-engineered diagram were checked
 against the plugin's files. Runs of the `diagrammer` agent at `6bb506d` on the same two requests drew
-plain `rectangle` elements without the C4 library, a legend, or element status. Not verified: Codex
-loading the skill, and rendering inside Codex's `workspace-write` sandbox.
+plain `rectangle` elements without the C4 library, a legend, or element status. `evals/evals.json` holds
+these two requests and a negative case with their expectations. Not verified: Codex loading the skill,
+because the reliability policy denies agents the Codex binary outside the project, and rendering inside
+Codex's `workspace-write` sandbox.
 
 **`ml-system-design` GenAI template, 2026-11-07.** `references/genai-template.md` is written here. Its
 section structure comes from `ML-SystemDesign/MLSystemDesign` (MIT); RAG preparation, retrieval, and
@@ -441,7 +445,9 @@ evaluation guidance from Microsoft Azure Architecture Center, `MicrosoftDocs/arc
 states the changes); and agent and observability requirements from `ml-system-design-review`'s
 `references/modern-ai-systems.md`. No text is copied. `references/example-rag-system.md` keeps the facts
 of the earlier distillation of the source's MagicSharepoint design document, rearranged into the GenAI
-sections, with notes where the source does not cover a template item.
+sections, with notes where the source does not cover a template item. `evals/evals.json` holds the five
+design scenarios used to check the change (forecasting, permission-aware RAG, a tool-using agent at
+production and at POC maturity, and a hybrid LLM classifier) and a routing case, with their expectations.
 
 ### Not vendored — `remotion-best-practices`
 

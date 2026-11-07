@@ -32,7 +32,7 @@ List open decisions with the options and their trade-offs, and the questions for
 
 1. **Scope** — the system being designed and its boundary.
 2. **Given** — people, external systems, and constraints from the input, quoted or paraphrased with their source.
-3. **Element status** — a table: element, level, status (Given or Proposed), reason (the requirement or the design argument), rejected alternative for each Proposed container.
+3. **Element and relationship status** — one table for elements (element, level, status, reason, rejected alternative for each Proposed container) and one for relationships (from, to, label, status, reason). A reason is the requirement for Given and the design argument for Proposed.
 4. **System Context** and **Container view** — two or three sentences each, and the diagram files.
 5. **Constraint coverage** — each Given constraint and the element that satisfies it, or "gap".
 6. **Open decisions and questions.**
