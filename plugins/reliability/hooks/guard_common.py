@@ -32,12 +32,16 @@ PATH_TOOLS = {"Write": ("file_path",), "Edit": ("file_path",),
 
 
 def emit(decision: str, reason: str, layer: str) -> None:
+    # No opinion, `{}`, for anything not refused; see guard_bash.emit for why an
+    # `allow` would be wrong here. An authorized edit gets no opinion too: the
+    # authorization lifts this guard's refusal, not the user's permission rules.
+    if decision == "allow":
+        print("{}")
+        return
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": decision,
-        "permissionDecisionReason": (
-            f"[reliability/{layer}] {reason}" if decision == "allow"
-            else f"[reliability/{layer}] Blocked: {reason}")}}))
+        "permissionDecisionReason": f"[reliability/{layer}] Blocked: {reason}"}}))
 
 
 def target_paths(tool: str, tool_input: dict) -> list[str]:

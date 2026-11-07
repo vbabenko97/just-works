@@ -31,11 +31,12 @@ PLUGIN_LAUNCHER = pathlib.Path(__file__).resolve().parents[1] / "hooks" / "run_g
 
 RUNS = 7
 
-ALLOW = ('import json\nprint(json.dumps({"hookSpecificOutput": {"hookEventName": '
-         '"PreToolUse", "permissionDecision": "allow", "permissionDecisionReason": '
-         '"bench"}}))\n')
-DENY = ALLOW.replace("allow", "deny")
-SLOW = 'import time, json\ntime.sleep(2)\n' + ALLOW
+# A guard answers no opinion (`{}`) or deny; run_gate.sh refuses `allow`.
+NO_OPINION = 'print("{}")\n'
+DENY = ('import json\nprint(json.dumps({"hookSpecificOutput": {"hookEventName": '
+        '"PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": '
+        '"bench"}}))\n')
+SLOW = 'import time\ntime.sleep(2)\n' + NO_OPINION
 
 PAYLOAD = json.dumps({"tool_name": "Bash", "cwd": str(REPO),
                       "tool_input": {"command": "ls -la"}})
@@ -78,7 +79,7 @@ def main() -> int:
     work = pathlib.Path(tempfile.mkdtemp(prefix="jw-bench-"))
     guards = work / "guards"
     guards.mkdir()
-    (guards / "allow.py").write_text(ALLOW)
+    (guards / "no_opinion.py").write_text(NO_OPINION)
     (guards / "deny.py").write_text(DENY)
     (guards / "slow.py").write_text(SLOW)
 
@@ -98,7 +99,8 @@ def main() -> int:
         if not launcher.is_file():
             print(f"(skipped {name}: {launcher} is missing)")
             continue
-        for scenario, guard in (("fast allow", "allow.py"), ("fast deny", "deny.py"),
+        for scenario, guard in (("fast no opinion", "no_opinion.py"),
+                                ("fast deny", "deny.py"),
                                 ("delayed child (2s)", "slow.py")):
             report(f"{name} launcher, {scenario}",
                    ["bash", str(launcher), str(guards / guard)])
