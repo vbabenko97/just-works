@@ -1,6 +1,6 @@
 ---
 name: ml-system-design
-description: Apply when designing or specifying an ML or GenAI system before implementation — writing a system design document, architecting a training or inference pipeline, or planning a fraud detection, recommendation, forecasting, RAG, LLM application, LLM classifier, or tool-using agent system. Not for generic docs or specs (use doc-coauthoring), not for reviewing an existing design doc (use ml-system-design-review), and not for writing ML code without a design phase.
+description: Apply when designing or specifying an ML or GenAI system before implementation — writing a system design document, architecting a training or inference pipeline, or planning a fraud detection, recommendation, forecasting, RAG, LLM application, LLM classifier, or tool-using agent system. Not for generic docs or specs (use human-writing), not for reviewing an existing design doc (use ml-system-design-review), and not for writing ML code without a design phase.
 ---
 
 # ML System Design
@@ -9,7 +9,7 @@ Author a system design document from one of two 12-section templates distilled f
 
 ## When NOT to use
 
-- Generic documentation, proposals, or specs with no ML component — use `doc-coauthoring`.
+- Generic documentation, proposals, or specs with no ML component — use `human-writing`.
 - Writing ML code without a design phase — use the language coding skills.
 - Reviewing or scoring an existing design doc — use `ml-system-design-review` (this skill's reviewer pair).
 
