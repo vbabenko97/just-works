@@ -1,5 +1,5 @@
 name = "swift-code-writer"
-description = "Use when writing or editing Swift (.swift) files. Applies swift-coding skill standards and runs quality checks."
+description = "Use when Swift (.swift) work is delegated as an independent workstream, such as one of several parallel changes. Applies swift-coding skill standards and runs quality checks. For other Swift edits the main session loads the swift-coding skill and edits directly."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"

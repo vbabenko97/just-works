@@ -1,6 +1,6 @@
 ---
 name: react-code-writer
-description: Use proactively when writing or editing React (.tsx/.jsx) files, Tailwind CSS classes, or shadcn/ui components. Applies project React standards and runs quality checks.
+description: Use when React (.tsx/.jsx), Tailwind CSS, or shadcn/ui work is delegated as an independent workstream, such as one of several parallel changes. Applies project React standards and runs quality checks. For other React edits the main session loads the matching skills (react-coding, typescript-coding, tailwind-css-coding, shadcn-ui-coding) and edits directly.
 tools: Write, Read, Edit, Bash, Glob, Grep
 model: inherit
 skills:

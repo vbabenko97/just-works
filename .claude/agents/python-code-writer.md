@@ -1,6 +1,6 @@
 ---
 name: python-code-writer
-description: Use proactively when writing or editing Python (.py) files. Applies project python standards and runs quality checks.
+description: Use when Python (.py) work is delegated as an independent workstream, such as one of several parallel changes. Applies project Python standards and runs quality checks. For other Python edits the main session loads the python-coding skill and edits directly.
 tools: Write, Read, Edit, Bash, Glob, Grep, Skill
 model: inherit
 skills:
