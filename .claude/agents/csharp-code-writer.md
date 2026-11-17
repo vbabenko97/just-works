@@ -1,6 +1,6 @@
 ---
 name: csharp-code-writer
-description: Use proactively when writing or editing C# (.cs) files. Applies project C# standards and runs quality checks.
+description: Use when C# (.cs) work is delegated as an independent workstream, such as one of several parallel changes. Applies project C# standards and runs quality checks. For other C# edits the main session loads the csharp-coding skill and edits directly.
 tools: Write, Read, Edit, Bash, Glob, Grep, Skill
 model: inherit
 skills:

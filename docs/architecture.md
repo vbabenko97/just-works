@@ -13,10 +13,12 @@ Two parallel provider directories plus distribution scaffolding:
 
 ## Module Boundaries
 
-**Agents** (`.claude/agents/`, `.codex/agents/`) — 20 Claude and 17 Codex agents; the three Claude-only ones are the `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`). Writers are file-type-triggered via `description` frontmatter:
+**Agents** (`.claude/agents/`, `.codex/agents/`) — 20 Claude and 17 Codex agents; the three Claude-only ones are the `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`). The main session makes code edits itself with the matching coding skill. Six language writers take code work that the main session delegates as an independent workstream, such as one of several parallel changes:
 - `python-code-writer`, `typescript-code-writer`, `swift-code-writer`, `csharp-code-writer`
 - `react-code-writer` (React/Tailwind/shadcn)
 - `flutter-code-writer` (Dart/Flutter)
+
+Two writers are file-type-triggered via `description` frontmatter:
 - `prompt-writer` (Fable, Opus, GPT, Gemini)
 - `diagrammer` (PlantUML, C4-PlantUML)
 
@@ -33,7 +35,7 @@ Dependency direction: Agents → Skills (declared in agent frontmatter). Command
 
 ## Data Flow
 
-1. User invokes agent via CLI (e.g., Claude Code matches `*.py` edit → `python-code-writer`).
+1. The main session delegates a task to the agent whose `description` matches it (e.g., a `.puml` edit → `diagrammer`, or one of several parallel Python changes → `python-code-writer`).
 2. Orchestrator reads agent frontmatter, loads declared skills as behavioral standards.
 3. Agent reads target file and project context before editing.
 4. Agent edits via `Read`/`Edit`/`Write`/`Bash` tools within declared tool allow-list.
@@ -45,7 +47,8 @@ Dependency direction: Agents → Skills (declared in agent frontmatter). Command
 
 - **Filesystem discipline** — see the shared rules in [AGENTS.md](../AGENTS.md#filesystem-discipline) and [CLAUDE.md](../CLAUDE.md#filesystem-discipline), and the reviewer instructions for [Codex](../.codex/agents/reviewer.toml) and [Claude](../.claude/agents/reviewer.md).
 - **Dual-provider mirror** — `.claude/` (Markdown with YAML frontmatter) and `.codex/` (TOML) hold parallel copies of the shared agents and skills; Codex can't resolve `@file` references, so a skill wanted in both is copied into both trees. The trees are not required to match; see Module Boundaries for provider-specific entries.
-- **File-extension-triggered selection** — agent `description` fields declare target file types; the orchestrator matches on descriptions, not names.
+- **Description-based selection** — the orchestrator matches delegated work on agent `description` fields, not names. `prompt-writer` and `diagrammer` declare target file types there; the language writers declare delegated workstreams.
+- **Code edits in the main session** — the main session loads the matching coding skill and edits directly, because a writer agent returns a summary and the detail of its work stays outside the main session's context. A language writer is for an independent workstream. Decided 2026-11-17 after Anthropic's guide on [folding subagents into the main agent loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop); no evaluation was run in this repository.
 - **Skill composition** — agents stack multiple skills (e.g., `react-code-writer` loads `react-coding` + `tailwind-css-coding` + `shadcn-ui-coding`).
 - **Global skill installation** — shared skills are copied to `~/.claude/skills` and `~/.agents/skills`. `install.sh` rejects the former `--repos` option before installation and does not scan or update project skill directories. Projects keep their own skills; the two provider trees in this repository remain distribution sources.
 - **Permission deny-list** — the project's `.claude/settings.json` denies `Read` access to `.env`, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, and DB files. The global install template, `settings.json.default`, has an empty deny-list.
@@ -62,4 +65,4 @@ Dependency direction: Agents → Skills (declared in agent frontmatter). Command
 - `.claude/agents/*.md`, `.codex/agents/*.toml` — agents
 
 ---
-*Generated: 2026-07-07 | Commit: ef80bb5 · Corrected by hand 2026-09-26: agent and skill counts, mirroring, `src/evals/` removed (never committed) · 2026-09-27: career skills consolidated, counts updated · 2026-10-08: documentation workflows updated · 2026-10-13: ML experiment skills added, counts updated · 2026-10-13: `sql-assistant` added, counts updated · 2026-10-25: `ex-ussr-kinship-research` added, counts updated · 2026-11-04: demo-video production skills added, counts updated · 2026-11-07: `c4-architecture` added, counts updated · 2026-11-07: skill list completed after an audit · 2026-11-07: `doc-coauthoring` removed (no license), counts updated*
+*Generated: 2026-07-07 | Commit: ef80bb5 · Corrected by hand 2026-09-26: agent and skill counts, mirroring, `src/evals/` removed (never committed) · 2026-09-27: career skills consolidated, counts updated · 2026-10-08: documentation workflows updated · 2026-10-13: ML experiment skills added, counts updated · 2026-10-13: `sql-assistant` added, counts updated · 2026-10-25: `ex-ussr-kinship-research` added, counts updated · 2026-11-04: demo-video production skills added, counts updated · 2026-11-07: `c4-architecture` added, counts updated · 2026-11-07: skill list completed after an audit · 2026-11-07: `doc-coauthoring` removed (no license), counts updated · 2026-11-17: language writers changed from file-type-triggered to delegated workstreams*

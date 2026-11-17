@@ -1,6 +1,6 @@
 ---
 name: swift-code-writer
-description: Use proactively when writing or editing Swift (.swift) files. Applies project Swift standards and runs quality checks.
+description: Use when Swift (.swift) work is delegated as an independent workstream, such as one of several parallel changes. Applies project Swift standards and runs quality checks. For other Swift edits the main session loads the swift-coding skill and edits directly.
 tools: Write, Read, Edit, Bash, Glob, Grep
 model: inherit
 skills:

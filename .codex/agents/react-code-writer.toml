@@ -1,5 +1,5 @@
 name = "react-code-writer"
-description = "Use when writing or editing React (.tsx/.jsx) files, Tailwind CSS classes, or shadcn/ui components. Applies react-coding, typescript-coding, tailwind-css-coding, and shadcn-ui-coding skill standards."
+description = "Use when React (.tsx/.jsx), Tailwind CSS, or shadcn/ui work is delegated as an independent workstream, such as one of several parallel changes. Applies react-coding, typescript-coding, tailwind-css-coding, and shadcn-ui-coding skill standards. For other React edits the main session loads the react-coding, tailwind-css-coding, or shadcn-ui-coding skill and edits directly."
 model = "gpt-5.6-terra"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
