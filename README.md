@@ -4,6 +4,16 @@ Drop-in AI agent workflows, coding skills, and prompt standards for **Claude Cod
 
 Fork of [dynokostya/just-works](https://github.com/dynokostya/just-works), maintained independently; upstream changes are reviewed and recorded in [UPSTREAM.md](UPSTREAM.md).
 
+## Quick start
+
+```bash
+git clone https://github.com/vbabenko97/just-works.git
+cd just-works
+./install.sh
+```
+
+The installer overwrites the global `~/.claude/CLAUDE.md`, `~/.claude/CLAUDE-CHAT.md` and `~/.codex/AGENTS.md`, and asks first whether to back up the existing destinations. Read [Installation](#installation) for what it keeps, what it replaces, and its options.
+
 Install globally to use shared agents, coding skills, and documentation workflows across projects. Keep project skill directories for skills specific to that project.
 
 Use the global installer for Codex setup. This repo's `.codex/config.toml` also loads as a project layer when Codex trusts this checkout; see [Codex ownership](UPSTREAM.md#codex-ownership--installation-baseline-and-a-live-project-layer).
@@ -17,11 +27,30 @@ Use the global installer for Codex setup. This repo's `.codex/config.toml` also 
 **Context-isolating subagents** — delegates independent workstreams, such as one of several parallel changes, to subagents that carry their own context; the main session makes other code edits itself with the matching coding skill.
 
 **Agents** — language writers for delegated workstreams (`python`, `typescript`, `swift`, `csharp`, `react`, `flutter`), plus `prompt-writer`, `diagrammer`, `reviewer`, `test-runner`, `docs-agent`, `refactor-agent`, `cv-claim-verifier`, and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`). 17 per provider, plus three Claude-only `/goal` roles (`goal-architect`, `goal-implementer`, `goal-security`).
+
 **Commands** — `project-docs` and `git-sync` (Claude & Codex), `plan-reviewer` (Codex).
 
-**Skills** — coding standards (Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter), architecture patterns (DDD, feature-driven), SQL (`sql-assistant` writes, reviews, optimizes, and converts SQL for PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery, Snowflake, and DuckDB, with per-engine references and rules for when SQL may be executed), ML system design (`ml-system-design` authoring, with one template for predictive ML and one for RAG, LLM applications and agents + `ml-system-design-review` rubric-graded critique + `ai-stage-gate` Go/Kill gate reviews), C4 architecture diagrams (`c4-architecture` draws system context, container and component views in C4-PlantUML, from an existing repository or from requirements, and renders them locally; the `diagrammer` agent loads it), ML experiment discipline (`ml-problem-and-data-audit` problem contract, data, split, and leakage audit with a readiness verdict + `ml-experiment-protocol` baselines, fair comparison, and protected final test + `ml-provenance-and-handoff` run records and reproducible result notes + `scikit-learn` implementation patterns that follow the accepted protocol), document work (`lossless-doc-compress` compression with preservation checks + `human-writing` for documents that readers outside the project can follow + `staged-docs` for building a document with its author piece by piece, invoke manually with `/staged-docs <topic>`), predictive UX evaluation of web UIs (`predictive-ux-evaluation`), model-specific prompt engineering (Claude Opus 5.5 & Fable 5.1, GPT-6, Gemini 3.8 Flash, Grok 4.7), Blender 5.2 expert tools (`scenario-blender-expert` router + 12 specialists, from scenario-labs/skills), evidence-first family-history research in former-USSR and Russian Empire archives (`ex-ussr-kinship-research`, from DenisSergeevitch/ex-ussr-kinship-research), demo-video production (`saas-product-demo-production`, `screen-demo-production`, `storyboard-previsualization`, `editing-montage`, `captions-media-accessibility`, `generated-media-qa`, `media-provenance-rights`, `media-qc-delivery`, from calesthio/generative-media-skills; `short-form-video`, `caption-animation`, from iart-ai/tiktok-video-skills; `app-demo-agent` with `voice-generation`, `music-generation`, `media-utils`, from michaelboeding/skills; `demo-video`, from Hmache/demo; `app-demo-agent`, `voice-generation`, `music-generation` and `demo-video` invoke manually, because they call paid APIs or drive a live site), job applications (`career-application-builder` evidence-checked CVs and letters, `job-triage` vacancy screening, `interview-drill` mock interviews), GitHub profile and README presentation (`github-presentation`, invoke manually), and behavioral modes (`minimal-coding`). Applied automatically based on task intent or, for language and framework skills, the file type being edited.
+**Skills** — applied automatically based on task intent or, for language and framework skills, the file type being edited.
 
-**Permission rules** — this repo's `.claude/settings.json` denies `Read` access to `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and database files. The global install template, `settings.json.default`, has an empty deny-list.
+| Area | Skills |
+|---|---|
+| Coding standards | Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter |
+| Architecture patterns | DDD, feature-driven |
+| SQL | `sql-assistant` writes, reviews, optimizes, and converts SQL for PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery, Snowflake, and DuckDB, with per-engine references and rules for when SQL may be executed |
+| ML system design | `ml-system-design` authoring, with one template for predictive ML and one for RAG, LLM applications and agents<br>`ml-system-design-review` rubric-graded critique<br>`ai-stage-gate` Go/Kill gate reviews |
+| C4 architecture diagrams | `c4-architecture` draws system context, container and component views in C4-PlantUML, from an existing repository or from requirements, and renders them locally; the `diagrammer` agent loads it |
+| ML experiment discipline | `ml-problem-and-data-audit` problem contract, data, split, and leakage audit with a readiness verdict<br>`ml-experiment-protocol` baselines, fair comparison, and protected final test<br>`ml-provenance-and-handoff` run records and reproducible result notes<br>`scikit-learn` implementation patterns that follow the accepted protocol |
+| Document work | `lossless-doc-compress` compression with preservation checks<br>`human-writing` for documents that readers outside the project can follow<br>`staged-docs` for building a document with its author piece by piece, invoke manually with `/staged-docs <topic>` |
+| Predictive UX evaluation of web UIs | `predictive-ux-evaluation` |
+| Model-specific prompt engineering | Claude Opus 5.5 & Fable 5.1, GPT-6, Gemini 3.8 Flash, Grok 4.7 |
+| Blender 5.2 expert tools | `scenario-blender-expert` router + 12 specialists, from scenario-labs/skills |
+| Evidence-first family-history research in former-USSR and Russian Empire archives | `ex-ussr-kinship-research`, from DenisSergeevitch/ex-ussr-kinship-research |
+| Demo-video production | `saas-product-demo-production`, `screen-demo-production`, `storyboard-previsualization`, `editing-montage`, `captions-media-accessibility`, `generated-media-qa`, `media-provenance-rights`, `media-qc-delivery`, from calesthio/generative-media-skills<br>`short-form-video`, `caption-animation`, from iart-ai/tiktok-video-skills<br>`app-demo-agent` with `voice-generation`, `music-generation`, `media-utils`, from michaelboeding/skills<br>`demo-video`, from Hmache/demo<br>`app-demo-agent`, `voice-generation`, `music-generation` and `demo-video` invoke manually, because they call paid APIs or drive a live site |
+| Job applications | `career-application-builder` evidence-checked CVs and letters<br>`job-triage` vacancy screening<br>`interview-drill` mock interviews |
+| GitHub profile and README presentation | `github-presentation`, invoke manually |
+| Behavioral modes | `minimal-coding` |
+
+**Permission rules** — this repo's `.claude/settings.json` denies `Read` access to `.env` files, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and database files. The global install template, `settings.json.default`, has an empty deny-list.
 
 ## Documentation workflows
 
@@ -41,13 +70,7 @@ Compression reports the preservation checks performed and their limits; it canno
 
 ### From source
 
-```bash
-git clone https://github.com/vbabenko97/just-works.git
-cd just-works
-./install.sh
-```
-
-To update: `git pull && ./install.sh` (existing config files are kept; add `--replace-config` to refresh them).
+Clone the repository and run `./install.sh`, as in [Quick start](#quick-start). To update: `git pull && ./install.sh` (existing config files are kept; add `--replace-config` to refresh them).
 
 `install.sh` leaves project skill directories unchanged. The former `--repos` option is rejected before installation, including with `--prune` or `--dry-run`. Remove it from saved commands and scripts. `--prune` removes obsolete installer-owned entries from global destinations; it does not clean up copies in projects.
 
@@ -101,7 +124,7 @@ export AZURE_OPENAI_API_KEY="your-key-here"
 
 ### MCP for Claude Code
 
-MCP servers are configured per-project, not globally. To set up MCP in your project:
+MCP servers are configured per-project, not globally. To set up MCP in your project, copy one of two files: `.mcp.json.default` declares no servers, and `.mcp.json` declares the Playwright server.
 
 ```bash
 cp .mcp.json.default /path/to/your/project/.mcp.json

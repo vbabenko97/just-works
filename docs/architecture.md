@@ -24,22 +24,45 @@ Two writers are file-type-triggered via `description` frontmatter:
 
 The rest are task agents — `reviewer`, `test-runner`, `docs-agent`, `refactor-agent`, `cv-claim-verifier` (read-only factual review of application material) — and a personal-finance set (`personal-cfo-agent`, `risk-officer-agent`, `investment-committee-agent`, `career-capital-agent`).
 
-**Skills** (`.claude/skills/`, `.codex/skills/`) — 96 skills in `.claude/skills/` and 72 in `.codex/skills/`, counted by `SKILL.md`; all 72 Codex skills are identical copies of their `.claude/` counterparts, except that the Codex copy of `staged-docs` adds `agents/openai.yaml`, and the other 24 are Claude-only. Claude also has two workspace directories without `SKILL.md`. Skills cover coding standards per language, architecture patterns (DDD, feature-driven), cross-dialect SQL (`sql-assistant`), model-specific prompting (`fable-5-1-prompting`, `opus-5-5-prompting`, `gpt-6-prompting`, `gemini-3-8-flash-prompting`, `grok-4-7-prompting`, `glm-5-2-prompting`, `kimi-k-3-prompting`, `gpt-image-2-prompting`, `claude-science-prompting`) and prompt rewriting (`safe-prompt-rewriter`), ML and document work (`ml-system-design`, `ml-system-design-review`, `ai-stage-gate`, `lossless-doc-compress`, `human-writing`, `staged-docs`; `staged-docs` is manual-only), ML experiment discipline (`ml-problem-and-data-audit`, `ml-experiment-protocol`, `ml-provenance-and-handoff`, `scikit-learn`), predictive UX evaluation (`predictive-ux-evaluation`), data analysis (`ai-analyst-pipeline`), code and repository quality (`clean-code-reviewer`, `repo-professionalizer`), skill and MCP server authoring (`skill-creator`, `mcp-builder`), presentations (`powerpoint-designer`), Blender 5.2 3D work (the `scenario-blender-expert` router and 12 `scenario-blender-*` specialists), the `/goal` orchestrator (`goal`, manual-only), grant writing (`msca-pf-european-2026`, `msca-pf-2026-reviewer`, `msca-text-humanizer`), personal finance, job applications (`career-application-builder`, `job-triage`, `interview-drill`), GitHub presentation (`github-presentation`, manual-only), genealogy (`ex-ussr-kinship-research`), demo-video production (`saas-product-demo-production`, `screen-demo-production`, `storyboard-previsualization`, `editing-montage`, `captions-media-accessibility`, `generated-media-qa`, `media-provenance-rights`, `media-qc-delivery`, `short-form-video`, `caption-animation`, `app-demo-agent`, `voice-generation`, `music-generation`, `media-utils`, `demo-video`; `app-demo-agent`, `voice-generation`, `music-generation` and `demo-video` are manual-only), domain skills (`ticket-writing`, `sprint-estimation`, `plantuml-diagramming`, `c4-architecture`, `rest-api`), and behavioral modes (`caveman`, `minimal-coding`, `i-have-adhd`).
+**Skills** (`.claude/skills/`, `.codex/skills/`) — 96 skills in `.claude/skills/` and 72 in `.codex/skills/`, counted by `SKILL.md`; all 72 Codex skills are identical copies of their `.claude/` counterparts, except that the Codex copy of `staged-docs` adds `agents/openai.yaml`, and the other 24 are Claude-only. Claude also has two workspace directories without `SKILL.md`. Skills cover:
+- coding standards per language
+- architecture patterns (DDD, feature-driven)
+- cross-dialect SQL (`sql-assistant`)
+- model-specific prompting (`fable-5-1-prompting`, `opus-5-5-prompting`, `gpt-6-prompting`, `gemini-3-8-flash-prompting`, `grok-4-7-prompting`, `glm-5-2-prompting`, `kimi-k-3-prompting`, `gpt-image-2-prompting`, `claude-science-prompting`) and prompt rewriting (`safe-prompt-rewriter`)
+- ML and document work (`ml-system-design`, `ml-system-design-review`, `ai-stage-gate`, `lossless-doc-compress`, `human-writing`, `staged-docs`; `staged-docs` is manual-only)
+- ML experiment discipline (`ml-problem-and-data-audit`, `ml-experiment-protocol`, `ml-provenance-and-handoff`, `scikit-learn`)
+- predictive UX evaluation (`predictive-ux-evaluation`)
+- data analysis (`ai-analyst-pipeline`)
+- code and repository quality (`clean-code-reviewer`, `repo-professionalizer`)
+- skill and MCP server authoring (`skill-creator`, `mcp-builder`)
+- presentations (`powerpoint-designer`)
+- Blender 5.2 3D work (the `scenario-blender-expert` router and 12 `scenario-blender-*` specialists)
+- the `/goal` orchestrator (`goal`, manual-only)
+- grant writing (`msca-pf-european-2026`, `msca-pf-2026-reviewer`, `msca-text-humanizer`)
+- personal finance
+- job applications (`career-application-builder`, `job-triage`, `interview-drill`)
+- GitHub presentation (`github-presentation`, manual-only)
+- genealogy (`ex-ussr-kinship-research`)
+- demo-video production (`saas-product-demo-production`, `screen-demo-production`, `storyboard-previsualization`, `editing-montage`, `captions-media-accessibility`, `generated-media-qa`, `media-provenance-rights`, `media-qc-delivery`, `short-form-video`, `caption-animation`, `app-demo-agent`, `voice-generation`, `music-generation`, `media-utils`, `demo-video`; `app-demo-agent`, `voice-generation`, `music-generation` and `demo-video` are manual-only)
+- domain skills (`ticket-writing`, `sprint-estimation`, `plantuml-diagramming`, `c4-architecture`, `rest-api`)
+- behavioral modes (`caveman`, `minimal-coding`, `i-have-adhd`)
 
 **Commands** (`.claude/commands/`, `.codex/prompts/`) — multi-phase workflows:
 - `project-docs` — scoped documentation updates: establish scope and sources, gather evidence, reconcile requested coverage, write, and verify
 - `git-sync` — sync repos and submodules to default branch
 - `plan-reviewer` — Codex-only, reviews plans authored by Claude Opus
 
-Dependency direction: Agents → Skills (declared in agent frontmatter). Commands → Agents and Skills (referenced in command prompts). Skills may compose (`sprint-estimation` pairs with `ticket-writing`; `ml-system-design` pairs with `ml-system-design-review` and points to `c4-architecture` for diagrams; `c4-architecture` leaves sequence, state and deployment diagrams to `plantuml-diagramming`; `ml-experiment-protocol` starts from the evidence of `ml-problem-and-data-audit` and records runs in the `ml-provenance-and-handoff` format, and `scikit-learn` implements the accepted protocol without changing it). No reverse dependencies.
+Dependency direction: Agents → Skills (declared in the agent definition). Commands → Agents and Skills (referenced in command prompts). Skills may compose (`sprint-estimation` pairs with `ticket-writing`; `ml-system-design` pairs with `ml-system-design-review` and points to `c4-architecture` for diagrams; `c4-architecture` leaves sequence, state and deployment diagrams to `plantuml-diagramming`; `ml-experiment-protocol` starts from the evidence of `ml-problem-and-data-audit` and records runs in the `ml-provenance-and-handoff` format, and `scikit-learn` implements the accepted protocol without changing it). No reverse dependencies.
 
 ## Data Flow
 
+For a code edit, the main session loads the matching coding skill and edits the file itself. Delegated work follows these steps:
+
 1. The main session delegates a task to the agent whose `description` matches it (e.g., a `.puml` edit → `diagrammer`, or one of several parallel Python changes → `python-code-writer`).
-2. Orchestrator reads agent frontmatter, loads declared skills as behavioral standards.
+2. The agent applies the skills its definition names as behavioral standards. A Claude Code agent lists them in YAML frontmatter; a Codex agent names them in `developer_instructions`.
 3. Agent reads target file and project context before editing.
 4. Agent edits via `Read`/`Edit`/`Write`/`Bash` tools within declared tool allow-list.
-5. Orchestrator marks task complete per `CLAUDE.md` rule 3.
+5. The main session marks the task complete per `CLAUDE.md` rule 3.
 
 `project-docs` reads existing documentation and the sources needed for the requested scope. It can delegate independent investigations, maps capabilities to canonical sections when complete coverage is requested, updates those documents, and verifies claims, status labels, and links. Implementation facts and approved requirements remain distinguishable; contradictions are reported.
 
@@ -47,11 +70,11 @@ Dependency direction: Agents → Skills (declared in agent frontmatter). Command
 
 - **Filesystem discipline** — see the shared rules in [AGENTS.md](../AGENTS.md#filesystem-discipline) and [CLAUDE.md](../CLAUDE.md#filesystem-discipline), and the reviewer instructions for [Codex](../.codex/agents/reviewer.toml) and [Claude](../.claude/agents/reviewer.md).
 - **Dual-provider mirror** — `.claude/` (Markdown with YAML frontmatter) and `.codex/` (TOML) hold parallel copies of the shared agents and skills; Codex can't resolve `@file` references, so a skill wanted in both is copied into both trees. The trees are not required to match; see Module Boundaries for provider-specific entries.
-- **Description-based selection** — the orchestrator matches delegated work on agent `description` fields, not names. `prompt-writer` and `diagrammer` declare target file types there; the language writers declare delegated workstreams.
+- **Description-based selection** — the main session matches delegated work on agent `description` fields, not names. `prompt-writer` and `diagrammer` declare target file types there; the language writers declare delegated workstreams.
 - **Code edits in the main session** — the main session loads the matching coding skill and edits directly, because a writer agent returns a summary and the detail of its work stays outside the main session's context. A language writer is for an independent workstream. Decided 2026-11-17 after Anthropic's guide on [folding subagents into the main agent loop](https://claude.com/resources/articles/building-agents-when-to-fold-subagents-into-your-main-agent-loop); no evaluation was run in this repository.
-- **Skill composition** — agents stack multiple skills (e.g., `react-code-writer` loads `react-coding` + `tailwind-css-coding` + `shadcn-ui-coding`).
+- **Skill composition** — agents stack multiple skills (e.g., `react-code-writer` loads `react-coding` + `typescript-coding` + `tailwind-css-coding` + `shadcn-ui-coding` + `minimal-coding`).
 - **Global skill installation** — shared skills are copied to `~/.claude/skills` and `~/.agents/skills`. `install.sh` rejects the former `--repos` option before installation and does not scan or update project skill directories. Projects keep their own skills; the two provider trees in this repository remain distribution sources.
-- **Permission deny-list** — the project's `.claude/settings.json` denies `Read` access to `.env`, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, and DB files. The global install template, `settings.json.default`, has an empty deny-list.
+- **Permission deny-list** — the project's `.claude/settings.json` denies `Read` access to `.env`, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and DB files. The global install template, `settings.json.default`, has an empty deny-list.
 - **Evidence-based documentation** — `project-docs` verifies implementation claims against inspected code, configuration, or runtime interfaces; relevant passing checks corroborate those claims. Intent claims require approved sources. Unsupported claims are omitted or marked as open questions. Requested complete coverage requires reconciling capabilities against substantive documentation, beyond checking links.
 - **Personal vs default configs** — `install.sh` uses minimal `.default` configs and keeps existing configs unless `--replace-config` is passed. It refuses `--personal` for Claude before installing anything; `--personal --codex-only` selects the opinionated Codex config. The older `install.bat` and `bin/cli.mjs` have separate behavior; see the [installation guidance](../README.md#installation) before choosing an installer.
 
@@ -65,4 +88,4 @@ Dependency direction: Agents → Skills (declared in agent frontmatter). Command
 - `.claude/agents/*.md`, `.codex/agents/*.toml` — agents
 
 ---
-*Generated: 2026-07-07 | Commit: ef80bb5 · Corrected by hand 2026-09-26: agent and skill counts, mirroring, `src/evals/` removed (never committed) · 2026-09-27: career skills consolidated, counts updated · 2026-10-08: documentation workflows updated · 2026-10-13: ML experiment skills added, counts updated · 2026-10-13: `sql-assistant` added, counts updated · 2026-10-25: `ex-ussr-kinship-research` added, counts updated · 2026-11-04: demo-video production skills added, counts updated · 2026-11-07: `c4-architecture` added, counts updated · 2026-11-07: skill list completed after an audit · 2026-11-07: `doc-coauthoring` removed (no license), counts updated · 2026-11-17: language writers changed from file-type-triggered to delegated workstreams*
+*Generated: 2026-07-07 | Commit: ef80bb5 · Corrected by hand 2026-09-26: agent and skill counts, mirroring, `src/evals/` removed (never committed) · 2026-09-27: career skills consolidated, counts updated · 2026-10-08: documentation workflows updated · 2026-10-13: ML experiment skills added, counts updated · 2026-10-13: `sql-assistant` added, counts updated · 2026-10-25: `ex-ussr-kinship-research` added, counts updated · 2026-11-04: demo-video production skills added, counts updated · 2026-11-07: `c4-architecture` added, counts updated · 2026-11-07: skill list completed after an audit · 2026-11-07: `doc-coauthoring` removed (no license), counts updated · 2026-11-17: language writers changed from file-type-triggered to delegated workstreams; skill list set as a list; Data Flow, skill composition and deny-list corrected*
