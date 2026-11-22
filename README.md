@@ -12,8 +12,8 @@ flowchart LR
     claude[".claude/: agents, skills,<br>commands, output-styles"]
     claudemd["CLAUDE.md, CLAUDE-CHAT.md"]
     codex[".codex/: agents, prompts"]
-    codexskills[".codex/skills/"]
     agentsmd["AGENTS.md"]
+    codexskills[".codex/skills/"]
     plugins["plugins/: reliability,<br>product-analyst"]
   end
   claude -->|install.sh| home_claude["~/.claude/"]
