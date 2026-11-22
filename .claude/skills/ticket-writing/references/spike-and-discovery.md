@@ -37,4 +37,3 @@ Explicit unknowns that block a go/no-go decision. Numbered for reference.
 
 **Expected output**
 The decision artifact the discovery will produce — a go/no-go recommendation, a research summary. Not a spec or shipped code.
-

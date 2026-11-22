@@ -14,4 +14,3 @@ Minimum DoR worth enforcing:
 - At least one acceptance criterion (PBI) or one expected behavior (Bug)
 
 Skip formal DoR if refinement conversations already cover these items. The checklist is a backstop, not a ritual.
-
