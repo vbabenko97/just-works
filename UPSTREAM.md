@@ -221,6 +221,16 @@ Stays disabled (`backend_enabled: false`) until its protocol assumptions are val
 real run and sending this repo's code to a second provider is explicitly authorised. Provider and
 auth configuration unchanged.
 
+### `ticket-writing` layout — rare sections in `references/`
+
+This fork's `ticket-writing` keeps the User Story, Bug and tracker rules in `SKILL.md` and moves the
+rest into `references/`, so that the file loaded on every call is smaller: the full Spike and
+Discovery guidance (`spike-and-discovery.md`), the Definition of Ready (`definition-of-ready.md`), and
+the Bug rewrite pair and the Given-When-Then example (`rewrite-examples.md`). `SKILL.md` keeps a short
+Spike and Discovery template with the required sections. The Vocabulary section is gone: its
+definitions sit in the type sections, and the Definition of Done rule sits under Acceptance criteria.
+When an upstream change touches one of the moved sections, apply it to the reference file.
+
 ## Intake log
 
 | Date | Upstream SHA | Change | Disposition | Reason |
