@@ -1,6 +1,43 @@
-# Rewrite examples — PBI and Spike
+# Rewrite examples — Bug, PBI and Spike
 
-Companion to the Bug rewrite in SKILL.md. Same rules, applied to the other ticket types.
+Before and after pairs for the ticket types in SKILL.md, with the same rules applied to each.
+
+## Bug — before
+
+Title: **Login bug**
+
+Body:
+
+> Login doesn't work. Please fix ASAP.
+
+## Bug — after
+
+Title: **Fix silent login failure on Chrome 125 / Windows 11**
+
+Body:
+
+**Summary**
+Users on Chrome 125 / Windows 11 see no error when login credentials are rejected. The page reloads with the form cleared.
+
+**Steps to reproduce:**
+1. Open https://app.example.com/login in Chrome 125 on Windows 11.
+2. Enter a valid email and an incorrect password.
+3. Click Sign in.
+
+**Actual result**
+Page reloads. Form fields cleared. No error banner. Console: `POST /api/auth 401 — empty body`.
+
+**Expected result**
+An error banner appears above the form: "Invalid email or password." Form fields remain populated so the user can correct them.
+
+**Environment**
+Chrome 125.0.6422.76, Windows 11 23H2, Stage, web client v2.18.0. Reproduced on two accounts.
+
+**Severity:**
+Major. Failed logins give no feedback on the affected platform; the workaround is retrying credentials or the password-reset flow.
+
+**Attachments**
+`login-failure.mp4`, a screen recording of the failure.
 
 ## PBI — before
 
@@ -27,6 +64,19 @@ Add a Download CSV button in Settings → Account → Transactions. The file cov
 
 **Links:**
 Parent: ACCT-410, Self-service reporting epic.
+
+## PBI acceptance criteria in Given-When-Then
+
+Given-When-Then for the same CSV export, where the flow branches on row count:
+
+```
+- Given a signed-in user on the Transactions page with a date range selected
+  When the user clicks Download CSV and the range contains fewer than 10,000 rows
+  Then a CSV downloads within 2 seconds with columns: date, amount, merchant, category, status.
+- Given a signed-in user with a date range selected
+  When the range contains more than 10,000 rows
+  Then the user is prompted to narrow the range before download proceeds.
+```
 
 ## Spike — before
 
