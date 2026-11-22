@@ -231,6 +231,16 @@ Spike and Discovery template with the required sections. The Vocabulary section 
 definitions sit in the type sections, and the Definition of Done rule sits under Acceptance criteria.
 When an upstream change touches one of the moved sections, apply it to the reference file.
 
+### `install.sh` — workspaces, backup rotation, stale ownership
+
+This fork's `install.sh` differs from upstream in three ways. It does not install skill-creator
+evaluation workspaces (top-level `<name>-workspace/` directories, which `.gitignore` already keeps out
+of the repository), and it treats copies an earlier run installed as stale. It keeps the newest three
+`<timestamp>` backups in `~/just-works-backups/` (`--keep-backups N`, `0` keeps all) and never touches
+other entries there. A run without `--prune` keeps ownership of the stale entries it reports, so a
+later `--prune` run can still remove them. When an upstream installer change is imported, keep all
+three. `install.bat` has none of them.
+
 ## Intake log
 
 | Date | Upstream SHA | Change | Disposition | Reason |
