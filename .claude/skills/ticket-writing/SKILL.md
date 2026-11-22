@@ -62,7 +62,6 @@ Aim for under ~70 characters when possible — that's the width where titles sta
 - **Headers** — one level of boldness: Markdown bold (`**Header**`) or H2 (`## Header`), whichever the tool renders. No H1 inside the body. Pick one style per ticket and keep it uniform.
 - **Header punctuation** — end the header with `:` when it introduces a list, a single-value line below, or a definition (`Steps to reproduce:`, `Severity:`, `Acceptance criteria:`). Omit the colon when the header opens a prose paragraph (`Summary`, `Problem`, `Proposed change`).
 - **Single-value sections** — for one-line values like `Severity`, put the header on its own line and the value on the next line. Don't inline the value next to the header.
-- **Native fields stay out of the body** — time estimate or timebox, due date or deadline, story points or complexity, and priority go in the tracker's native fields. Duplicating them in the body lets the two copies drift out of sync. Severity stays in the body because most trackers (ClickUp, Linear) have no native severity field.
 - **No horizontal rules** (`---`). Sections separate themselves through bold headers.
 - **No em dashes as separators** — never to join a label or value to its explanation in a field list (`Major — no workaround`), never between sections. Use a period, comma, or colon instead. Em dashes inside prose sentences are fine.
 - **No blank line between a header and its first line of content.** Each section opens immediately.
@@ -271,7 +270,7 @@ Skip formal DoR if refinement conversations already cover these items. The check
 
 **When a ticket comes from a meeting, thread, or report** — put the substance of why it exists (the decision, the report, the signal) in Problem, Summary, Goal, or Opportunity, and attach the origin (Slack thread, support ticket, meeting) through the tracker's native link or integration, not a body section. Trackers capture origin natively (Linear customer requests, GitHub backlinks, Jira issue links), and coding agents read only title, body, and comments, so a bare permalink they can't open carries no context.
 
-**When a required value is unknown at creation** — ask before creating, or omit it and add a follow-up comment the same day. Don't insert `[TBD]` or `[paste link]`; those become permanent. If the user can't supply a value the type demands (e.g., a Spike with no timebox), the type is probably wrong — propose a different type rather than fabricating a placeholder.
+**When a required value is unknown at creation** — ask before creating, or omit it and add a follow-up comment the same day. If the user can't supply a value the type demands (e.g., a Spike with no timebox), the type is probably wrong — propose a different type rather than fabricating a placeholder.
 
 **Before creating, search for existing tickets** — query the target tracker by title keywords and by likely tags. If candidates exist, surface them to the requester. They decide: close as duplicate, link as relates-to or blocks, or proceed. Skip this step only when the user has already confirmed it's a new ticket.
 
