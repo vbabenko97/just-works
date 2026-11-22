@@ -28,7 +28,7 @@ The rest are task agents — `reviewer`, `test-runner`, `docs-agent`, `refactor-
 - coding standards per language
 - architecture patterns (DDD, feature-driven)
 - cross-dialect SQL (`sql-assistant`)
-- model-specific prompting (`fable-5-1-prompting`, `opus-5-5-prompting`, `gpt-6-prompting`, `gemini-3-8-flash-prompting`, `grok-4-7-prompting`, `glm-5-2-prompting`, `kimi-k-3-prompting`, `gpt-image-2-prompting`, `claude-science-prompting`) and prompt rewriting (`safe-prompt-rewriter`)
+- model-specific prompting (`opus-5-5-prompting`, `gpt-6-prompting`, `grok-4-7-prompting`, `claude-science-prompting`) and prompt rewriting (`safe-prompt-rewriter`)
 - ML and document work (`ml-system-design`, `ml-system-design-review`, `ai-stage-gate`, `lossless-doc-compress`, `human-writing`, `staged-docs`; `staged-docs` is manual-only)
 - ML experiment discipline (`ml-problem-and-data-audit`, `ml-experiment-protocol`, `ml-provenance-and-handoff`, `scikit-learn`)
 - predictive UX evaluation (`predictive-ux-evaluation`)
