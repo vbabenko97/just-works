@@ -123,12 +123,16 @@ DISCARDED_OUTPUT = re.compile(r"\d?>\s*/dev/null(?=\s|$)")
 # `>&word` with a file name does write, and does not match.
 FD_DUPLICATION = re.compile(r"\d*>&(?:\d+|-)(?=[\s;|&]|$)")
 # Where the quote-and-separator split above can disagree with bash, or where bash
-# reparses text: an escaped quote, separator or redirection character, a heredoc,
-# command or process substitution, parameter expansion. A command containing any of
-# them is never scrubbed, because the scrub deletes text the split delimited. An
-# escaped `>` matters because `\>&1` is not a redirection: its `&` runs what follows
-# as a separate command, which `FD_DUPLICATION` must not remove.
-SCRUB_UNSAFE = re.compile(r"""\\['";|&\n<>]|<<|`|\$\(|\$\{|<\(|>\(""")
+# reparses text: an escaped quote, a heredoc, command or process substitution,
+# parameter expansion. A command containing any of them is never scrubbed, because
+# the scrub deletes text the split delimited.
+SCRUB_UNSAFE = re.compile(r"""\\['"]|<<|`|\$\(|\$\{|<\(|>\(""")
+# An escaped separator, redirection character or newline outside quotes, where bash
+# reads a literal and the split a separator. An escaped `>` matters because `\>&1` is
+# not a redirection: its `&` runs what follows as a separate command, which
+# `FD_DUPLICATION` must not remove. Inside quotes bash and the split both keep the
+# pair literal, so it is checked against the unquoted text only: `grep "a\|b"` reads.
+ESCAPED_SEPARATOR = re.compile(r"""\\[;|&\n<>]""")
 # An unquoted parenthesis not escaped by an odd run of backslashes: a subshell,
 # `case` pattern or function in bash, and in zsh a glob qualifier, where
 # `*(e:'...':)` runs code for every match.
@@ -252,6 +256,19 @@ def _outside_quotes(text: str) -> tuple[str, bool]:
     return "".join(out), quote is not None
 
 
+def split_agrees_with_bash(command: str) -> bool:
+    """Whether the quote-and-separator split reads `command` the way bash does.
+
+    Every check that treats quoted text as data depends on this; where it may not
+    hold, the raw text is judged instead. It fails for `SCRUB_UNSAFE` anywhere, for
+    `ESCAPED_SEPARATOR` outside quotes, for a quote left open, for an unquoted `#`,
+    since bash ignores a comment's quotes and the split does not, and for
+    `UNESCAPED_PAREN`."""
+    outside, quote_open = _outside_quotes(command)
+    return not (SCRUB_UNSAFE.search(command) or ESCAPED_SEPARATOR.search(outside)
+                or quote_open or "#" in outside or UNESCAPED_PAREN.search(outside))
+
+
 def tokens(segment: str) -> list[str]:
     try:
         return shlex.split(segment, posix=True)
@@ -317,14 +334,10 @@ def scrub_literal_reads(command: str) -> str:
     other segment and every separator is kept verbatim, which keeps patterns that
     span segments, such as `| sh` and `| xargs rm`, matching.
 
-    The command comes back unchanged whenever the split may not match bash's own
-    parse: `grep -F 'x\\' f ; sudo id` holds a quote the split never closes, so the
-    whole line would read as one grep and `; sudo id` would be scrubbed with it.
-    Besides `SCRUB_UNSAFE`, that covers a quote left open, an unquoted `#`, since
-    bash ignores a comment's quotes and the split does not, and `UNESCAPED_PAREN`."""
-    outside, quote_open = _outside_quotes(command)
-    if (SCRUB_UNSAFE.search(command) or quote_open or "#" in outside
-            or UNESCAPED_PAREN.search(outside)):
+    The command comes back unchanged whenever `split_agrees_with_bash` fails:
+    `grep -F 'x\\' f ; sudo id` holds a quote the split never closes, so the whole
+    line would read as one grep and `; sudo id` would be scrubbed with it."""
+    if not split_agrees_with_bash(command):
         return command
     command = FD_DUPLICATION.sub(" ", command)
     out: list[str] = []
@@ -510,13 +523,40 @@ def inline_verdict(segment: str, recurse):
     return None
 
 
+def _glob_view(segment: str) -> str:
+    """The segment as the glob pattern judges it: the unquoted text, since the shell
+    expands no glob inside quotes, or all of it when the segment runs git, which
+    expands a quoted pathspec such as `git rm '*.log'` itself. Git is found in the raw
+    text and in the unquoted words, so neither `timeout 5 git` nor `g'i't` hides it."""
+    try:
+        words = " ".join(shlex.split(segment, posix=True))
+    except ValueError:
+        return segment
+    if re.search(r"\bgit\b", segment) or re.search(r"\bgit\b", words):
+        return segment
+    return _outside_quotes(segment)[0]
+
+
 def unbounded_deny(command: str) -> str | None:
     """Mutation whose target set this classifier cannot bound. Universal: it needs
-    no repository data, only the shape of the command."""
+    no repository data, only the shape of the command.
+
+    Quoted text is literal to the shell, so the loop and glob patterns are matched
+    against unquoted text: `git commit -m 'for each skill in the list'` holds no loop
+    and `rsync --exclude='/*-workspace/'` no glob the shell expands. `_glob_view` keeps
+    git's quoted pathspecs in, and a command the split may read differently from bash
+    is judged on its raw text, as before. The other patterns stay on the raw text:
+    bash still expands `"$DEST"` and `"$(...)"` inside double quotes, and runs a
+    quoted or brace-expanded command word such as `"find"` or `{"xargs",}`."""
     cmd = scrub_literal_reads(command.strip())
     if not [m for m in MUTATORS if re.search(m, cmd)]:
         return None
-    unbounded = [label for pattern, label in UNBOUNDED if re.search(pattern, cmd)]
+    views = {}
+    if split_agrees_with_bash(cmd):
+        views = {"shell loop": _outside_quotes(cmd)[0],
+                 "glob": "\n".join(_glob_view(s) for s in split_segments(cmd))}
+    unbounded = [label for pattern, label in UNBOUNDED
+                 if re.search(pattern, views.get(label, cmd))]
     if unbounded:
         return ("mutation with a target set this gate cannot bound: "
                 + ", ".join(sorted(set(unbounded))))

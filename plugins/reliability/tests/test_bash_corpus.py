@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The Bash corpus: the 112 cases ported verbatim from
-tests/reliability/test_guard_bash.py, plus the literal-read cases at the end of each
-list.
+tests/reliability/test_guard_bash.py, plus the literal-read and quoted-text cases at
+the end of each list.
 
 Every case is here individually, not summarised into classes. Class-level coverage in
 test_monotonic and test_optional_policy asserts that categories behave; it cannot
@@ -143,6 +143,17 @@ MUST_DENY = [
     (r"""ls *(e:'rm -rf /tmp/x':)""", "zsh glob qualifier running code"),
     (r"""ls *\\(e:'rm -rf /tmp/x':)""",
      "zsh glob qualifier behind an escaped backslash"),
+    # quoted text: what treating it as data must not excuse
+    ("git add -- '*.py'", "git expands a quoted pathspec glob itself"),
+    ("timeout 5 git checkout -- '*.md'", "quoted pathspec glob behind an unlisted wrapper"),
+    ("cp a b && g'i't add '*.py'", "quoted pathspec glob behind a quoted git"),
+    ("for f in 'a' 'b'; do mv \"$f\" /tmp; done", "loop over quoted words"),
+    ('cp notes.txt "$DEST/notes.txt"', "double-quoted variable target still expands"),
+    ('mv "a\\|b" * /tmp', "unquoted glob beside an escaped alternation in quotes"),
+    ('grep -l x "a\\|b" | xargs mv -t /tmp', "xargs fed by a grep with an escaped alternation"),
+    ('grep -F "a\\;b" notes.txt; rm -rf /tmp/x', "recursive rm after a quoted escaped separator"),
+    (r"""cp a 'x\' * /tmp/""", "glob after a backslash-closed single quote"),
+    ("cp a b # it's\nmv * /tmp\n# '", "glob hidden behind a quote inside a comment"),
 ]
 
 MUST_ALLOW = [
@@ -217,6 +228,17 @@ MUST_ALLOW = [
      "grep whose pattern holds |sh -c"),
     (r"""grep -n -E 'CLAUDE.md|AGENTS.md|CLAUDE-CHAT' install.sh install.bat bin/cli.mjs; echo "=== gate: protected names ==="; grep -rn -E 'CLAUDE\.md|AGENTS\.md|settings(\.local)?\.json' plugins/reliability/hooks/*.py | head -20""",
      "grep over install.sh beside a glob"),
+    # quoted text is data: refused verbatim on 2026-11-22
+    ("rsync -a --exclude='/*-workspace/' /tmp/jw-src/ /tmp/jw-dst/",
+     "quoted rsync filter is not a glob target"),
+    (r"""grep -n "skills" install.sh | sed -n 1,60p | grep -n -i "copy\|cp \|for \|SKILL.md\|find" | head -20""",
+     "grep whose quoted pattern escapes its alternation"),
+    (r"""grep -rn "test_no_project_sync\|tests/install" --include=*.md README.md docs | head""",
+     "escaped alternation beside an unquoted --include glob"),
+    ("git commit -q -m 'loop for each skill in the list'", "loop keywords in a commit message"),
+    ("sed -i '' 's/a*b/c/' notes.txt", "in-place sed whose quoted regex holds a star"),
+    ("cp a b && python3 -c \"for x in range(3): print(x)\"",
+     "a Python loop beside a copy is not a shell loop"),
 ]
 
 # Scripts the fixture's allowlist pins, mirroring this repository's own.

@@ -53,6 +53,24 @@ open.
 that check the whole line read as one grep. The corpus holds the refused commands
 verbatim in MUST_ALLOW and their dangerous neighbours in MUST_DENY.
 
+**Quoted text in mutating commands (observed 2026-11-22).** Mutating commands were
+refused for text the shell treats as literal. `rsync -a --exclude='/*-workspace/' src/
+dst/` tripped the glob pattern, a commit message holding `for … in` tripped the loop
+pattern, and a `grep` whose quoted pattern held `\|` was never scrubbed, so `cp` and
+`find` inside the pattern read as commands. `plugins/reliability/hooks/rules.py` now
+treats an escaped separator, redirection character or newline as a scrub hazard only
+outside quotes (`ESCAPED_SEPARATOR`), because inside quotes bash and the split both keep
+it literal. `unbounded_deny` matches the loop and glob patterns against the unquoted
+text, except that a segment running git keeps its quoted text for the glob pattern:
+git expands a quoted pathspec such as `'*.log'` itself. Both apply only where
+`split_agrees_with_bash` holds, the condition the scrub already used; otherwise the raw
+text is judged as before. The patterns for command words and expansions (`find`,
+`xargs`, `parallel`, `$VAR`, `$(`, backticks, brace ranges) keep the raw text, because
+bash expands `"$DEST"` inside double quotes and runs a quoted or brace-expanded command
+word such as `"find"` or `{"xargs",}`. The corpus holds the refused commands in
+MUST_ALLOW and their neighbours in MUST_DENY, among them `git add -- '*.py'` and a loop
+over quoted words.
+
 **Also observed 2026-09-26, policy layer.** A session judges every command by its own
 project's policy: `guard_bash.py:49-50` takes the project from `CLAUDE_PROJECT_DIR`,
 the policy is loaded from it (`engine.py:46`), and a `cd` inside the command is not
