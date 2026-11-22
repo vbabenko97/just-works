@@ -97,6 +97,13 @@ maintainer, not an inference from git history.
 Also intentionally absent and staying absent, though upstream still maintains them:
 `.claude/agents/ticket-creator.md`, `.codex/agents/ticket-creator.toml`.
 
+Removed by the maintainer on 2026-11-22 and staying absent: `fable-5-1-prompting` and
+`gemini-3-8-flash-prompting` from both skill trees, and `glm-5-2-prompting`,
+`gpt-image-2-prompting` and `kimi-k-3-prompting` from `.claude/skills/`, the only tree that had
+them. An upstream change to one of them, such as to its Fable prompting skill, is not imported.
+`prompt-writer` routes only to `opus-5-5-prompting` and `gpt-6-prompting`. The removed skills
+remain in git history before the removal commit.
+
 ### rtk hook — removed 2026-09-27 (was: preserve; migration deferred)
 
 **Superseded 2026-09-27 by the maintainer: the hook is removed and the native migration is
