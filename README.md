@@ -4,6 +4,26 @@ Drop-in AI agent workflows, coding skills, and prompt standards for **Claude Cod
 
 Fork of [dynokostya/just-works](https://github.com/dynokostya/just-works), maintained independently; upstream changes are reviewed and recorded in [UPSTREAM.md](UPSTREAM.md).
 
+`install.sh` copies the Claude Code and Codex trees into your home directory, and the Claude Code plugin manager installs the plugins (see [Plugins](#plugins)):
+
+```mermaid
+flowchart LR
+  subgraph repo["This repository"]
+    claude[".claude/: agents, skills,<br>commands, output-styles"]
+    claudemd["CLAUDE.md, CLAUDE-CHAT.md"]
+    codex[".codex/: agents, prompts"]
+    codexskills[".codex/skills/"]
+    agentsmd["AGENTS.md"]
+    plugins["plugins/: reliability,<br>product-analyst"]
+  end
+  claude -->|install.sh| home_claude["~/.claude/"]
+  claudemd -->|install.sh| home_claude
+  codex -->|install.sh| home_codex["~/.codex/"]
+  agentsmd -->|install.sh| home_codex
+  codexskills -->|install.sh| home_agents["~/.agents/skills/"]
+  plugins -->|claude plugin install| cache["Claude Code plugin cache"]
+```
+
 ## Quick start
 
 ```bash
@@ -35,20 +55,30 @@ Use the global installer for Codex setup. This repo's `.codex/config.toml` also 
 | Area | Skills |
 |---|---|
 | Coding standards | Python, TypeScript, React, Tailwind, shadcn/ui, Swift, C#, Dart/Flutter |
+| REST APIs | `rest-api` URL conventions, methods, status codes, errors, pagination, versioning and authentication |
+| Code quality and repository cleanup | `clean-code-reviewer` review and refactoring for readability and maintainability<br>`repo-professionalizer` reorganizing a repository for review, handoff or open source |
 | Architecture patterns | DDD, feature-driven |
+| Issue-tracker tickets | `ticket-writing` titles, sections per ticket type, acceptance criteria and bug reproduction fields for Jira, Linear, ClickUp, GitHub Issues and Asana<br>`sprint-estimation` story points, when asked for an estimate |
 | SQL | `sql-assistant` writes, reviews, optimizes, and converts SQL for PostgreSQL, MySQL, MariaDB, SQL Server, Oracle, SQLite, BigQuery, Snowflake, and DuckDB, with per-engine references and rules for when SQL may be executed |
 | ML system design | `ml-system-design` authoring, with one template for predictive ML and one for RAG, LLM applications and agents<br>`ml-system-design-review` rubric-graded critique<br>`ai-stage-gate` Go/Kill gate reviews |
 | C4 architecture diagrams | `c4-architecture` draws system context, container and component views in C4-PlantUML, from an existing repository or from requirements, and renders them locally; the `diagrammer` agent loads it |
+| PlantUML diagrams | `plantuml-diagramming` diagram type selection, syntax and styling for `.puml` files |
+| Data analysis | `ai-analyst-pipeline` six-phase analysis of CSV or Excel data, from framing the question to validated findings, charts and delivery |
 | ML experiment discipline | `ml-problem-and-data-audit` problem contract, data, split, and leakage audit with a readiness verdict<br>`ml-experiment-protocol` baselines, fair comparison, and protected final test<br>`ml-provenance-and-handoff` run records and reproducible result notes<br>`scikit-learn` implementation patterns that follow the accepted protocol |
 | Document work | `lossless-doc-compress` compression with preservation checks<br>`human-writing` for documents that readers outside the project can follow<br>`staged-docs` for building a document with its author piece by piece, invoke manually with `/staged-docs <topic>` |
 | Predictive UX evaluation of web UIs | `predictive-ux-evaluation` |
-| Model-specific prompt engineering | Claude Opus 5.5, GPT-6, Grok 4.7 |
+| Model-specific prompt engineering | `opus-5-5-prompting` Claude Opus 5.5, `gpt-6-prompting` GPT-6, `grok-4-7-prompting` Grok 4.7<br>`claude-science-prompting` research prompts for Claude Science<br>`safe-prompt-rewriter` clearer, policy-compliant rewrites of a prompt |
+| Presentations | `powerpoint-designer` finished `.pptx` decks, slide-by-slide design briefs and critiques |
+| Skill and MCP authoring | `skill-creator` creating, editing and evaluating skills<br>`mcp-builder` designing MCP servers that connect a model to external services |
 | Blender 5.2 expert tools | `scenario-blender-expert` router + 12 specialists, from scenario-labs/skills |
 | Evidence-first family-history research in former-USSR and Russian Empire archives | `ex-ussr-kinship-research`, from DenisSergeevitch/ex-ussr-kinship-research |
 | Demo-video production | `saas-product-demo-production`, `screen-demo-production`, `storyboard-previsualization`, `editing-montage`, `captions-media-accessibility`, `generated-media-qa`, `media-provenance-rights`, `media-qc-delivery`, from calesthio/generative-media-skills<br>`short-form-video`, `caption-animation`, from iart-ai/tiktok-video-skills<br>`app-demo-agent` with `voice-generation`, `music-generation`, `media-utils`, from michaelboeding/skills<br>`demo-video`, from Hmache/demo<br>`app-demo-agent`, `voice-generation`, `music-generation` and `demo-video` invoke manually, because they call paid APIs or drive a live site |
 | Job applications | `career-application-builder` evidence-checked CVs and letters<br>`job-triage` vacancy screening<br>`interview-drill` mock interviews |
+| MSCA Postdoctoral Fellowship 2026 applications | `msca-pf-european-2026` drafting and final audit of a European Fellowship application<br>`msca-pf-2026-reviewer` evaluator-style review and repair plan<br>`msca-text-humanizer` natural academic English for the proposal and CV |
+| Personal finance | `bank-broker-due-diligence`, `cashflow-and-net-worth-auditor`, `debt-and-obligation-prioritizer`, `emergency-fund-planner`, `finance-data-normalizer`, `finance-privacy-redactor`, `financial-stress-tester`, `income-optimizer`, `investment-policy-builder`, `portfolio-rebalancer-and-risk-review`, `subscription-and-expense-auditor`, `tax-and-residency-watch` |
 | GitHub profile and README presentation | `github-presentation`, invoke manually |
-| Behavioral modes | `minimal-coding` |
+| Delegated task execution | `goal` runs a task with selective delegation to Claude specialists and an optional Codex review, invoke manually with `/goal` |
+| Behavioral modes | `minimal-coding`<br>`i-have-adhd` output shaped for a reader with ADHD, invoke with `/i-have-adhd` |
 
 **Permission rules** — this repo's `.claude/settings.json` denies `Read` access to `.env` files, `*.pem`, `*.key`, credentials, cloud configs, SSH keys, Terraform state, and database files. The global install template, `settings.json.default`, has an empty deny-list.
 
@@ -137,6 +167,23 @@ cp .mcp.json /path/to/your/project/.mcp.json
 
 Requires `npx` (Node.js) in your PATH.
 
+## Plugins
+
+This repository is also a Claude Code plugin marketplace named `just-works`, declared in `.claude-plugin/marketplace.json`. It holds two plugins. `install.sh` does not install them; the Claude Code plugin manager does.
+
+| Plugin | What it does |
+|---|---|
+| `reliability` | Guards that deny an action when they cannot run, instead of allowing it. In every project it denies recognised destructive operations, mutations whose targets it cannot bound, edits to the configuration that governs the agent, and attempts to disable the plugin. A repository can add restrictions in `.claude/reliability-policy.json`, such as reviewed-script pinning and extra protected paths, but cannot weaken the rules that apply in every project. |
+| `product-analyst` | Read-only product investigations across PostgreSQL, PostHog and Amazon QuickSight, with evidence records and independent claim verification. Run `/product-analyst:investigate`. Setup and requirements are in [plugins/product-analyst/README.md](plugins/product-analyst/README.md). |
+
+```bash
+claude plugin marketplace add vbabenko97/just-works
+claude plugin install reliability@just-works
+claude plugin install product-analyst@just-works
+```
+
+To update a plugin, run `claude plugin marketplace update just-works`, then `claude plugin update reliability@just-works` (or `product-analyst@just-works`), and restart Claude Code. [docs/owner-plugin-procedure.md](docs/owner-plugin-procedure.md) covers updates and rollback for `reliability`.
+
 ## Project Structure
 
 ```
@@ -153,10 +200,21 @@ Requires `npx` (Node.js) in your PATH.
   skills/           # Skills copied from .claude/ (a subset)
   config/azure/     # config.toml.default + config.toml
   hooks.json        # Lifecycle hooks (notification)
+.claude-plugin/
+  marketplace.json  # Claude Code plugin marketplace (reliability, product-analyst)
+plugins/
+  reliability/      # Guard hooks, policy layer and their tests
+  product-analyst/  # Read-only product investigation plugin
+scripts/verify/     # bulk_mutate.py, verify_tree_equivalence.py, policy and maintenance helpers
+tests/              # Installer, reliability, /goal and skill tests
+docs/               # Architecture, plugin procedures and guard notes
+install.sh          # Global installer
+install.bat         # Older Windows installer
 bin/cli.mjs         # npx installer
 CLAUDE.md           # Behavioral instructions for Claude Code
 CLAUDE-CHAT.md      # Behavioral instructions for claude.ai chat
 AGENTS.md           # Behavioral instructions for Codex
+UPSTREAM.md         # Upstream intake log and standing decisions
 ```
 
 `.claude/` and `.codex/` are parallel and independent — use one or both.
