@@ -19,6 +19,7 @@ SKIP_STATUSLINE=false
 SKIP_SKILLS_CLAUDE=false
 SKIP_SKILLS_CODEX=false
 DO_BACKUP=true
+KEEP_BACKUPS=3
 PRUNE=false
 REPLACE_CONFIG=false
 
@@ -67,6 +68,9 @@ Options:
   --codex-only    Install only Codex files (~/.codex/, ~/.agents/)
   --dry-run       Show what would be installed without making changes
   --no-backup     Skip backup prompt, disable backups (for CI/non-interactive)
+  --keep-backups N  Keep the newest N backups this installer made in
+                  ~/just-works-backups/ (default 3; 0 keeps all). Only its
+                  <timestamp> directories are removed; other entries are kept.
   --prune         Delete entries that a previous run of this installer placed
                   in the destination and that no longer exist in the source
                   (tracked in ~/.just-works-manifest). Entries the installer
@@ -116,6 +120,12 @@ while [[ $# -gt 0 ]]; do
         --skip-skills-claude) SKIP_SKILLS_CLAUDE=true; shift ;;
         --skip-skills-codex)  SKIP_SKILLS_CODEX=true; shift ;;
         --no-backup)   DO_BACKUP=false; shift ;;
+        --keep-backups)
+            if [[ ! "${2:-}" =~ ^[0-9]+$ ]]; then
+                error "--keep-backups needs a non-negative integer, got: ${2:-<none>}"
+                exit 1
+            fi
+            KEEP_BACKUPS=$((10#$2)); shift 2 ;;
         --prune)       PRUNE=true; shift ;;
         --repos)
             error "--repos is no longer supported: shared skills are installed globally."
@@ -189,13 +199,28 @@ if $PERSONAL && ! $CODEX_ONLY; then
     exit 1
 fi
 
+# skill-creator writes evaluation runs to <skill>-workspace/ next to the skill.
+# .gitignore keeps them out of the repository; the installer keeps them out of
+# destinations too, so they are neither copied nor claimed in the manifest.
+is_install_excluded() { [[ "$2" == *-workspace && -d "$1/$2" ]]; }
+
 # Choose copy method. Copies are always additive; deletion happens only through
 # the manifest-scoped prune in install_dir, so --prune no longer needs rsync.
+# copy_dir takes a full copy (backups); install_copy skips excluded entries.
 if command -v rsync &>/dev/null; then
     copy_dir() { rsync -a "$1/" "$2/"; }
+    install_copy() { rsync -a --exclude='/*-workspace/' "$1/" "$2/"; }
 else
     warn "rsync not found — falling back to cp (existing files may be overwritten)"
     copy_dir() { cp -r "$1/." "$2/"; }
+    install_copy() {
+        local entry
+        for entry in "$1"/* "$1"/.[!.]*; do
+            [[ -e "$entry" ]] || continue
+            is_install_excluded "$1" "${entry##*/}" && continue
+            cp -r "$entry" "$2/"
+        done
+    }
 fi
 
 echo -e "${BOLD}just-works installer${NC}"
@@ -279,7 +304,7 @@ install_dir() {
     if [[ -d "$dest" ]]; then
         while IFS= read -r entry; do
             [[ -n "$entry" ]] || continue
-            [[ -e "${src}/${entry}" ]] && continue
+            [[ -e "${src}/${entry}" ]] && ! is_install_excluded "$src" "$entry" && continue
             if printf '%s\n' "$owned" | grep -Fxq "$entry"; then
                 stale="${stale}${entry} "
             else
@@ -305,19 +330,28 @@ install_dir() {
         done
         warn "Pruned from ${dest}: ${stale}"
     fi
+    # Ownership of a stale entry lasts until it is pruned, so a later --prune run
+    # can still remove what an earlier run without --prune only reported.
+    if ! $PRUNE && [[ -n "$stale" ]]; then
+        for entry in $stale; do
+            echo "${dest}/${entry}" >> "$MANIFEST_NEW"
+        done
+    fi
 
     if $DRY_RUN; then
         info "Would copy: $src/ -> $dest/"
     else
         mkdir -p "$dest"
-        copy_dir "$src" "$dest"
+        install_copy "$src" "$dest"
         info "Installed: $label -> $dest/"
     fi
 
     # Claim ownership of everything we ship, whether or not this run is dry:
     # only a real run rewrites the manifest (guarded at the end of the script).
     while IFS= read -r entry; do
-        [[ -n "$entry" ]] && echo "${dest}/${entry}" >> "$MANIFEST_NEW"
+        [[ -n "$entry" ]] || continue
+        is_install_excluded "$src" "$entry" && continue
+        echo "${dest}/${entry}" >> "$MANIFEST_NEW"
     done < <(ls "$src" 2>/dev/null)
 }
 
@@ -347,6 +381,37 @@ install_file() {
         cp "$src" "$dest"
         info "Installed: $label -> $dest"
     fi
+}
+
+# Each backup is a full copy of every destination, tens of MB per run. Keep the
+# newest KEEP_BACKUPS of the <timestamp> directories this script creates; other
+# entries in ~/just-works-backups/ belong to the user and are never touched.
+prune_backups() {
+    local root="${HOME}/just-works-backups" keep="$KEEP_BACKUPS" path name excess old
+    local names=()
+    (( keep > 0 )) || return 0
+    [[ -d "$root" ]] || return 0
+    for path in "$root"/*; do
+        name="${path##*/}"
+        if [[ -d "$path" && "$name" =~ ^[0-9]{8}_[0-9]{6}$ ]]; then
+            names+=("$name")
+        fi
+    done
+    # A dry run makes no backup of its own; the real run would add one.
+    if $DRY_RUN; then
+        keep=$((keep - 1))
+    fi
+    excess=$(( ${#names[@]} - keep ))
+    (( excess > 0 )) || return 0
+    old="${names[*]:0:excess}"
+    if $DRY_RUN; then
+        warn "Would remove old installer backups (keeping the newest ${KEEP_BACKUPS}): ${old}"
+        return 0
+    fi
+    for name in "${names[@]:0:excess}"; do
+        rm -rf "${root:?}/${name}"
+    done
+    warn "Removed old installer backups (kept the newest ${KEEP_BACKUPS}): ${old}"
 }
 
 # --- Claude Code ---
@@ -435,6 +500,10 @@ if ! $DRY_RUN && [[ -s "$MANIFEST_DESTS" ]]; then
         fi
         cat "$MANIFEST_NEW"
     } | sort -u > "${MANIFEST_FILE}.tmp" && mv "${MANIFEST_FILE}.tmp" "$MANIFEST_FILE"
+fi
+
+if $DO_BACKUP; then
+    prune_backups
 fi
 
 # --- Summary ---

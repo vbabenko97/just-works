@@ -66,17 +66,17 @@ Compression reports the preservation checks performed and their limits; it canno
 
 ## Installation
 
-`install.sh` installs agents, skills, commands, and settings globally to `~/.claude/`, `~/.codex/`, and `~/.agents/skills/`. Before copying, it asks whether to back up the existing destinations to `~/just-works-backups/<timestamp>/`; without a terminal it backs up without asking, and answering "n" or passing `--no-backup` turns backups off. An existing `settings.json`, `config.toml`, or `hooks.json` is kept unless you pass `--replace-config`, and entries you added under names this repo doesn't ship are left in place. On each side that runs, `CLAUDE.md` and `CLAUDE-CHAT.md` (Claude) and `AGENTS.md` (Codex) are overwritten — `--skip-config` does not protect them — and so is `statusline-command.sh` unless you pass `--skip-statusline`; all are backed up when backups are on.
+`install.sh` installs agents, skills, commands, and settings globally to `~/.claude/`, `~/.codex/`, and `~/.agents/skills/`. Before copying, it asks whether to back up the existing destinations to `~/just-works-backups/<timestamp>/`; without a terminal it backs up without asking, and answering "n" or passing `--no-backup` turns backups off. A run that backs up keeps the newest three of these `<timestamp>` directories and deletes older ones; `--keep-backups N` changes the count, `--keep-backups 0` keeps all, and other entries in `~/just-works-backups/` are never touched. An existing `settings.json`, `config.toml`, or `hooks.json` is kept unless you pass `--replace-config`, and entries you added under names this repo doesn't ship are left in place. On each side that runs, `CLAUDE.md` and `CLAUDE-CHAT.md` (Claude) and `AGENTS.md` (Codex) are overwritten — `--skip-config` does not protect them — and so is `statusline-command.sh` unless you pass `--skip-statusline`; all are backed up when backups are on.
 
 ### From source
 
 Clone the repository and run `./install.sh`, as in [Quick start](#quick-start). To update: `git pull && ./install.sh` (existing config files are kept; add `--replace-config` to refresh them).
 
-`install.sh` leaves project skill directories unchanged. The former `--repos` option is rejected before installation, including with `--prune` or `--dry-run`. Remove it from saved commands and scripts. `--prune` removes obsolete installer-owned entries from global destinations; it does not clean up copies in projects.
+`install.sh` leaves project skill directories unchanged. The former `--repos` option is rejected before installation, including with `--prune` or `--dry-run`. Remove it from saved commands and scripts. `--prune` removes obsolete installer-owned entries from global destinations; it does not clean up copies in projects. Skill-creator evaluation workspaces (`<skill>-workspace/` directories, ignored by Git) are not installed, and `--prune` removes copies that earlier runs installed.
 
 To clean up copies left by earlier installs, compare complete skill directories with the shared source, preserve local changes, and move confirmed copies to a backup outside the project's skill directories. Check that the corresponding global skill is installed before removing its project copy. Keep project-specific skills in place. This source repository retains both provider trees for distribution.
 
-Most protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script: it has no `--prune`, `--replace-config`, or `--personal` refusal, and it overwrites existing config files. Like `install.sh`, it leaves entries you added in place: with backups off it deletes only the files it is about to replace, never a destination directory.
+Most protections above apply to `install.sh` only. On Windows, `install.bat` is a separate, older script: it has no `--prune`, `--replace-config`, `--keep-backups`, or `--personal` refusal, it also installs skill-creator workspaces, and it overwrites existing config files. Like `install.sh`, it leaves entries you added in place: with backups off it deletes only the files it is about to replace, never a destination directory.
 
 `bootstrap.sh` (upstream's `curl | bash` one-liner) downloads `dynokostya/just-works` and runs that repository's own installer unless `JUST_WORKS_REPO` (set in `bash`'s environment) names another repository; the npm package `@dynokostya/just-works` is upstream's. By default both install upstream, not this fork — use the source checkout above.
 
@@ -107,6 +107,7 @@ Both profiles install the same `hooks.json`, a `Stop` hook that plays a sound wi
 --claude-only           # skip Codex
 --codex-only            # skip Claude
 --no-backup             # skip backup prompt, disable backups (for CI/scripts)
+--keep-backups N        # keep the newest N installer backups in ~/just-works-backups/ (default 3, 0 keeps all)
 --prune                 # delete entries a previous run installed that are gone from the source (tracked in ~/.just-works-manifest)
 --replace-config        # overwrite existing settings.json / config.toml / hooks.json (backed up when backups are on)
 -h, --help              # show help
