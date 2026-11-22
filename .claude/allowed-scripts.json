@@ -27,7 +27,7 @@
     "tests/goal/fake-codex.py": "21334f82fb20a3f84e9db8fb98525c90ee3801ba2ea3436080293b01420e2935",
     ".claude/skills/career-application-builder/scripts/check-pdf-extraction.sh": "35adb2538caa18c79547615597b7af9fa206eebc6ebabb83949a6ee15128ba63",
     ".codex/skills/career-application-builder/scripts/check-pdf-extraction.sh": "35adb2538caa18c79547615597b7af9fa206eebc6ebabb83949a6ee15128ba63",
-     "tests/install/test_no_project_sync.py": "80426301c979bf7071be851566e8f2230bb6fa77ad78550cc7767572b6b96904",
+    "tests/install/test_no_project_sync.py": "80426301c979bf7071be851566e8f2230bb6fa77ad78550cc7767572b6b96904",
     "tests/install/test_workspace_and_backup_rotation.py": "ba89c9e88b99ff43e1c28838bdbaaeb359f659df0b703aac3a68a2eb1d163639"
   }
 }
